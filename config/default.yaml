@@ -1,0 +1,20 @@
+# Baseline config — I ship with cloud off for air-gapped MVP
+
+app:
+  name: LakanVault
+  log_level: INFO
+
+cloud:
+  enabled: false  # I leave this false unless I'm deliberately demoing hybrid
+
+local:
+  chunk_size_bytes: 1048576  # 1MB — fewer disk reads on 30GB+ models, still tiny RAM
+  models_dir: ./data/models
+  manifest_db: ./data/manifest.db
+  audit_dir: ./data/audit
+
+pipeline:
+  order: [integrity, threat_scanner, privacy, audit]  # fixed order, don't reorder casually
+
+privacy:
+  enabled: true

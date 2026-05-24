@@ -1,0 +1,7 @@
+# I copy this to cloud.yaml when I want to test hybrid mode locally
+# Never put real API keys or secrets in anything I commit
+
+cloud:
+  enabled: false
+  analytics_endpoint: https://example.invalid/analytics
+  enrichment_endpoint: https://example.invalid/enrichment
