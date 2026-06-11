@@ -8,10 +8,13 @@ Hybrid, locally deployable AI security gateway. Air-gapped by default.
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -e .
+.\scripts\download_test_model.ps1   # first time — small GGUF into ./data/models
 .\scripts\run_ui.ps1
 ```
 
-Open **http://127.0.0.1:8080**
+Open **http://127.0.0.1:8080** — use folder/file icons to pick your model, then **run**.
+
+See **[docs/PROJECT_FILES.md](docs/PROJECT_FILES.md)** for what every file does.
 
 - UI: `src/lakanvault/app/static/index.html` (based on `lakanvault_dashboard.html`)
 - API: `src/lakanvault/app/server.py` → `Gateway.receive()`
