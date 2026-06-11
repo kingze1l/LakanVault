@@ -1,35 +1,27 @@
-from typing import Protocol
+"""Ports — abstract interfaces that adapters implement. No concrete imports here."""
+from __future__ import annotations
 
-from lakanvault.contracts.dtos import CloudTelemetryDTO, RedactedText, StatusSummaryDTO
-from lakanvault.contracts.events import (
-    AuditRecorded,
-    IntegrityVerified,
-    PIIMasked,
-    ThreatFinding,
-)
+from abc import ABC, abstractmethod
+
+from lakanvault.contracts.events import PipelineEvent, StageResult
 
 
-class IIntegrityGuard(Protocol):
-    def verify(self, model_id: str, model_path: str) -> IntegrityVerified: ...
+class PipelineStage(ABC):
+    """Every pipeline stage implements this. Orchestration calls run()."""
+
+    @property
+    @abstractmethod
+    def name(self) -> str: ...
+
+    @abstractmethod
+    def run(self, event: PipelineEvent) -> StageResult: ...
 
 
-class IThreatScanner(Protocol):
-    def scan_environment(self, request_id: str) -> list[ThreatFinding]: ...
+class AuditWriter(ABC):
+    @abstractmethod
+    def write(self, event: PipelineEvent) -> None: ...
 
 
-class IPrivacyShield(Protocol):
-    def mask_prompt(self, request_id: str, text: str) -> tuple[PIIMasked, RedactedText]: ...
-
-
-class IAuditStore(Protocol):
-    def record(self, event: AuditRecorded) -> None: ...
-
-    def get_status(self, request_id: str) -> StatusSummaryDTO: ...
-
-
-class ICloudEnrichment(Protocol):
-    def fetch_artifacts(self, telemetry: CloudTelemetryDTO) -> bytes: ...
-
-
-class ICloudAnalytics(Protocol):
-    def upload_metrics(self, telemetry: CloudTelemetryDTO) -> None: ...
+class CloudForwarder(ABC):
+    @abstractmethod
+    def forward(self, event: PipelineEvent) -> bool: ...

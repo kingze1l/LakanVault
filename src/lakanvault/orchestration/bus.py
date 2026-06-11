@@ -1,45 +1,41 @@
-from lakanvault.contracts.dtos import CloudTelemetryDTO
-from lakanvault.contracts.events import (
-    AuditRecorded,
-    IntegrityVerified,
-    PIIMasked,
-    ThreatFinding,
-)
-from lakanvault.contracts.policies import AirGapPolicy, CloudEligibility, redact_for_cloud
-from lakanvault.contracts.ports import ICloudAnalytics, ICloudEnrichment
-from lakanvault.infrastructure.config_loader import AppConfig
+"""Event bus — the ONLY egress point toward cloud (ADR-001).
+Never hand-rolls dicts; always goes through contracts.policies.redact_for_cloud().
+"""
+from __future__ import annotations
 
-PipelineEvent = IntegrityVerified | ThreatFinding | PIIMasked | AuditRecorded
+import logging
+
+from lakanvault.contracts.events import PipelineEvent
+from lakanvault.contracts.policies import redact_for_cloud
+
+logger = logging.getLogger(__name__)
 
 
 class EventBus:
-    def __init__(
-        self,
-        config: AppConfig,
-        enrichment: ICloudEnrichment | None = None,
-        analytics: ICloudAnalytics | None = None,
-    ) -> None:
-        self._config = config
-        self._enrichment = enrichment
-        self._analytics = analytics
-        self._local_log: list[PipelineEvent] = []
+    """
+    Receives a completed pipeline event.
+    If cloud is enabled, redacts and forwards.
+    If cloud is disabled, logs and stops — nothing leaves the machine.
+    """
 
-    @property
-    def local_events(self) -> list[PipelineEvent]:
-        return list(self._local_log)
+    def __init__(self, cloud_enabled: bool = False, analytics_endpoint: str = ""):
+        self._cloud_enabled = cloud_enabled
+        self._analytics_endpoint = analytics_endpoint
 
-    def publish_local(self, event: PipelineEvent) -> None:
-        self._local_log.append(event)
+    def publish(self, event: PipelineEvent, duration_ms: float = 0.0) -> bool:
+        """Returns True if forwarded, False otherwise."""
+        if not self._cloud_enabled:
+            logger.info(
+                "Cloud disabled — event %s not forwarded (fail-safe default)",
+                event.run_id,
+            )
+            return False
 
-    def maybe_forward(self, event: PipelineEvent) -> CloudTelemetryDTO | None:
-        self.publish_local(event)
-        if not AirGapPolicy.cloud_allowed(self._config):
-            return None
-        if not CloudEligibility.event_may_forward(event):
-            return None
-        telemetry = redact_for_cloud(event)
-        if self._analytics is not None:
-            self._analytics.upload_metrics(telemetry)
-        if self._enrichment is not None:
-            self._enrichment.fetch_artifacts(telemetry)
-        return telemetry
+        dto = redact_for_cloud(event, duration_ms)
+        logger.info(
+            "Forwarding redacted telemetry for run %s to %s",
+            dto.run_id, self._analytics_endpoint,
+        )
+        # Real HTTP call would go here when cloud is wired up
+        # import httpx; httpx.post(self._analytics_endpoint, json=dto.model_dump())
+        return True

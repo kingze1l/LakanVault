@@ -1,6 +1,3 @@
-# My EliteBook overrides — only touch paths that differ from default.yaml
-# Optional file; missing keys fall back to default.yaml
-
 local:
   models_dir: ./data/models
   audit_dir: ./data/audit

@@ -1,48 +1,34 @@
-from datetime import datetime
-from typing import Literal
+"""Data Transfer Objects — safe shapes for passing data across layer boundaries."""
+from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from lakanvault.shared.constants import FORBIDDEN_CLOUD_DTO_FIELDS
 
 
-class SensitiveContext(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    request_id: str
-    model_path: str | None = None
-    prompt_text: str | None = None
+class ScanRequest(BaseModel):
+    target_path: str
+    prompt_text: str = ""
 
 
-class RedactedText(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    request_id: str
-    text: str
+class ScanResponse(BaseModel):
+    run_id: str
+    overall_status: str
+    stages: list[dict]
+    hash_summary: str = ""
+    pii_span_count: int = 0
+    cloud_forwarded: bool = False
 
 
 class CloudTelemetryDTO(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(extra="forbid")
 
-    event_type: str
-    timestamp: datetime
-    request_id: str | None = None
-    severity: str | None = None
-    finding_type: str | None = None
-    hash_prefix: str | None = Field(default=None, max_length=16)
-    entity_count: int | None = Field(default=None, ge=0)
-    stage: str | None = None
-    duration_ms: int | None = Field(default=None, ge=0)
-    bytes_processed: int | None = Field(default=None, ge=0)
-
-
-class StatusSummaryDTO(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    request_id: str
-    overall_status: Literal["ok", "fail", "pending", "not_implemented"]
-    stages_completed: list[str] = Field(default_factory=list)
-    message: str | None = None
+    run_id: str
+    overall_status: str
+    pii_span_count: int
+    integrity_ok: bool
+    duration_ms: float
+    bytes_processed: int = 0
 
 
 def cloud_dto_field_names() -> frozenset[str]:

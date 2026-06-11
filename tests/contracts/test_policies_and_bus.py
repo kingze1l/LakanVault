@@ -1,28 +1,17 @@
-from datetime import datetime, timezone
+from pathlib import Path
 
-from lakanvault.cloud_intelligence.adapters.noop import NoOpCloudAnalytics, NoOpCloudEnrichment
-from lakanvault.contracts.events import ThreatFinding
-from lakanvault.contracts.policies import AirGapPolicy
+from lakanvault.contracts.events import PipelineEvent, StageResult, StageStatus
 from lakanvault.infrastructure.config_loader import load_config
 from lakanvault.orchestration.bus import EventBus
-from pathlib import Path
 
 
 def test_air_gap_blocks_cloud_forward() -> None:
     root = Path(__file__).resolve().parents[2]
     config = load_config(root / "config")
-    assert AirGapPolicy.cloud_allowed(config) is False
-    bus = EventBus(
-        config,
-        enrichment=NoOpCloudEnrichment(),
-        analytics=NoOpCloudAnalytics(),
+    bus = EventBus(cloud_enabled=config.cloud.enabled)
+    event = PipelineEvent(run_id="r1", target_path="model.bin")
+    event.stages.append(
+        StageResult(stage="integrity", status=StageStatus.PASS, metadata={"bytes_processed": 100})
     )
-    event = ThreatFinding(
-        request_id="r1",
-        severity="low",
-        finding_type="env_leak",
-        timestamp=datetime.now(timezone.utc),
-    )
-    forwarded = bus.maybe_forward(event)
-    assert forwarded is None
-    assert len(bus.local_events) == 1
+    forwarded = bus.publish(event, duration_ms=5.0)
+    assert forwarded is False

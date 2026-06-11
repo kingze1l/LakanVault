@@ -1,12 +1,9 @@
-from datetime import datetime, timezone
-
 from lakanvault.contracts.dtos import (
     CloudTelemetryDTO,
-    RedactedText,
     assert_no_forbidden_cloud_fields,
     cloud_dto_field_names,
 )
-from lakanvault.contracts.events import IntegrityVerified, PIIMasked
+from lakanvault.contracts.events import PipelineEvent, StageResult, StageStatus
 from lakanvault.contracts.policies import redact_for_cloud
 from lakanvault.shared.constants import FORBIDDEN_CLOUD_DTO_FIELDS
 
@@ -19,8 +16,11 @@ def test_cloud_dto_has_no_forbidden_field_names() -> None:
 def test_cloud_dto_rejects_extra_sensitive_fields() -> None:
     try:
         CloudTelemetryDTO(
-            event_type="bad",
-            timestamp=datetime.now(timezone.utc),
+            run_id="r1",
+            overall_status="PASS",
+            pii_span_count=0,
+            integrity_ok=True,
+            duration_ms=1.0,
             raw_prompt="secret",
         )
     except Exception:
@@ -28,29 +28,17 @@ def test_cloud_dto_rejects_extra_sensitive_fields() -> None:
     raise AssertionError("CloudTelemetryDTO must forbid extra sensitive fields")
 
 
-def test_redact_for_cloud_does_not_include_raw_prompt() -> None:
-    event = PIIMasked(request_id="r1", entity_count=3, timestamp=datetime.now(timezone.utc))
-    dto = redact_for_cloud(event)
+def test_redact_for_cloud_uses_safe_fields_only() -> None:
+    event = PipelineEvent(run_id="r1", target_path="model.bin", prompt_text="secret@example.com")
+    event.stages.append(
+        StageResult(
+            stage="privacy",
+            status=StageStatus.WARN,
+            metadata={"pii_span_count": 2},
+        )
+    )
+    dto = redact_for_cloud(event, duration_ms=12.5)
     payload = dto.model_dump()
     assert "raw_prompt" not in payload
-    assert "prompt" not in payload
-    assert payload.get("entity_count") == 3
-
-
-def test_integrity_redaction_uses_hash_prefix_only() -> None:
-    digest = "a" * 64
-    event = IntegrityVerified(
-        model_id="m1",
-        sha256=digest,
-        verified=True,
-        timestamp=datetime.now(timezone.utc),
-    )
-    dto = redact_for_cloud(event)
-    assert dto.hash_prefix == digest[:16]
-    assert dto.hash_prefix is not None
-    assert len(dto.hash_prefix) == 16
-
-
-def test_redacted_text_schema_is_minimal() -> None:
-    RedactedText(request_id="r1", text="[EMAIL]")
-    assert set(RedactedText.model_fields) == {"request_id", "text"}
+    assert "prompt_text" not in payload
+    assert payload["pii_span_count"] == 2

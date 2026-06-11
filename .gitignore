@@ -1,10 +1,8 @@
-# My local Cursor / planning stuff — not for the repo
 .cursor/
 .cursorrules
 ai_planning/
 *.plan.md
 
-# Python junk
 __pycache__/
 *.py[cod]
 .venv/
@@ -13,16 +11,13 @@ venv/
 .env.*
 !.env.example
 
-# Runtime data on my machine — models, dbs, logs
 data/
 *.db
 logs/
 
-# OS noise
 .DS_Store
 Thumbs.db
 
-# Build / test caches
 .pytest_cache/
 .mypy_cache/
 dist/

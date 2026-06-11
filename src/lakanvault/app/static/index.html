@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LakanVault</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" />
+<style>
+:root{
+  --font-mono:'Consolas','Courier New',monospace;
+  --color-background-primary:#0d1117;
+  --color-background-secondary:#161b22;
+  --color-background-success:#0d2818;
+  --color-background-danger:#2d1215;
+  --color-background-warning:#2d2408;
+  --color-border-tertiary:#30363d;
+  --color-border-secondary:#484f58;
+  --color-border-success:#238636;
+  --color-text-primary:#e6edf3;
+  --color-text-secondary:#8b949e;
+  --color-text-tertiary:#6e7681;
+  --color-text-success:#3fb950;
+  --color-text-danger:#f85149;
+  --color-text-warning:#d29922;
+  --border-radius-md:6px;
+  --border-radius-lg:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-mono);background:var(--color-background-primary);color:var(--color-text-primary);padding:1.25rem}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.lv-wrap{display:flex;min-height:560px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.lv-sidebar{width:180px;flex-shrink:0;background:var(--color-background-secondary);border-right:0.5px solid var(--color-border-tertiary);padding:1rem 0;display:flex;flex-direction:column;gap:2px}
+.lv-logo{padding:0 1rem 1rem;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:0.5rem}
+.lv-logo-name{font-size:13px;font-weight:500;color:var(--color-text-primary);letter-spacing:0.05em}
+.lv-logo-sub{font-size:10px;color:var(--color-text-secondary);margin-top:2px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 1rem;font-size:12px;color:var(--color-text-secondary);cursor:pointer;border-left:2px solid transparent;transition:background 0.15s}
+.nav-item:hover{background:var(--color-background-primary);color:var(--color-text-primary)}
+.nav-item.active{color:var(--color-text-primary);border-left:2px solid var(--color-text-success);background:var(--color-background-primary)}
+.nav-item i{font-size:14px}
+.lv-main{flex:1;padding:1.25rem;overflow-y:auto;background:var(--color-background-primary)}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);letter-spacing:0.08em;margin-bottom:1.25rem;text-transform:uppercase}
+.status-bar{display:flex;align-items:center;gap:0;margin-bottom:1.5rem}
+.stage{flex:1;padding:10px 8px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);text-align:center;position:relative}
+.stage:not(:last-child)::after{content:'';position:absolute;right:-1px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:7px solid var(--color-border-secondary);z-index:2}
+.stage:first-child{border-radius:var(--border-radius-md) 0 0 var(--border-radius-md)}
+.stage:last-child{border-radius:0 var(--border-radius-md) var(--border-radius-md) 0}
+.stage-name{font-size:10px;color:var(--color-text-secondary);letter-spacing:0.06em}
+.stage-status{font-size:11px;font-weight:500;margin-top:3px}
+.stage.pass{background:var(--color-background-success)}
+.stage.pass .stage-name,.stage.pass .stage-status{color:var(--color-text-success)}
+.stage.fail{background:var(--color-background-danger)}
+.stage.fail .stage-name,.stage.fail .stage-status{color:var(--color-text-danger)}
+.stage.warn{background:var(--color-background-warning)}
+.stage.warn .stage-name,.stage.warn .stage-status{color:var(--color-text-warning)}
+.stage.idle{opacity:0.5}
+.stage.running .stage-status{color:var(--color-text-secondary)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:1.5rem}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:0.75rem 1rem}
+.metric-label{font-size:10px;color:var(--color-text-secondary);letter-spacing:0.06em;margin-bottom:4px}
+.metric-val{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.metric-val.ok{color:var(--color-text-success)}
+.metric-val.err{color:var(--color-text-danger)}
+.metric-val.warn{color:var(--color-text-warning)}
+.section-label{font-size:10px;color:var(--color-text-secondary);letter-spacing:0.08em;margin-bottom:0.6rem;text-transform:uppercase}
+.scan-form{display:flex;gap:8px;margin-bottom:1rem}
+.scan-form input,.prompt-box{flex:1;font-family:var(--font-mono);font-size:12px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px 10px;color:var(--color-text-primary);width:100%}
+.scan-form input::placeholder,.prompt-box::placeholder{color:var(--color-text-tertiary)}
+.prompt-box{min-height:72px;resize:vertical;margin-bottom:1.5rem}
+.btn{font-family:var(--font-mono);font-size:12px;padding:8px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-primary);cursor:pointer}
+.btn:hover{background:var(--color-background-secondary)}
+.btn.primary{border-color:var(--color-border-success);color:var(--color-text-success)}
+.btn.primary:hover{background:var(--color-background-success)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.log-area{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:0.75rem 1rem;font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary);min-height:110px;max-height:160px;overflow-y:auto;white-space:pre}
+.log-line{margin-bottom:3px}
+.log-line.ok{color:var(--color-text-success)}
+.log-line.err{color:var(--color-text-danger)}
+.log-line.warn{color:var(--color-text-warning)}
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:var(--border-radius-md);margin-left:6px;vertical-align:middle}
+.badge.cloud-off{background:var(--color-background-secondary);color:var(--color-text-secondary);border:0.5px solid var(--color-border-secondary)}
+.badge.cloud-on{background:var(--color-background-success);color:var(--color-text-success);border:0.5px solid var(--color-border-success)}
+.audit-table{width:100%;border-collapse:collapse;font-size:11px}
+.audit-table th{text-align:left;font-weight:500;font-size:10px;color:var(--color-text-secondary);letter-spacing:0.06em;padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.audit-table td{padding:7px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary)}
+.audit-table tr:last-child td{border-bottom:none}
+.pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px}
+.pill.pass{background:var(--color-background-success);color:var(--color-text-success)}
+.pill.fail{background:var(--color-background-danger);color:var(--color-text-danger)}
+.pill.warn{background:var(--color-background-warning);color:var(--color-text-warning)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:12px}
+.settings-row:last-child{border-bottom:none}
+.settings-label{color:var(--color-text-primary)}
+.settings-val{color:var(--color-text-secondary);font-family:var(--font-mono);font-size:11px}
+.spinner{display:inline-block;width:10px;height:10px;border:1.5px solid var(--color-border-secondary);border-top-color:var(--color-text-primary);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<h1 class="sr-only">LakanVault — AI security gateway dashboard</h1>
+
+<div class="lv-wrap">
+  <div class="lv-sidebar">
+    <div class="lv-logo">
+      <div class="lv-logo-name">LAKANVAULT</div>
+      <div class="lv-logo-sub">v0.1.0 · air-gapped</div>
+    </div>
+    <div class="nav-item active" data-page="scan"><i class="ti ti-shield-check"></i>scan</div>
+    <div class="nav-item" data-page="audit"><i class="ti ti-list"></i>audit log</div>
+    <div class="nav-item" data-page="config"><i class="ti ti-settings"></i>config</div>
+  </div>
+  <div class="lv-main">
+
+    <div id="page-scan" class="page active">
+      <div class="page-title">pipeline scan <span class="badge cloud-off" id="cloud-badge"><i class="ti ti-cloud-off"></i> cloud off</span></div>
+      <div class="section-label">model / file path</div>
+      <div class="scan-form">
+        <input id="scan-path" type="text" placeholder="./data/models/llama-3-8b.gguf" />
+        <button class="btn primary" id="run-btn" type="button"><i class="ti ti-player-play"></i> run</button>
+      </div>
+      <div class="section-label">prompt text (optional — PII scan)</div>
+      <textarea id="scan-prompt" class="prompt-box" placeholder="Paste a prompt to test privacy scanning…"></textarea>
+      <div class="section-label">pipeline</div>
+      <div class="status-bar" id="pipeline-bar">
+        <div class="stage idle" id="s-integrity"><div class="stage-name">INTEGRITY</div><div class="stage-status">—</div></div>
+        <div class="stage idle" id="s-threat"><div class="stage-name">THREAT</div><div class="stage-status">—</div></div>
+        <div class="stage idle" id="s-privacy"><div class="stage-name">PRIVACY</div><div class="stage-status">—</div></div>
+        <div class="stage idle" id="s-audit"><div class="stage-name">AUDIT</div><div class="stage-status">—</div></div>
+      </div>
+      <div class="cards">
+        <div class="metric"><div class="metric-label">LAST RESULT</div><div class="metric-val" id="m-result">—</div></div>
+        <div class="metric"><div class="metric-label">PII SPANS</div><div class="metric-val" id="m-pii">—</div></div>
+        <div class="metric"><div class="metric-label">HASH</div><div class="metric-val" id="m-hash" style="font-size:12px;margin-top:4px;word-break:break-all">—</div></div>
+        <div class="metric"><div class="metric-label">CLOUD</div><div class="metric-val" id="m-cloud">off</div></div>
+      </div>
+      <div class="section-label">output log</div>
+      <div class="log-area" id="log-area"><span style="color:var(--color-text-tertiary)">awaiting scan…</span></div>
+    </div>
+
+    <div id="page-audit" class="page">
+      <div class="page-title">audit log</div>
+      <table class="audit-table">
+        <thead><tr><th>run</th><th>model</th><th>integrity</th><th>threat</th><th>privacy</th><th>audit</th><th>result</th></tr></thead>
+        <tbody id="audit-tbody">
+          <tr><td colspan="7" style="color:var(--color-text-tertiary)">loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="page-config" class="page">
+      <div class="page-title">config — default.yaml</div>
+      <div id="config-rows"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const STAGE_IDS = {
+  integrity: 's-integrity',
+  threat_scanner: 's-threat',
+  privacy: 's-privacy',
+  audit: 's-audit'
+};
+
+function nav(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  el.classList.add('active');
+  if (page === 'audit') loadAudit();
+  if (page === 'config') loadConfig();
+}
+
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => nav(el.dataset.page, el));
+});
+
+function ts() {
+  const d = new Date();
+  return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
+}
+
+function setStage(id, state, label) {
+  const el = document.getElementById(id);
+  el.className = 'stage ' + state;
+  el.querySelector('.stage-status').textContent = label;
+}
+
+function addLog(line, cls) {
+  const area = document.getElementById('log-area');
+  const d = document.createElement('div');
+  d.className = 'log-line' + (cls ? ' ' + cls : '');
+  d.textContent = line;
+  area.appendChild(d);
+  area.scrollTop = area.scrollHeight;
+}
+
+function statusClass(s) {
+  if (s === 'PASS') return 'pass';
+  if (s === 'WARN') return 'warn';
+  if (s === 'FAIL' || s === 'ERROR') return 'fail';
+  return 'idle';
+}
+
+function logClass(s) {
+  if (s === 'PASS') return 'ok';
+  if (s === 'WARN') return 'warn';
+  if (s === 'FAIL' || s === 'ERROR') return 'err';
+  return '';
+}
+
+function pill(s) {
+  const c = s === 'PASS' ? 'pass' : s === 'WARN' ? 'warn' : 'fail';
+  return '<span class="pill ' + c + '">' + s + '</span>';
+}
+
+async function loadConfig() {
+  try {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    const rows = [
+      ['cloud.enabled', String(cfg.cloud?.enabled ?? false)],
+      ['pipeline.order', (cfg.pipeline?.order || []).join(' → ')],
+      ['local.chunk_size_bytes', Number(cfg.local?.chunk_size_bytes || 0).toLocaleString()],
+      ['local.models_dir', cfg.local?.models_dir || ''],
+      ['local.audit_dir', cfg.local?.audit_dir || ''],
+      ['privacy.enabled', String(cfg.privacy?.enabled ?? true)],
+      ['privacy.spacy_model_path', cfg.privacy?.spacy_model_path || ''],
+      ['app.log_level', cfg.app?.log_level || 'INFO']
+    ];
+    document.getElementById('config-rows').innerHTML = rows.map(([k, v]) =>
+      '<div class="settings-row"><span class="settings-label">' + k + '</span><span class="settings-val">' + v + '</span></div>'
+    ).join('');
+    updateCloudBadge(cfg.cloud?.enabled);
+  } catch (e) {
+    document.getElementById('config-rows').innerHTML = '<div class="settings-row"><span class="settings-val">failed to load config</span></div>';
+  }
+}
+
+function updateCloudBadge(enabled) {
+  const badge = document.getElementById('cloud-badge');
+  if (enabled) {
+    badge.className = 'badge cloud-on';
+    badge.innerHTML = '<i class="ti ti-cloud"></i> cloud on';
+  } else {
+    badge.className = 'badge cloud-off';
+    badge.innerHTML = '<i class="ti ti-cloud-off"></i> cloud off';
+  }
+}
+
+async function loadAudit() {
+  const tbody = document.getElementById('audit-tbody');
+  try {
+    const rows = await fetch('/api/audit').then(r => r.json());
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--color-text-tertiary)">no runs yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(row => {
+      const stages = {};
+      (row.stages || []).forEach(s => { stages[s.stage] = s.status; });
+      const name = row.target_name || row.target || '—';
+      const overall = row.overall_status || '—';
+      return '<tr><td>' + (row.run_id || '—') + '</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</td>'
+        + '<td>' + pill(stages.integrity || '—') + '</td><td>' + pill(stages.threat_scanner || '—') + '</td>'
+        + '<td>' + pill(stages.privacy || '—') + '</td><td>' + pill(stages.audit || '—') + '</td>'
+        + '<td>' + pill(overall) + '</td></tr>';
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--color-text-danger)">failed to load audit log</td></tr>';
+  }
+}
+
+async function runScan() {
+  const path = document.getElementById('scan-path').value.trim();
+  const prompt = document.getElementById('scan-prompt').value;
+  const btn = document.getElementById('run-btn');
+  if (!path) {
+    addLog('[' + ts() + '] enter a file path first', 'warn');
+    return;
+  }
+
+  btn.disabled = true;
+  const area = document.getElementById('log-area');
+  area.innerHTML = '';
+  Object.values(STAGE_IDS).forEach(id => setStage(id, 'idle', '—'));
+  document.getElementById('m-result').textContent = '—';
+  document.getElementById('m-result').className = 'metric-val';
+  document.getElementById('m-pii').textContent = '—';
+  document.getElementById('m-hash').textContent = '—';
+  document.getElementById('m-cloud').textContent = '…';
+
+  addLog('[' + ts() + '] scan started: ' + path.split(/[/\\]/).pop());
+  Object.values(STAGE_IDS).forEach(id => setStage(id, 'running', '…'));
+
+  try {
+    const res = await fetch('/api/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_path: path, prompt_text: prompt })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || res.statusText);
+    }
+    const data = await res.json();
+
+    (data.stages || []).forEach(s => {
+      const elId = STAGE_IDS[s.stage];
+      if (elId) setStage(elId, statusClass(s.status), s.status);
+      addLog('[' + ts() + '] ' + s.stage + ': ' + s.message, logClass(s.status));
+    });
+
+    const overall = data.overall_status || '—';
+    const mResult = document.getElementById('m-result');
+    mResult.textContent = overall;
+    mResult.className = 'metric-val ' + (overall === 'PASS' ? 'ok' : overall === 'WARN' ? 'warn' : 'err');
+
+    const pii = data.pii_span_count ?? 0;
+    const mPii = document.getElementById('m-pii');
+    mPii.textContent = String(pii);
+    mPii.className = 'metric-val ' + (pii > 0 ? 'warn' : 'ok');
+
+    document.getElementById('m-hash').textContent = data.hash_summary || 'n/a';
+    document.getElementById('m-cloud').textContent = data.cloud_forwarded ? 'forwarded' : 'off';
+
+    addLog('[' + ts() + '] cloud forward: ' + (data.cloud_forwarded ? 'YES' : 'SKIPPED (cloud.enabled=false)'), data.cloud_forwarded ? '' : 'warn');
+    addLog('[' + ts() + '] run complete — ' + overall + ' (id:' + data.run_id + ')', logClass(overall));
+
+  } catch (e) {
+    addLog('[' + ts() + '] gateway error: ' + e.message, 'err');
+    Object.values(STAGE_IDS).forEach(id => setStage(id, 'fail', 'ERR'));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('run-btn').addEventListener('click', runScan);
+loadConfig();
+</script>
+</body>
+</html>

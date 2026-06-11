@@ -31,6 +31,7 @@ class PipelineSection(BaseModel):
 
 class PrivacySection(BaseModel):
     enabled: bool = True
+    spacy_model_path: str = "./data/models/spacy/en_core_web_sm"
 
 
 class AppConfig(BaseModel):

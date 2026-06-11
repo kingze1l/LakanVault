@@ -1,58 +1,31 @@
+"""Policies — the single place where we decide what's safe to send to cloud."""
+from __future__ import annotations
+
 from lakanvault.contracts.dtos import CloudTelemetryDTO
-from lakanvault.contracts.events import (
-    AuditRecorded,
-    IntegrityVerified,
-    PIIMasked,
-    ThreatFinding,
-)
-from lakanvault.infrastructure.config_loader import AppConfig
-
-PipelineEvent = IntegrityVerified | ThreatFinding | PIIMasked | AuditRecorded
+from lakanvault.contracts.events import PipelineEvent, StageStatus
 
 
-class AirGapPolicy:
-    @staticmethod
-    def cloud_allowed(config: AppConfig) -> bool:
-        return config.cloud.enabled
+def redact_for_cloud(event: PipelineEvent, duration_ms: float = 0.0) -> CloudTelemetryDTO:
+    """
+    Build a cloud-safe DTO from a pipeline event.
+    Only fields listed in data-classification.md are included.
+    Never called when cloud.enabled is False.
+    """
+    pii_count = 0
+    integrity_ok = True
 
+    for stage in event.stages:
+        if stage.stage == "privacy":
+            pii_count = stage.metadata.get("pii_span_count", 0)
+        if stage.stage == "integrity" and stage.status == StageStatus.FAIL:
+            integrity_ok = False
 
-class CloudEligibility:
-    @staticmethod
-    def event_may_forward(event: PipelineEvent) -> bool:
-        return isinstance(
-            event,
-            (IntegrityVerified, ThreatFinding, PIIMasked, AuditRecorded),
-        )
-
-
-def redact_for_cloud(event: PipelineEvent) -> CloudTelemetryDTO:
-    if isinstance(event, IntegrityVerified):
-        return CloudTelemetryDTO(
-            event_type="integrity_verified",
-            timestamp=event.timestamp,
-            hash_prefix=event.sha256[:16],
-            severity="info" if event.verified else "high",
-        )
-    if isinstance(event, ThreatFinding):
-        return CloudTelemetryDTO(
-            event_type="threat_finding",
-            timestamp=event.timestamp,
-            request_id=event.request_id,
-            severity=event.severity,
-            finding_type=event.finding_type,
-        )
-    if isinstance(event, PIIMasked):
-        return CloudTelemetryDTO(
-            event_type="pii_masked",
-            timestamp=event.timestamp,
-            request_id=event.request_id,
-            entity_count=event.entity_count,
-        )
-    if isinstance(event, AuditRecorded):
-        return CloudTelemetryDTO(
-            event_type="audit_recorded",
-            timestamp=event.timestamp,
-            request_id=event.request_id,
-            stage=event.stage,
-        )
-    raise TypeError(f"Unsupported event type: {type(event)!r}")
+    return CloudTelemetryDTO(
+        run_id=event.run_id,
+        overall_status=event.overall_status.value,
+        pii_span_count=pii_count,
+        integrity_ok=integrity_ok,
+        duration_ms=round(duration_ms, 2),
+        bytes_processed=event.stages[0].metadata.get("bytes_processed", 0)
+        if event.stages else 0,
+    )

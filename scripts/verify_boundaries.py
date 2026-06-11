@@ -1,66 +1,70 @@
+"""
+Boundary checker — catches import violations per ADR-001.
+Run after P1b: python scripts/verify_boundaries.py
+
+Rules (from docs/architecture/001-hybrid-boundary.md):
+  app          → must NOT import local_core or cloud_intelligence
+  orchestration → must NOT import cloud_intelligence directly
+  local_core   → must NOT import cloud_intelligence or app
+  cloud_intelligence → must NOT import local_core or app
+  contracts    → must NOT import local_core, cloud_intelligence, app, orchestration
+"""
 from __future__ import annotations
 
 import ast
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src" / "lakanvault"
+SRC = Path(__file__).parent.parent / "src" / "lakanvault"
 
-FORBIDDEN_IMPORTS: tuple[tuple[str, str], ...] = (
-    ("local_core", "cloud_intelligence"),
-    ("cloud_intelligence", "local_core"),
-    ("app", "local_core"),
-    ("app", "cloud_intelligence"),
-    ("orchestration", "cloud_intelligence"),
-)
+# (package, forbidden_imports)
+RULES: list[tuple[str, list[str]]] = [
+    ("app",               ["local_core", "cloud_intelligence"]),
+    ("orchestration",     ["cloud_intelligence"]),
+    ("local_core",        ["cloud_intelligence", "app"]),
+    ("cloud_intelligence",["local_core", "app"]),
+    ("contracts",         ["local_core", "cloud_intelligence", "app", "orchestration"]),
+]
 
 
-def _layer_modules(layer: str) -> list[Path]:
-    base = SRC / layer
-    if not base.exists():
+def get_imports(path: Path) -> list[str]:
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+    except SyntaxError:
         return []
-    return sorted(base.rglob("*.py"))
-
-
-def _imports_in_file(path: Path) -> set[str]:
-    tree = ast.parse(path.read_text(encoding="utf-8"))
-    found: set[str] = set()
+    names = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                found.add(alias.name.split(".")[0])
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            found.add(node.module.split(".")[0])
-    return found
+                names.append(alias.name)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                names.append(node.module)
+    return names
 
 
-def _module_imports_layer(module_text: str, forbidden_layer: str) -> bool:
-    needle = f"lakanvault.{forbidden_layer}"
-    return needle in module_text or forbidden_layer in module_text
+def check() -> int:
+    violations = 0
+    for package, forbidden in RULES:
+        pkg_dir = SRC / package
+        if not pkg_dir.exists():
+            continue
+        for py_file in pkg_dir.rglob("*.py"):
+            imports = get_imports(py_file)
+            for imp in imports:
+                for bad in forbidden:
+                    full_bad = f"lakanvault.{bad}"
+                    if imp == full_bad or imp.startswith(full_bad + "."):
+                        rel = py_file.relative_to(SRC.parent.parent)
+                        print(f"VIOLATION: {rel} imports {imp!r} (forbidden for {package})")
+                        violations += 1
 
-
-def verify() -> list[str]:
-    errors: list[str] = []
-    for source_layer, forbidden_layer in FORBIDDEN_IMPORTS:
-        for path in _layer_modules(source_layer):
-            text = path.read_text(encoding="utf-8")
-            if _module_imports_layer(text, forbidden_layer):
-                errors.append(
-                    f"{path.relative_to(ROOT)} must not import {forbidden_layer}"
-                )
-    return errors
-
-
-def main() -> int:
-    errors = verify()
-    if errors:
-        for err in errors:
-            print(f"BOUNDARY VIOLATION: {err}", file=sys.stderr)
-        return 1
-    print("Boundary checks passed.")
-    return 0
+    if violations == 0:
+        print("OK: all boundary checks passed.")
+    else:
+        print(f"\n{violations} violation(s) found.")
+    return violations
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(check())
