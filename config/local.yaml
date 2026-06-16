@@ -1,3 +1,16 @@
 local:
   models_dir: ./data/models
   audit_dir: ./data/audit
+  chunk_size_bytes: 1048576
+local_ai:
+  provider: lm_studio
+  base_url: http://localhost:1234
+  model: ''
+  temperature: 0.7
+  max_tokens: 256
+  timeout_seconds: 120
+  stream: true
+privacy:
+  enabled: true
+cloud:
+  enabled: false

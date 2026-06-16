@@ -2,36 +2,21 @@
 
 Hybrid, locally deployable AI security gateway. Air-gapped by default.
 
-## Quick start — HTML dashboard (your UI)
+## Quick start
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -e .
-.\scripts\download_test_model.ps1   # first time — small GGUF into ./data/models
-.\scripts\run_ui.ps1
-```
-
-Open **http://127.0.0.1:8080** — use folder/file icons to pick your model, then **run**.
-
-See **[docs/PROJECT_FILES.md](docs/PROJECT_FILES.md)** for what every file does.
-
-- UI: `src/lakanvault/app/static/index.html` (based on `lakanvault_dashboard.html`)
-- API: `src/lakanvault/app/server.py` → `Gateway.receive()`
-
-## Alternative — Streamlit
-
-```powershell
-$env:PYTHONPATH="src"
-python -m streamlit run src/lakanvault/app/dashboard.py
+streamlit run src/lakanvault/app/dashboard.py
 ```
 
 ## Architecture
 
-- `contracts/` — DTOs, events, ports, policies
+- `contracts/` — DTOs, events, ports, policies (no business logic)
 - `local_core/` — integrity hashing, threat scanner, privacy (PII), audit
 - `orchestration/` — pipeline runner, gateway (pure Python), event bus
-- `app/` — HTML UI + FastAPI shell only; zero business logic
+- `app/` — Streamlit UI shell only; zero business logic
 - `cloud_intelligence/` — optional cloud enrichment (disabled by default)
 
 Cloud is **off by default**. Nothing leaves the machine unless `config/default.yaml` sets `cloud.enabled: true`.
@@ -40,7 +25,6 @@ Cloud is **off by default**. Nothing leaves the machine unless `config/default.y
 
 ```powershell
 python scripts/verify_boundaries.py
-python -m pytest tests/ -q
 ```
 
 ## Pipeline order

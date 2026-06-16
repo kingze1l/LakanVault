@@ -34,10 +34,12 @@ class PipelineEvent(BaseModel):
 
     def add_stage(self, result: StageResult) -> None:
         self.stages.append(result)
+        # Fail-closed: any FAIL or ERROR poisons the whole run
         if result.status in (StageStatus.FAIL, StageStatus.ERROR):
             self.overall_status = StageStatus.FAIL
         elif result.status == StageStatus.WARN and self.overall_status == StageStatus.PASS:
             self.overall_status = StageStatus.WARN
 
     def should_continue(self) -> bool:
+        """Return False if a downstream stage must not run (fail-closed)."""
         return self.overall_status not in (StageStatus.FAIL, StageStatus.ERROR)

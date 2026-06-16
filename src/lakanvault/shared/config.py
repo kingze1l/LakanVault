@@ -31,3 +31,36 @@ def load_config(config_dir: str | Path = "./config") -> dict[str, Any]:
         config = _deep_merge(config, local)
 
     return config
+
+
+def save_local_config(config_dir: str | Path, partial: dict[str, Any]) -> dict[str, Any]:
+    """Deep-merge partial settings into config/local.yaml and return full merged config."""
+    config_dir = Path(config_dir)
+    local_path = config_dir / "local.yaml"
+    existing: dict[str, Any] = {}
+    if local_path.exists():
+        with open(local_path, encoding="utf-8") as f:
+            existing = yaml.safe_load(f) or {}
+    merged_local = _deep_merge(existing, partial)
+    config_dir.mkdir(parents=True, exist_ok=True)
+    with open(local_path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(merged_local, f, default_flow_style=False, sort_keys=False)
+    return load_config(config_dir)
+
+
+def clear_local_config_keys(config_dir: str | Path, keys: list[str]) -> dict[str, Any]:
+    """Remove top-level keys from local.yaml (reset to defaults)."""
+    config_dir = Path(config_dir)
+    local_path = config_dir / "local.yaml"
+    if not local_path.exists():
+        return load_config(config_dir)
+    with open(local_path, encoding="utf-8") as f:
+        existing = yaml.safe_load(f) or {}
+    for key in keys:
+        existing.pop(key, None)
+    if existing:
+        with open(local_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(existing, f, default_flow_style=False, sort_keys=False)
+    else:
+        local_path.unlink(missing_ok=True)
+    return load_config(config_dir)

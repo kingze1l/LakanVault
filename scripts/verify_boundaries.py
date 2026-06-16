@@ -60,7 +60,7 @@ def check() -> int:
                         violations += 1
 
     if violations == 0:
-        print("OK: all boundary checks passed.")
+        print("OK: All boundary checks passed.")
     else:
         print(f"\n{violations} violation(s) found.")
     return violations

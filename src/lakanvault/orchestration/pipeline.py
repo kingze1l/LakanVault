@@ -7,7 +7,7 @@ import logging
 import uuid
 from time import monotonic
 
-from lakanvault.contracts.dtos import ScanRequest
+from lakanvault.contracts.dtos import ScanRequest, ScanResponse
 from lakanvault.contracts.events import PipelineEvent, StageStatus
 from lakanvault.contracts.ports import PipelineStage
 

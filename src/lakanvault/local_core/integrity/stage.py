@@ -42,7 +42,7 @@ class IntegrityStage(PipelineStage):
                     bytes_processed += len(chunk)
 
             digest = sha.hexdigest()
-            short = f"{digest[:8]}…{digest[-4:]}"
+            short = f"{digest[:8]}...{digest[-4:]}"
 
             if self._baseline_hash and digest != self._baseline_hash:
                 return StageResult(

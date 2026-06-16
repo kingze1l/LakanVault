@@ -2,6 +2,7 @@
 .cursorrules
 ai_planning/
 *.plan.md
+docs/SYSTEM_GUIDE.md
 
 __pycache__/
 *.py[cod]

@@ -4,422 +4,933 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LakanVault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<link rel="icon" href="/static/logo.png" type="image/png" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" />
 <style>
 :root{
-  --font-mono:'Consolas','Courier New',monospace;
-  --color-background-primary:#0d1117;
-  --color-background-secondary:#161b22;
-  --color-background-success:#0d2818;
-  --color-background-danger:#2d1215;
-  --color-background-warning:#2d2408;
-  --color-border-tertiary:#30363d;
-  --color-border-secondary:#484f58;
-  --color-border-success:#238636;
-  --color-text-primary:#e6edf3;
-  --color-text-secondary:#8b949e;
-  --color-text-tertiary:#6e7681;
-  --color-text-success:#3fb950;
-  --color-text-danger:#f85149;
-  --color-text-warning:#d29922;
-  --border-radius-md:6px;
-  --border-radius-lg:8px;
+  --font-display:'Space Grotesk',system-ui,sans-serif;
+  --font-sans:'Inter',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --navy:#0B0E14;
+  --navy-2:#0F1319;
+  --surface:#111622;
+  --surface-2:#161B28;
+  --surface-3:#1A2030;
+  --border:rgba(255,255,255,.06);
+  --border-2:rgba(255,255,255,.1);
+  --text:#E8EAED;
+  --muted:#8B92A5;
+  --dim:#5C6370;
+  --gray-brand:#6B7280;
+  --green:#3E704D;
+  --green-bright:#5A9E6F;
+  --green-glow:#E0F7E9;
+  --green-bg:rgba(62,112,77,.12);
+  --green-border:rgba(90,158,111,.35);
+  --purple:#5D327C;
+  --purple-bg:rgba(93,50,124,.15);
+  --warn:#D4A843;
+  --warn-bg:rgba(212,168,67,.1);
+  --err:#E5484D;
+  --err-bg:rgba(229,72,77,.12);
+  --err-glow:rgba(229,72,77,.45);
+  --radius:12px;
+  --radius-sm:8px;
+  --radius-pill:999px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --shadow-glow:0 0 40px rgba(62,112,77,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-mono);background:var(--color-background-primary);color:var(--color-text-primary);padding:1.25rem}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-sans);
+  background:var(--navy);
+  color:var(--text);
+  min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%,rgba(93,50,124,.12),transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%,rgba(62,112,77,.08),transparent),
+    radial-gradient(ellipse 50% 30% at 0% 100%,rgba(62,112,77,.05),transparent);
+}
+.mono{font-family:var(--font-mono)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
-.lv-wrap{display:flex;min-height:560px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
-.lv-sidebar{width:180px;flex-shrink:0;background:var(--color-background-secondary);border-right:0.5px solid var(--color-border-tertiary);padding:1rem 0;display:flex;flex-direction:column;gap:2px}
-.lv-logo{padding:0 1rem 1rem;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:0.5rem}
-.lv-logo-name{font-size:13px;font-weight:500;color:var(--color-text-primary);letter-spacing:0.05em}
-.lv-logo-sub{font-size:10px;color:var(--color-text-secondary);margin-top:2px}
-.nav-item{display:flex;align-items:center;gap:8px;padding:7px 1rem;font-size:12px;color:var(--color-text-secondary);cursor:pointer;border-left:2px solid transparent;transition:background 0.15s}
-.nav-item:hover{background:var(--color-background-primary);color:var(--color-text-primary)}
-.nav-item.active{color:var(--color-text-primary);border-left:2px solid var(--color-text-success);background:var(--color-background-primary)}
-.nav-item i{font-size:14px}
-.lv-main{flex:1;padding:1.25rem;overflow-y:auto;background:var(--color-background-primary)}
-.page{display:none}
+
+.lv-wrap{display:flex;min-height:100vh}
+.lv-sidebar{
+  width:248px;flex-shrink:0;
+  background:linear-gradient(180deg,var(--navy-2) 0%,var(--navy) 100%);
+  border-right:1px solid var(--border);
+  padding:1.25rem 0;
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;
+}
+.lv-brand{padding:0 1.25rem 1.5rem;border-bottom:1px solid var(--border);margin-bottom:.75rem}
+.lv-brand img{width:72px;height:auto;display:block;margin:0 auto 12px;filter:drop-shadow(0 0 20px rgba(224,247,233,.15))}
+.lv-brand-name{font-family:var(--font-display);font-size:15px;font-weight:600;text-align:center;letter-spacing:-.02em}
+.lv-brand-name .gray{color:var(--gray-brand)}
+.lv-brand-name .green{color:var(--green-bright)}
+.lv-brand-sub{font-size:10px;color:var(--dim);text-align:center;margin-top:6px;letter-spacing:.12em;text-transform:uppercase}
+.nav-section{padding:0 .75rem;margin-bottom:.5rem}
+.nav-label{font-size:9px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;padding:0 .75rem;margin-bottom:6px;font-family:var(--font-mono)}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;margin-bottom:2px;
+  font-size:13px;font-weight:500;color:var(--muted);
+  cursor:pointer;border-radius:var(--radius-sm);
+  transition:all .2s ease;border:1px solid transparent;
+}
+.nav-item i{font-size:17px;opacity:.7}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);border-color:var(--border)}
+.nav-item.active{
+  color:var(--green-glow);background:var(--green-bg);
+  border-color:var(--green-border);
+  box-shadow:inset 0 1px 0 rgba(224,247,233,.06);
+}
+.nav-item.active i{opacity:1;color:var(--green-bright)}
+.sidebar-foot{margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--border)}
+.status-pill{
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--muted);
+  padding:8px 10px;border-radius:var(--radius-sm);
+  background:var(--surface);border:1px solid var(--border);
+  margin-bottom:6px;font-family:var(--font-mono);
+}
+.sidebar-foot .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot.on{background:var(--green-bright);box-shadow:0 0 8px var(--green-bright)}
+.dot.off{background:var(--dim)}
+
+.lv-main{flex:1;padding:2rem 2.5rem;overflow-y:auto;max-width:1200px}
+.page{display:none;animation:fadeIn .25s ease}
 .page.active{display:block}
-.page-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);letter-spacing:0.08em;margin-bottom:1.25rem;text-transform:uppercase}
-.status-bar{display:flex;align-items:center;gap:0;margin-bottom:1.5rem}
-.stage{flex:1;padding:10px 8px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);text-align:center;position:relative}
-.stage:not(:last-child)::after{content:'';position:absolute;right:-1px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:7px solid var(--color-border-secondary);z-index:2}
-.stage:first-child{border-radius:var(--border-radius-md) 0 0 var(--border-radius-md)}
-.stage:last-child{border-radius:0 var(--border-radius-md) var(--border-radius-md) 0}
-.stage-name{font-size:10px;color:var(--color-text-secondary);letter-spacing:0.06em}
-.stage-status{font-size:11px;font-weight:500;margin-top:3px}
-.stage.pass{background:var(--color-background-success)}
-.stage.pass .stage-name,.stage.pass .stage-status{color:var(--color-text-success)}
-.stage.fail{background:var(--color-background-danger)}
-.stage.fail .stage-name,.stage.fail .stage-status{color:var(--color-text-danger)}
-.stage.warn{background:var(--color-background-warning)}
-.stage.warn .stage-name,.stage.warn .stage-status{color:var(--color-text-warning)}
-.stage.idle{opacity:0.5}
-.stage.running .stage-status{color:var(--color-text-secondary)}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:1.5rem}
-.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:0.75rem 1rem}
-.metric-label{font-size:10px;color:var(--color-text-secondary);letter-spacing:0.06em;margin-bottom:4px}
-.metric-val{font-size:20px;font-weight:500;color:var(--color-text-primary)}
-.metric-val.ok{color:var(--color-text-success)}
-.metric-val.err{color:var(--color-text-danger)}
-.metric-val.warn{color:var(--color-text-warning)}
-.section-label{font-size:10px;color:var(--color-text-secondary);letter-spacing:0.08em;margin-bottom:0.6rem;text-transform:uppercase}
-.scan-form{display:flex;gap:8px;margin-bottom:0.5rem;align-items:center}
-.model-picker-row{display:flex;gap:8px;margin-bottom:1rem;align-items:center}
-.model-select{flex:1;font-family:var(--font-mono);font-size:12px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px 10px;color:var(--color-text-primary)}
-.model-status{font-size:10px;color:var(--color-text-tertiary);margin-bottom:1rem}
-.model-status.ok{color:var(--color-text-success)}
-.model-status.warn{color:var(--color-text-warning)}
-.btn.icon{min-width:36px;padding:8px 10px}
-.scan-form input,.prompt-box{flex:1;font-family:var(--font-mono);font-size:12px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px 10px;color:var(--color-text-primary);width:100%}
-.scan-form input::placeholder,.prompt-box::placeholder{color:var(--color-text-tertiary)}
-.prompt-box{min-height:72px;resize:vertical;margin-bottom:1.5rem}
-.btn{font-family:var(--font-mono);font-size:12px;padding:8px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-primary);cursor:pointer}
-.btn:hover{background:var(--color-background-secondary)}
-.btn.primary{border-color:var(--color-border-success);color:var(--color-text-success)}
-.btn.primary:hover{background:var(--color-background-success)}
-.btn:disabled{opacity:0.5;cursor:not-allowed}
-.log-area{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:0.75rem 1rem;font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary);min-height:110px;max-height:160px;overflow-y:auto;white-space:pre}
-.log-line{margin-bottom:3px}
-.log-line.ok{color:var(--color-text-success)}
-.log-line.err{color:var(--color-text-danger)}
-.log-line.warn{color:var(--color-text-warning)}
-.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:var(--border-radius-md);margin-left:6px;vertical-align:middle}
-.badge.cloud-off{background:var(--color-background-secondary);color:var(--color-text-secondary);border:0.5px solid var(--color-border-secondary)}
-.badge.cloud-on{background:var(--color-background-success);color:var(--color-text-success);border:0.5px solid var(--color-border-success)}
-.audit-table{width:100%;border-collapse:collapse;font-size:11px}
-.audit-table th{text-align:left;font-weight:500;font-size:10px;color:var(--color-text-secondary);letter-spacing:0.06em;padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary)}
-.audit-table td{padding:7px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary)}
-.audit-table tr:last-child td{border-bottom:none}
-.pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px}
-.pill.pass{background:var(--color-background-success);color:var(--color-text-success)}
-.pill.fail{background:var(--color-background-danger);color:var(--color-text-danger)}
-.pill.warn{background:var(--color-background-warning);color:var(--color-text-warning)}
-.settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:12px}
-.settings-row:last-child{border-bottom:none}
-.settings-label{color:var(--color-text-primary)}
-.settings-val{color:var(--color-text-secondary);font-family:var(--font-mono);font-size:11px}
-.spinner{display:inline-block;width:10px;height:10px;border:1.5px solid var(--color-border-secondary);border-top-color:var(--color-text-primary);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.page-head{margin-bottom:1.75rem}
+.page-title{
+  font-family:var(--font-display);font-size:26px;font-weight:600;
+  letter-spacing:-.03em;margin-bottom:8px;
+  display:flex;align-items:center;flex-wrap:wrap;gap:10px;
+}
+.page-caption{font-size:14px;color:var(--muted);line-height:1.5;max-width:640px}
+.page-caption .mono{color:var(--green-bright);font-size:12px}
+
+.panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:1.25rem 1.5rem;
+  margin-bottom:1.25rem;
+  box-shadow:var(--shadow);
+}
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);
+}
+.panel-title{font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+
+.pill{display:inline-flex;align-items:center;font-size:10px;font-weight:600;font-family:var(--font-mono);padding:4px 10px;border-radius:var(--radius-pill);letter-spacing:.03em}
+.pill.PASS,.pill.TRUSTED{background:var(--green-bg);color:var(--green-bright);border:1px solid var(--green-border)}
+.pill.WARN,.pill.UNVERIFIED{background:var(--warn-bg);color:var(--warn);border:1px solid rgba(212,168,67,.3)}
+.pill.FAIL,.pill.ERROR,.pill.POISONED{background:var(--err-bg);color:var(--err);border:1px solid rgba(229,72,77,.35)}
+.pill.SKIPPED,.pill.idle{background:rgba(255,255,255,.04);color:var(--dim);border:1px solid var(--border)}
+
+.conn-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-family:var(--font-mono);padding:5px 12px;border-radius:var(--radius-pill)}
+.conn-badge.connected{background:var(--green-bg);color:var(--green-bright);border:1px solid var(--green-border)}
+.conn-badge.offline{background:rgba(255,255,255,.04);color:var(--dim);border:1px solid var(--border)}
+.conn-badge.probing{background:var(--warn-bg);color:var(--warn);border:1px solid rgba(212,168,67,.3)}
+
+.connection-bar{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.25rem}
+.conn-row{display:grid;grid-template-columns:100px 1fr auto;gap:12px;align-items:center;margin-bottom:10px}
+.conn-row label{font-size:11px;color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em}
+.active-model-bar{
+  font-size:11px;font-family:var(--font-mono);color:var(--green-bright);
+  margin-top:10px;padding:10px 14px;
+  background:linear-gradient(90deg,var(--green-bg),transparent);
+  border:1px solid var(--green-border);border-radius:var(--radius-sm);
+  display:none;
+}
+.active-model-bar.visible{display:block}
+
+.flow-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.5rem}
+.flow-stage{
+  text-align:center;padding:16px 12px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface-2);position:relative;transition:all .3s ease;
+}
+.flow-stage:not(:last-child)::after{
+  content:'';position:absolute;right:-10px;top:50%;transform:translateY(-50%);
+  width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;
+  border-left:8px solid var(--dim);z-index:2;
+}
+.flow-stage.running{border-color:rgba(212,168,67,.4);background:var(--warn-bg);box-shadow:0 0 20px rgba(212,168,67,.1)}
+.flow-stage.pass{border-color:var(--green-border);background:var(--green-bg)}
+.flow-stage.fail{border-color:rgba(229,72,77,.4);background:var(--err-bg);box-shadow:0 0 20px rgba(229,72,77,.15)}
+.flow-stage.warn-state{border-color:rgba(212,168,67,.4);background:var(--warn-bg)}
+.flow-name{font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;font-family:var(--font-mono);margin-bottom:8px}
+.flow-status{margin-top:4px}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:1.5rem}
+.metric{
+  background:linear-gradient(145deg,var(--surface-2),var(--surface));
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;position:relative;overflow:hidden;
+  transition:transform .2s,border-color .2s;
+}
+.metric:hover{transform:translateY(-2px);border-color:var(--border-2)}
+.metric::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--purple),var(--green),transparent);
+  opacity:.5;
+}
+.metric.metric-trusted::before{background:linear-gradient(90deg,transparent,var(--green-bright),transparent);opacity:.8}
+.metric.metric-poisoned::before{background:linear-gradient(90deg,transparent,var(--err),transparent);opacity:1;animation:metricPulse 2s ease infinite}
+.metric.metric-unverified::before{background:linear-gradient(90deg,transparent,var(--warn),transparent);opacity:.7}
+@keyframes metricPulse{0%,100%{opacity:.6}50%{opacity:1}}
+.metric-label{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;font-family:var(--font-mono)}
+.metric-val{font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-.02em}
+.metric-val.ok{color:var(--green-bright)}
+.metric-val.warn{color:var(--warn)}
+.metric-val.err{color:var(--err);text-shadow:0 0 20px var(--err-glow)}
+
+.section-label{font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem;font-family:var(--font-mono)}
+
+.btn{
+  font-family:var(--font-sans);font-size:13px;font-weight:500;
+  padding:9px 16px;border:1px solid var(--border-2);border-radius:var(--radius-sm);
+  background:var(--surface-3);color:var(--text);cursor:pointer;
+  transition:all .15s ease;display:inline-flex;align-items:center;gap:6px;
+}
+.btn:hover{background:var(--surface-2);border-color:var(--muted)}
+.btn.primary{
+  background:linear-gradient(135deg,var(--green),#2d5a3a);
+  border-color:var(--green-border);color:var(--green-glow);
+  box-shadow:0 2px 12px rgba(62,112,77,.25);
+}
+.btn.primary:hover{box-shadow:0 4px 20px rgba(62,112,77,.35);transform:translateY(-1px)}
+.btn.danger{background:var(--err-bg);border-color:rgba(229,72,77,.4);color:var(--err)}
+.btn.danger:hover{box-shadow:0 0 20px var(--err-glow)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn.icon{min-width:40px;padding:9px 11px;justify-content:center}
+
+input,select,textarea{
+  font-family:var(--font-mono);font-size:13px;
+  background:var(--navy);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);width:100%;
+  transition:border-color .15s,box-shadow .15s;
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--green-border);
+  box-shadow:0 0 0 3px rgba(62,112,77,.15);
+}
+input::placeholder,textarea::placeholder{color:var(--dim)}
+input:disabled,select:disabled{opacity:.6;background:var(--surface)}
+.row{display:flex;gap:10px;align-items:center;margin-bottom:.85rem;flex-wrap:wrap}
+.row input,.row select{flex:1;min-width:120px}
+
+.console{
+  background:var(--navy);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px 16px;font-family:var(--font-mono);font-size:12px;
+  min-height:100px;max-height:220px;overflow-y:auto;
+}
+.console-line{margin-bottom:4px;color:var(--muted)}
+.console-line.ok{color:var(--green-bright)}
+.console-line.warn{color:var(--warn)}
+.console-line.err{color:var(--err)}
+
+.chat-panel{display:flex;flex-direction:column;min-height:420px}
+.chat-panel.panel{padding-bottom:0}
+.chat-panel .chat-thread{padding:0 4px}
+.chat-thread{
+  flex:1;margin-bottom:1rem;max-height:440px;overflow-y:auto;
+  padding:4px 2px;display:flex;flex-direction:column;gap:14px;
+}
+.chat-thread .empty{padding:3rem 1rem}
+.chat-msg{display:flex;gap:12px;align-items:flex-start}
+.chat-msg.user{flex-direction:row-reverse}
+.chat-avatar{
+  width:32px;height:32px;border-radius:var(--radius-sm);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  border:1px solid var(--border);
+}
+.chat-msg.user .chat-avatar{background:var(--purple-bg);color:var(--purple);border-color:rgba(93,50,124,.3)}
+.chat-msg.ai .chat-avatar{background:var(--green-bg);color:var(--green-bright);border-color:var(--green-border)}
+.chat-bubble{
+  flex:1;max-width:85%;border-radius:var(--radius);
+  padding:14px 18px;font-size:14px;line-height:1.6;
+}
+.chat-user .chat-bubble{
+  background:linear-gradient(135deg,rgba(93,50,124,.15),rgba(93,50,124,.05));
+  border:1px solid rgba(93,50,124,.25);
+}
+.chat-ai .chat-bubble{background:var(--surface-2);border:1px solid var(--border)}
+.chat-label{
+  font-size:10px;color:var(--muted);letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:8px;font-family:var(--font-mono);
+  display:flex;align-items:center;flex-wrap:wrap;gap:6px;
+}
+.model-tag{font-size:10px;color:var(--green-bright);font-family:var(--font-mono);padding:2px 8px;background:var(--green-bg);border-radius:var(--radius-pill);border:1px solid var(--green-border)}
+.chat-console{margin:8px 0;border-radius:var(--radius-sm)}
+.chat-input-wrap{
+  display:flex;gap:10px;align-items:flex-end;
+  padding:14px;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:var(--radius);
+}
+.chat-input-wrap textarea{min-height:52px;resize:none;border:none;background:transparent;padding:8px 4px}
+.chat-input-wrap textarea:focus{box-shadow:none}
+.chat-input-wrap .btn.primary{padding:12px 20px;border-radius:var(--radius-sm)}
+
+.model-card{
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;margin-bottom:12px;
+  background:var(--surface-2);
+  display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;
+  transition:all .25s ease;position:relative;overflow:hidden;
+}
+.model-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--green);opacity:.6;
+}
+.model-card.trusted::before{background:var(--green-bright)}
+.model-card.unverified::before{background:var(--warn)}
+.model-card.poisoned{
+  border-color:rgba(229,72,77,.5);
+  background:linear-gradient(135deg,rgba(229,72,77,.08),var(--surface-2));
+  animation:poisonGlow 2.5s ease-in-out infinite;
+}
+.model-card.poisoned::before{background:var(--err);width:4px;box-shadow:0 0 12px var(--err-glow)}
+@keyframes poisonGlow{
+  0%,100%{box-shadow:0 0 0 0 rgba(229,72,77,0),inset 0 0 30px rgba(229,72,77,.03)}
+  50%{box-shadow:0 0 28px rgba(229,72,77,.25),inset 0 0 40px rgba(229,72,77,.06)}
+}
+.model-card h4{
+  font-family:var(--font-display);font-size:15px;font-weight:600;
+  margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.model-card .meta{font-size:11px;color:var(--muted);font-family:var(--font-mono)}
+.model-card .hash{font-size:11px;font-family:var(--font-mono);color:var(--dim);margin-top:6px;word-break:break-all}
+.model-card .verified-tag{font-size:11px;color:var(--green-bright);font-family:var(--font-mono)}
+
+.demo-hint{
+  font-size:13px;color:var(--warn);padding:14px 18px;
+  background:var(--warn-bg);border:1px solid rgba(212,168,67,.25);
+  border-radius:var(--radius);margin-bottom:1.25rem;
+  border-left:3px solid var(--warn);
+}
+
+.audit-table{width:100%;border-collapse:collapse;font-size:12px}
+.audit-table th{
+  text-align:left;font-size:10px;color:var(--dim);
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:12px 14px;border-bottom:1px solid var(--border);
+  font-family:var(--font-mono);background:var(--surface-2);
+}
+.audit-table td{padding:12px 14px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:11px}
+.audit-table tr:hover td{background:rgba(255,255,255,.02)}
+
+.settings-group{
+  margin-bottom:1.75rem;padding:1.25rem 1.5rem;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);
+}
+.settings-group h3{font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:1rem;color:var(--text)}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em}
+.field-hint{font-size:11px;color:var(--dim);margin-top:4px}
+.settings-actions{display:flex;gap:10px;margin-top:1.5rem;flex-wrap:wrap}
+
+.toast{
+  position:fixed;bottom:2rem;right:2rem;padding:12px 20px;
+  background:var(--surface-2);border:1px solid var(--green-border);
+  color:var(--green-bright);border-radius:var(--radius);
+  font-size:13px;font-family:var(--font-mono);z-index:999;
+  opacity:0;transform:translateY(10px);transition:all .3s ease;
+  box-shadow:var(--shadow),0 0 30px rgba(62,112,77,.15);
+}
+.toast.show{opacity:1;transform:none}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:4px 10px;border-radius:var(--radius-pill);font-family:var(--font-mono);font-weight:500}
+.badge.cloud-off{background:rgba(255,255,255,.04);color:var(--dim);border:1px solid var(--border)}
+.badge.cloud-on{background:var(--purple-bg);color:#c4a8e0;border:1px solid rgba(93,50,124,.35)}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--green-bright);border-radius:50%;animation:spin .65s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.empty{color:var(--dim);font-size:14px;padding:2.5rem;text-align:center}
+details.advanced{margin-top:1rem}
+details.advanced summary{cursor:pointer;font-size:12px;color:var(--muted);font-family:var(--font-mono)}
 </style>
 </head>
 <body>
-<h1 class="sr-only">LakanVault — AI security gateway dashboard</h1>
+<h1 class="sr-only">LakanVault security gateway</h1>
+<div id="toast" class="toast"></div>
 
 <div class="lv-wrap">
-  <div class="lv-sidebar">
-    <div class="lv-logo">
-      <div class="lv-logo-name">LAKANVAULT</div>
-      <div class="lv-logo-sub">v0.1.0 · air-gapped</div>
+  <aside class="lv-sidebar">
+    <div class="lv-brand">
+      <img src="/static/logo.png" alt="LakanVault" width="72" height="72" />
+      <div class="lv-brand-name"><span class="gray">Lakan</span><span class="green">Vault</span></div>
+      <div class="lv-brand-sub">Security Gateway · v0.1</div>
     </div>
-    <div class="nav-item active" data-page="scan"><i class="ti ti-shield-check"></i>scan</div>
-    <div class="nav-item" data-page="audit"><i class="ti ti-list"></i>audit log</div>
-    <div class="nav-item" data-page="config"><i class="ti ti-settings"></i>config</div>
-  </div>
-  <div class="lv-main">
+    <div class="nav-section">
+      <div class="nav-label">Workspace</div>
+      <div class="nav-item active" data-page="chat"><i class="ti ti-message-circle-2"></i> Sanitized Chat</div>
+      <div class="nav-item" data-page="scan"><i class="ti ti-shield-check"></i> Pipeline Scan</div>
+      <div class="nav-item" data-page="integrity"><i class="ti ti-fingerprint"></i> Model Integrity</div>
+      <div class="nav-item" data-page="audit"><i class="ti ti-file-analytics"></i> Audit Log</div>
+      <div class="nav-item" data-page="settings"><i class="ti ti-settings"></i> Settings</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="status-pill" id="lm-status"><span class="dot off"></span> Local AI: checking...</div>
+      <div class="status-pill" id="cloud-sidebar"><i class="ti ti-cloud-off" style="font-size:12px"></i> Cloud: off</div>
+    </div>
+  </aside>
 
-    <div id="page-scan" class="page active">
-      <div class="page-title">pipeline scan <span class="badge cloud-off" id="cloud-badge"><i class="ti ti-cloud-off"></i> cloud off</span></div>
-      <div class="section-label">model / file path</div>
-      <div class="scan-form">
-        <input id="scan-path" type="text" placeholder="./data/models/tinyllama-test.gguf" />
-        <button class="btn icon" id="pick-file-btn" type="button" title="Select model file"><i class="ti ti-file"></i></button>
-        <button class="btn icon" id="pick-folder-btn" type="button" title="Select models folder"><i class="ti ti-folder"></i></button>
-        <button class="btn primary" id="run-btn" type="button"><i class="ti ti-player-play"></i> run</button>
+  <main class="lv-main">
+
+    <section id="page-chat" class="page active">
+      <div class="page-head">
+        <div class="page-title">
+          Sanitized Chat
+          <span class="badge cloud-off" id="cloud-badge-chat"><i class="ti ti-cloud-off"></i> air-gapped</span>
+          <span id="conn-badge" class="conn-badge offline"><span class="dot off"></span> Not connected</span>
+        </div>
+        <div class="page-caption">PII is masked before your local LLM sees it — then restored in the reply you read.</div>
       </div>
-      <div class="model-picker-row">
-        <select id="model-select" class="model-select"><option value="">— local models —</option></select>
+      <div class="panel">
+        <div class="panel-header" style="margin-bottom:1rem;padding-bottom:.75rem">
+          <span class="panel-title"><i class="ti ti-plug-connected"></i> Local AI Provider</span>
+          <button class="btn primary" id="connect-btn" type="button"><i class="ti ti-plug"></i> Connect</button>
+        </div>
+        <div class="conn-row">
+          <label>Provider</label>
+          <select id="provider-select">
+            <option value="lm_studio">LM Studio</option>
+            <option value="ollama">Ollama</option>
+            <option value="llama_cpp">llama.cpp</option>
+            <option value="custom">Custom</option>
+          </select>
+          <span></span>
+        </div>
+        <div class="conn-row">
+          <label>Endpoint</label>
+          <input id="provider-url" type="text" value="http://localhost:1234" />
+          <span></span>
+        </div>
+        <div class="conn-row">
+          <label>Model</label>
+          <select id="chat-model" disabled><option value="">— connect first —</option></select>
+          <span></span>
+        </div>
+        <div id="active-model-bar" class="active-model-bar"></div>
       </div>
-      <div class="model-status" id="model-status">checking ./data/models …</div>
-      <div class="section-label">prompt text (optional — PII scan)</div>
-      <textarea id="scan-prompt" class="prompt-box" placeholder="Paste a prompt to test privacy scanning…"></textarea>
-      <div class="section-label">pipeline</div>
-      <div class="status-bar" id="pipeline-bar">
-        <div class="stage idle" id="s-integrity"><div class="stage-name">INTEGRITY</div><div class="stage-status">—</div></div>
-        <div class="stage idle" id="s-threat"><div class="stage-name">THREAT</div><div class="stage-status">—</div></div>
-        <div class="stage idle" id="s-privacy"><div class="stage-name">PRIVACY</div><div class="stage-status">—</div></div>
-        <div class="stage idle" id="s-audit"><div class="stage-name">AUDIT</div><div class="stage-status">—</div></div>
+      <div class="panel chat-panel">
+        <div id="chat-thread" class="chat-thread"></div>
+        <div class="chat-input-wrap">
+          <textarea id="chat-prompt" placeholder="Try: hi my name is smai — PII becomes NAME_001 before the model sees it"></textarea>
+          <button class="btn primary" id="chat-send-btn" type="button"><i class="ti ti-send"></i> Send</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-scan" class="page">
+      <div class="page-head">
+        <div class="page-title">Pipeline Scan</div>
+        <div class="page-caption">Four-stage local pipeline — integrity, threat detection, PII sanitization, and audit logging.</div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><i class="ti ti-file-search"></i> Target</span>
+          <button class="btn primary" id="run-btn" type="button"><i class="ti ti-player-play"></i> Run pipeline</button>
+        </div>
+        <div class="section-label">Model / file path</div>
+        <div class="row">
+          <input id="scan-path" type="text" placeholder="Select from dropdown or pick a file" />
+          <button class="btn icon" id="pick-file-btn" type="button" title="Pick file"><i class="ti ti-file"></i></button>
+          <button class="btn icon" id="pick-folder-btn" type="button" title="Pick folder"><i class="ti ti-folder-open"></i></button>
+        </div>
+        <div class="row" style="margin-top:10px"><select id="model-select"><option value="">— detected local models —</option></select></div>
+        <div class="mono" style="font-size:11px;color:var(--dim);margin:10px 0 1rem" id="model-status">scanning...</div>
+        <div class="section-label">Prompt text (PII test)</div>
+        <textarea id="scan-prompt" class="mono" style="min-height:72px;resize:vertical" placeholder="e.g. email john@example.com"></textarea>
+      </div>
+      <div class="section-label">Pipeline stages</div>
+      <div class="flow-row" id="pipeline-bar">
+        <div class="flow-stage idle" id="s-integrity"><div class="flow-name">integrity</div><div class="flow-status"><span class="pill idle">—</span></div></div>
+        <div class="flow-stage idle" id="s-threat"><div class="flow-name">threat</div><div class="flow-status"><span class="pill idle">—</span></div></div>
+        <div class="flow-stage idle" id="s-privacy"><div class="flow-name">privacy</div><div class="flow-status"><span class="pill idle">—</span></div></div>
+        <div class="flow-stage idle" id="s-audit"><div class="flow-name">audit</div><div class="flow-status"><span class="pill idle">—</span></div></div>
       </div>
       <div class="cards">
-        <div class="metric"><div class="metric-label">LAST RESULT</div><div class="metric-val" id="m-result">—</div></div>
-        <div class="metric"><div class="metric-label">PII SPANS</div><div class="metric-val" id="m-pii">—</div></div>
-        <div class="metric"><div class="metric-label">HASH</div><div class="metric-val" id="m-hash" style="font-size:12px;margin-top:4px;word-break:break-all">—</div></div>
-        <div class="metric"><div class="metric-label">CLOUD</div><div class="metric-val" id="m-cloud">off</div></div>
+        <div class="metric"><div class="metric-label">Result</div><div class="metric-val" id="m-result">—</div></div>
+        <div class="metric"><div class="metric-label">PII spans</div><div class="metric-val" id="m-pii">—</div></div>
+        <div class="metric"><div class="metric-label">Hash</div><div class="metric-val" id="m-hash" style="font-size:12px">—</div></div>
+        <div class="metric"><div class="metric-label">Cloud</div><div class="metric-val" id="m-cloud">off</div></div>
       </div>
-      <div class="section-label">output log</div>
-      <div class="log-area" id="log-area"><span style="color:var(--color-text-tertiary)">awaiting scan…</span></div>
-    </div>
+      <div class="panel" style="padding:0;overflow:hidden">
+        <div class="panel-header" style="margin:0;padding:12px 16px;border-bottom:1px solid var(--border)">
+          <span class="panel-title"><i class="ti ti-terminal-2"></i> Output log</span>
+        </div>
+        <div class="console" id="log-area" style="border:none;border-radius:0;max-height:260px"><div class="console-line">awaiting scan...</div></div>
+      </div>
+    </section>
 
-    <div id="page-audit" class="page">
-      <div class="page-title">audit log</div>
+    <section id="page-integrity" class="page">
+      <div class="page-head">
+        <div class="page-title">Model Integrity Monitor</div>
+        <div class="page-caption">Hash vs <span class="mono">baselines.json</span> — run <span class="mono">.\scripts\setup_demo_integrity.ps1</span> for demo poisoned models</div>
+      </div>
+      <div id="integrity-demo-hint" class="demo-hint" style="display:none"></div>
+      <div class="row" style="margin-bottom:1rem">
+        <button class="btn primary" id="integrity-scan-btn" type="button"><i class="ti ti-refresh"></i> Scan models</button>
+        <span class="mono" style="font-size:11px;color:var(--dim)" id="integrity-dir"></span>
+      </div>
+      <div class="cards" id="integrity-cards" style="display:none">
+        <div class="metric metric-trusted"><div class="metric-label">Trusted</div><div class="metric-val ok" id="cnt-trusted">0</div></div>
+        <div class="metric metric-unverified"><div class="metric-label">Unverified</div><div class="metric-val warn" id="cnt-unverified">0</div></div>
+        <div class="metric metric-poisoned"><div class="metric-label">Poisoned</div><div class="metric-val" id="cnt-poisoned">0</div></div>
+      </div>
+      <div id="integrity-list"></div>
+      <div id="integrity-pin" class="panel" style="display:none;margin-top:1.5rem">
+        <div class="panel-title" style="margin-bottom:1rem"><i class="ti ti-pin"></i> Pin baseline</div>
+        <div class="row"><select id="pin-model"></select><button class="btn" id="pin-btn" type="button"><i class="ti ti-check"></i> Pin hash</button></div>
+      </div>
+    </section>
+
+    <section id="page-audit" class="page">
+      <div class="page-head"><div class="page-title">Audit Log</div><div class="page-caption">Immutable pipeline run records from <span class="mono">data/audit/</span></div></div>
+      <div class="panel" style="padding:0;overflow:hidden">
       <table class="audit-table">
         <thead><tr><th>run</th><th>model</th><th>integrity</th><th>threat</th><th>privacy</th><th>audit</th><th>result</th></tr></thead>
-        <tbody id="audit-tbody">
-          <tr><td colspan="7" style="color:var(--color-text-tertiary)">loading…</td></tr>
-        </tbody>
+        <tbody id="audit-tbody"><tr><td colspan="7" class="empty">loading...</td></tr></tbody>
       </table>
-    </div>
+      </div>
+    </section>
 
-    <div id="page-config" class="page">
-      <div class="page-title">config — default.yaml</div>
-      <div id="config-rows"></div>
-    </div>
-
-  </div>
+    <section id="page-settings" class="page">
+      <div class="page-head">
+        <div class="page-title">Settings</div>
+        <div class="page-caption">Saved to <span class="mono">config/local.yaml</span></div>
+      </div>
+      <form id="settings-form">
+        <div class="settings-group">
+          <h3>Local AI</h3>
+          <div class="field">
+            <label>Provider preset</label>
+            <select id="set-provider"><option value="lm_studio">LM Studio</option><option value="ollama">Ollama</option><option value="llama_cpp">llama.cpp</option><option value="custom">Custom</option></select>
+          </div>
+          <div class="field">
+            <label>Base URL (localhost only)</label>
+            <input id="set-base-url" type="text" />
+          </div>
+          <div class="field">
+            <label>Default model</label>
+            <input id="set-model" type="text" placeholder="empty = auto" />
+          </div>
+          <div class="row">
+            <div class="field" style="flex:1"><label>Temperature</label><input id="set-temp" type="number" step="0.1" min="0" max="2" /></div>
+            <div class="field" style="flex:1"><label>Max tokens</label><input id="set-max-tokens" type="number" min="1" /></div>
+            <div class="field" style="flex:1"><label>Timeout (s)</label><input id="set-timeout" type="number" min="5" /></div>
+          </div>
+          <div class="field"><label><input type="checkbox" id="set-stream" checked /> Stream responses (faster first token)</label></div>
+          <button class="btn" id="set-test-conn" type="button"><i class="ti ti-plug"></i> Test connection</button>
+          <span id="set-conn-status" class="conn-badge offline" style="margin-left:8px"><span class="dot off"></span> —</span>
+        </div>
+        <div class="settings-group">
+          <h3>Paths</h3>
+          <div class="field"><label>Models directory</label><input id="set-models-dir" type="text" /><div class="field-hint">Integrity scan + file picker</div></div>
+          <div class="field"><label>Audit directory</label><input id="set-audit-dir" type="text" /></div>
+        </div>
+        <div class="settings-group">
+          <h3>Privacy</h3>
+          <div class="field"><label><input type="checkbox" id="set-privacy-enabled" /> Enable PII detection</label></div>
+        </div>
+        <details class="advanced">
+          <summary>Advanced</summary>
+          <div class="field" style="margin-top:.75rem"><label><input type="checkbox" id="set-cloud-enabled" /> Enable cloud forwarding (hybrid mode)</label><div class="field-hint">Off by default — air-gapped</div></div>
+          <div class="field"><label>Hash chunk size (bytes)</label><input id="set-chunk-size" type="number" min="65536" /></div>
+        </details>
+        <div class="settings-actions">
+          <button class="btn primary" type="submit"><i class="ti ti-device-floppy"></i> Save settings</button>
+          <button class="btn" id="set-reset-btn" type="button">Reset to defaults</button>
+        </div>
+      </form>
+    </section>
+  </main>
 </div>
 
 <script>
-const STAGE_IDS = {
-  integrity: 's-integrity',
-  threat_scanner: 's-threat',
-  privacy: 's-privacy',
-  audit: 's-audit'
-};
+const STAGE_IDS = { integrity:'s-integrity', threat_scanner:'s-threat', privacy:'s-privacy', audit:'s-audit' };
+const PROVIDER_URLS = { lm_studio:'http://localhost:1234', ollama:'http://localhost:11434', llama_cpp:'http://localhost:8080' };
+let chatHistory = [];
+let appSettings = {};
+let connectedUrl = '';
+let connected = false;
 
-function nav(page, el) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
+function ts(){const d=new Date();return[d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function pill(s){return '<span class="pill '+(s||'SKIPPED')+'">'+(s||'SKIPPED')+'</span>';}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+function nav(page,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
   el.classList.add('active');
-  if (page === 'audit') loadAudit();
-  if (page === 'config') loadConfig();
+  if(page==='audit') loadAudit();
+  if(page==='settings') loadSettingsForm();
+  if(page==='integrity') loadIntegrity();
 }
+document.querySelectorAll('.nav-item').forEach(el=>el.addEventListener('click',()=>nav(el.dataset.page,el)));
 
-document.querySelectorAll('.nav-item').forEach(el => {
-  el.addEventListener('click', () => nav(el.dataset.page, el));
-});
-
-function ts() {
-  const d = new Date();
-  return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
-}
-
-function setStage(id, state, label) {
-  const el = document.getElementById(id);
-  el.className = 'stage ' + state;
-  el.querySelector('.stage-status').textContent = label;
-}
-
-function addLog(line, cls) {
-  const area = document.getElementById('log-area');
-  const d = document.createElement('div');
-  d.className = 'log-line' + (cls ? ' ' + cls : '');
-  d.textContent = line;
-  area.appendChild(d);
-  area.scrollTop = area.scrollHeight;
-}
-
-function statusClass(s) {
-  if (s === 'PASS') return 'pass';
-  if (s === 'WARN') return 'warn';
-  if (s === 'FAIL' || s === 'ERROR') return 'fail';
-  return 'idle';
-}
-
-function logClass(s) {
-  if (s === 'PASS') return 'ok';
-  if (s === 'WARN') return 'warn';
-  if (s === 'FAIL' || s === 'ERROR') return 'err';
-  return '';
-}
-
-function pill(s) {
-  const c = s === 'PASS' ? 'pass' : s === 'WARN' ? 'warn' : 'fail';
-  return '<span class="pill ' + c + '">' + s + '</span>';
-}
-
-async function loadConfig() {
-  try {
-    const cfg = await fetch('/api/config').then(r => r.json());
-    const rows = [
-      ['cloud.enabled', String(cfg.cloud?.enabled ?? false)],
-      ['pipeline.order', (cfg.pipeline?.order || []).join(' → ')],
-      ['local.chunk_size_bytes', Number(cfg.local?.chunk_size_bytes || 0).toLocaleString()],
-      ['local.models_dir', cfg.local?.models_dir || ''],
-      ['local.audit_dir', cfg.local?.audit_dir || ''],
-      ['privacy.enabled', String(cfg.privacy?.enabled ?? true)],
-      ['privacy.spacy_model_path', cfg.privacy?.spacy_model_path || ''],
-      ['app.log_level', cfg.app?.log_level || 'INFO']
-    ];
-    document.getElementById('config-rows').innerHTML = rows.map(([k, v]) =>
-      '<div class="settings-row"><span class="settings-label">' + k + '</span><span class="settings-val">' + v + '</span></div>'
-    ).join('');
-    updateCloudBadge(cfg.cloud?.enabled);
-  } catch (e) {
-    document.getElementById('config-rows').innerHTML = '<div class="settings-row"><span class="settings-val">failed to load config</span></div>';
-  }
-}
-
-function updateCloudBadge(enabled) {
-  const badge = document.getElementById('cloud-badge');
-  if (enabled) {
-    badge.className = 'badge cloud-on';
-    badge.innerHTML = '<i class="ti ti-cloud"></i> cloud on';
+function setConnUI(reachable, modelCount, url){
+  connected = reachable && modelCount > 0;
+  connectedUrl = url || connectedUrl;
+  const badge = document.getElementById('conn-badge');
+  const sidebar = document.getElementById('lm-status');
+  const modelSel = document.getElementById('chat-model');
+  if(reachable && modelCount > 0){
+    badge.className='conn-badge connected';
+    badge.innerHTML='<span class="dot on"></span> Connected — '+modelCount+' model(s)';
+    sidebar.innerHTML='<span class="dot on"></span> Local AI: connected';
+  } else if(reachable){
+    badge.className='conn-badge probing';
+    badge.innerHTML='<span class="dot off"></span> Connected — no models loaded';
+    sidebar.innerHTML='<span class="dot off"></span> Local AI: no models';
+    modelSel.disabled=true;
+    return;
   } else {
-    badge.className = 'badge cloud-off';
-    badge.innerHTML = '<i class="ti ti-cloud-off"></i> cloud off';
-  }
-}
-
-async function loadAudit() {
-  const tbody = document.getElementById('audit-tbody');
-  try {
-    const rows = await fetch('/api/audit').then(r => r.json());
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--color-text-tertiary)">no runs yet</td></tr>';
-      return;
-    }
-    tbody.innerHTML = rows.map(row => {
-      const stages = {};
-      (row.stages || []).forEach(s => { stages[s.stage] = s.status; });
-      const name = row.target_name || row.target || '—';
-      const overall = row.overall_status || '—';
-      return '<tr><td>' + (row.run_id || '—') + '</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</td>'
-        + '<td>' + pill(stages.integrity || '—') + '</td><td>' + pill(stages.threat_scanner || '—') + '</td>'
-        + '<td>' + pill(stages.privacy || '—') + '</td><td>' + pill(stages.audit || '—') + '</td>'
-        + '<td>' + pill(overall) + '</td></tr>';
-    }).join('');
-  } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--color-text-danger)">failed to load audit log</td></tr>';
-  }
-}
-
-async function runScan() {
-  const path = document.getElementById('scan-path').value.trim();
-  const prompt = document.getElementById('scan-prompt').value;
-  const btn = document.getElementById('run-btn');
-  if (!path) {
-    addLog('[' + ts() + '] enter a file path first', 'warn');
+    badge.className='conn-badge offline';
+    badge.innerHTML='<span class="dot off"></span> Not connected';
+    sidebar.innerHTML='<span class="dot off"></span> Local AI: offline';
+    modelSel.innerHTML='<option value="">— connect first —</option>';
+    modelSel.disabled=true;
     return;
   }
-
-  btn.disabled = true;
-  const area = document.getElementById('log-area');
-  area.innerHTML = '';
-  Object.values(STAGE_IDS).forEach(id => setStage(id, 'idle', '—'));
-  document.getElementById('m-result').textContent = '—';
-  document.getElementById('m-result').className = 'metric-val';
-  document.getElementById('m-pii').textContent = '—';
-  document.getElementById('m-hash').textContent = '—';
-  document.getElementById('m-cloud').textContent = '…';
-
-  addLog('[' + ts() + '] scan started: ' + path.split(/[/\\]/).pop());
-  Object.values(STAGE_IDS).forEach(id => setStage(id, 'running', '…'));
-
-  try {
-    const res = await fetch('/api/scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target_path: path, prompt_text: prompt })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || res.statusText);
-    }
-    const data = await res.json();
-
-    (data.stages || []).forEach(s => {
-      const elId = STAGE_IDS[s.stage];
-      if (elId) setStage(elId, statusClass(s.status), s.status);
-      addLog('[' + ts() + '] ' + s.stage + ': ' + s.message, logClass(s.status));
-    });
-
-    const overall = data.overall_status || '—';
-    const mResult = document.getElementById('m-result');
-    mResult.textContent = overall;
-    mResult.className = 'metric-val ' + (overall === 'PASS' ? 'ok' : overall === 'WARN' ? 'warn' : 'err');
-
-    const pii = data.pii_span_count ?? 0;
-    const mPii = document.getElementById('m-pii');
-    mPii.textContent = String(pii);
-    mPii.className = 'metric-val ' + (pii > 0 ? 'warn' : 'ok');
-
-    document.getElementById('m-hash').textContent = data.hash_summary || 'n/a';
-    document.getElementById('m-cloud').textContent = data.cloud_forwarded ? 'forwarded' : 'off';
-
-    addLog('[' + ts() + '] cloud forward: ' + (data.cloud_forwarded ? 'YES' : 'SKIPPED (cloud.enabled=false)'), data.cloud_forwarded ? '' : 'warn');
-    addLog('[' + ts() + '] run complete — ' + overall + ' (id:' + data.run_id + ')', logClass(overall));
-
-  } catch (e) {
-    addLog('[' + ts() + '] gateway error: ' + e.message, 'err');
-    Object.values(STAGE_IDS).forEach(id => setStage(id, 'fail', 'ERR'));
-  } finally {
-    btn.disabled = false;
-  }
+  modelSel.disabled=false;
 }
 
-async function loadModels(dir) {
-  const status = document.getElementById('model-status');
-  const select = document.getElementById('model-select');
-  const url = dir ? '/api/models?dir=' + encodeURIComponent(dir) : '/api/models';
-  try {
-    const res = await fetch(url);
-    if (!res.ok) {
-      status.textContent = 'model API missing — restart with .\\scripts\\run_ui.ps1';
-      status.className = 'model-status warn';
-      return;
-    }
-    const data = await res.json();
-    select.innerHTML = '<option value="">— pick a local model —</option>';
-    (data.models || []).forEach(m => {
-      const opt = document.createElement('option');
-      opt.value = m.path;
-      opt.textContent = m.name + ' (' + m.size_mb + ' MB)';
-      select.appendChild(opt);
-    });
-    if (data.count > 0) {
-      status.textContent = data.count + ' model(s) in ' + data.models_dir;
-      status.className = 'model-status ok';
-      if (!document.getElementById('scan-path').value && data.default_path) {
-        document.getElementById('scan-path').value = data.default_path;
-      }
-    } else if (!data.exists) {
-      status.textContent = 'folder not found: ' + data.models_dir;
-      status.className = 'model-status warn';
+async function connectLocalAI(){
+  const url = document.getElementById('provider-url').value.trim();
+  const btn = document.getElementById('connect-btn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>';
+  document.getElementById('conn-badge').className='conn-badge probing';
+  document.getElementById('conn-badge').innerHTML='<span class="spinner"></span> Connecting...';
+  try{
+    const data = await fetch('/api/local-llm/status?base_url='+encodeURIComponent(url)).then(r=>r.json());
+    const sel = document.getElementById('chat-model');
+    const savedModel = appSettings.local_ai?.model || '';
+    if(data.models?.length){
+      sel.innerHTML='<option value="">— auto —</option>'+data.models.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
+      if(savedModel && data.models.includes(savedModel)) sel.value=savedModel;
+      else if(data.models.length === 1) sel.value = data.models[0];
+      setConnUI(true, data.models.length, data.base_url);
+      updateActiveModelBar();
     } else {
-      status.textContent = 'no models in ' + data.models_dir + ' — add a .gguf file there';
-      status.className = 'model-status warn';
+      setConnUI(false, 0, url);
     }
-  } catch (e) {
-    status.textContent = 'could not list models — is the server running?';
-    status.className = 'model-status warn';
+  }catch{ setConnUI(false,0,url); }
+  finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-plug"></i> Connect'; }
+}
+
+function onProviderChange(){
+  const p = document.getElementById('provider-select').value;
+  const urlInput = document.getElementById('provider-url');
+  if(p==='custom'){ urlInput.disabled=false; return; }
+  urlInput.disabled=false;
+  urlInput.value = PROVIDER_URLS[p] || appSettings.local_ai?.presets?.[p] || urlInput.value;
+}
+
+function formatModelMeta(turn) {
+  if (!turn.model_used && !turn.latency_ms) return '';
+  const host = (turn.provider_url || '').replace(/^https?:\/\//, '');
+  const parts = [];
+  if (turn.model_used) parts.push(turn.model_used);
+  if (host) parts.push('@ ' + host);
+  if (turn.latency_ms) parts.push(turn.latency_ms + 'ms');
+  if (turn.sanitize_ms) parts.push('sanitize ' + turn.sanitize_ms + 'ms');
+  return parts.join(' · ');
+}
+
+function updateActiveModelBar() {
+  const sel = document.getElementById('chat-model');
+  const bar = document.getElementById('active-model-bar');
+  const url = document.getElementById('provider-url').value.trim();
+  const name = sel.value || '(auto — first loaded model)';
+  if (connected) {
+    bar.className = 'active-model-bar visible';
+    bar.textContent = 'Active: ' + name + ' via ' + url;
+  } else {
+    bar.className = 'active-model-bar';
   }
 }
 
-document.getElementById('model-select').addEventListener('change', function() {
-  if (this.value) document.getElementById('scan-path').value = this.value;
-});
-
-document.getElementById('pick-file-btn').addEventListener('click', async function() {
-  addLog('[' + ts() + '] opening file picker…');
-  try {
-    const data = await fetch('/api/pick-file').then(r => r.json());
-    if (data.path) {
-      document.getElementById('scan-path').value = data.path;
-      addLog('[' + ts() + '] selected file: ' + data.path.split(/[/\\]/).pop(), 'ok');
+function renderChat(){
+  const thread=document.getElementById('chat-thread');
+  if(!chatHistory.length){ thread.innerHTML='<div class="empty">No messages. Try: <span class="mono">hi my name is smai</span></div>'; return; }
+  thread.innerHTML=chatHistory.map(turn=>{
+    let h='<div class="chat-msg user"><div class="chat-avatar"><i class="ti ti-user"></i></div>'
+      +'<div class="chat-bubble chat-user"><div class="chat-label">You</div>'+esc(turn.prompt)+'</div></div>';
+    if(turn.pii_span_count>0){
+      h+='<div class="console chat-console"><div class="console-line warn">sanitized &rarr; '+esc(turn.sanitized_prompt)+'</div></div>';
     }
-  } catch (e) {
-    addLog('[' + ts() + '] file picker failed: ' + e.message, 'err');
-  }
-});
-
-document.getElementById('pick-folder-btn').addEventListener('click', async function() {
-  addLog('[' + ts() + '] opening folder picker…');
-  try {
-    const data = await fetch('/api/pick-folder').then(r => r.json());
-    if (data.path) {
-      addLog('[' + ts() + '] selected folder: ' + data.path, 'ok');
-      await loadModels(data.path);
-      if (data.default_path) document.getElementById('scan-path').value = data.default_path;
+    const meta = formatModelMeta(turn);
+    if(turn.error){
+      h+='<div class="chat-msg ai"><div class="chat-avatar"><i class="ti ti-alert-triangle"></i></div>'
+        +'<div class="chat-bubble chat-ai"><div class="chat-label">Error</div><span style="color:var(--err)">'+esc(turn.error)+'</span></div></div>';
+    } else {
+      const badge = turn.pii_span_count>0?'WARN':'PASS';
+      const body = esc(turn.restored_response || turn.stream_text || '');
+      h+='<div class="chat-msg ai"><div class="chat-avatar"><i class="ti ti-shield-check"></i></div>'
+        +'<div class="chat-bubble chat-ai"><div class="chat-label">Assistant '+pill(badge)
+        +(meta ? ' <span class="model-tag">'+esc(meta)+'</span>' : '')+'</div>'+body+'</div></div>';
     }
-  } catch (e) {
-    addLog('[' + ts() + '] folder picker failed: ' + e.message, 'err');
-  }
-});
+    return h;
+  }).join('');
+  thread.scrollTop=thread.scrollHeight;
+}
 
-document.getElementById('run-btn').addEventListener('click', runScan);
-loadConfig();
+async function sendChat(){
+  const prompt=document.getElementById('chat-prompt').value.trim();
+  const model=document.getElementById('chat-model').value||null;
+  const base_url=document.getElementById('provider-url').value.trim();
+  const btn=document.getElementById('chat-send-btn');
+  const useStream = appSettings.local_ai?.stream !== false;
+  if(!prompt) return;
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Sending';
+  const turn = { prompt, pii_span_count:0, sanitized_prompt:'', restored_response:'', stream_text:'' };
+  chatHistory.push(turn);
+  document.getElementById('chat-prompt').value='';
+  renderChat();
+  try {
+    if (useStream) {
+      const res = await fetch('/api/chat/stream', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({prompt,model,base_url})
+      });
+      if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.detail||res.statusText); }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const ev = JSON.parse(line.slice(6));
+          if (ev.type === 'meta') {
+            turn.sanitized_prompt = ev.sanitized_prompt;
+            turn.pii_span_count = ev.pii_span_count;
+          } else if (ev.type === 'token') {
+            turn.stream_text = (turn.stream_text || '') + ev.delta;
+            turn.restored_response = turn.stream_text;
+            renderChat();
+          } else if (ev.type === 'done') {
+            turn.restored_response = ev.restored_response;
+            turn.model_used = ev.model_used;
+            turn.provider_url = ev.provider_url;
+            turn.latency_ms = ev.latency_ms;
+            turn.sanitize_ms = ev.sanitize_ms;
+            renderChat();
+          } else if (ev.type === 'error') throw new Error(ev.error);
+        }
+      }
+    } else {
+      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,model,base_url})});
+      const data=await res.json();
+      if(!res.ok) throw new Error(data.detail||res.statusText);
+      Object.assign(turn, data);
+      renderChat();
+    }
+  } catch(e) {
+    turn.error = e.message;
+    renderChat();
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='<i class="ti ti-send"></i> Send';
+  }
+}
+
+async function loadSettings(){
+  appSettings = await fetch('/api/settings').then(r=>r.json());
+  const on=appSettings.cloud?.enabled;
+  const cloudSidebar=document.getElementById('cloud-sidebar');
+  if(on) cloudSidebar.innerHTML='<i class="ti ti-cloud" style="font-size:12px"></i> Cloud: enabled';
+  else cloudSidebar.innerHTML='<i class="ti ti-cloud-off" style="font-size:12px"></i> Cloud: off';
+  const badge=document.getElementById('cloud-badge-chat');
+  if(on){ badge.className='badge cloud-on'; badge.innerHTML='<i class="ti ti-cloud"></i> cloud on'; }
+  else{ badge.className='badge cloud-off'; badge.innerHTML='<i class="ti ti-cloud-off"></i> air-gapped'; }
+  const ai=appSettings.local_ai||{};
+  Object.assign(PROVIDER_URLS, ai.presets||{});
+  document.getElementById('provider-select').value=ai.provider||'lm_studio';
+  document.getElementById('provider-url').value=ai.base_url||PROVIDER_URLS.lm_studio;
+  onProviderChange();
+}
+
+function loadSettingsForm(){
+  loadSettings().then(()=>{
+    const ai=appSettings.local_ai||{};
+    const loc=appSettings.local||{};
+    document.getElementById('set-provider').value=ai.provider||'lm_studio';
+    document.getElementById('set-base-url').value=ai.base_url||'';
+    document.getElementById('set-model').value=ai.model||'';
+    document.getElementById('set-temp').value=ai.temperature??0.7;
+    document.getElementById('set-max-tokens').value=ai.max_tokens??256;
+    document.getElementById('set-timeout').value=ai.timeout_seconds??120;
+    document.getElementById('set-stream').checked=ai.stream!==false;
+    document.getElementById('set-models-dir').value=loc.models_dir||'';
+    document.getElementById('set-audit-dir').value=loc.audit_dir||'';
+    document.getElementById('set-privacy-enabled').checked=appSettings.privacy?.enabled!==false;
+    document.getElementById('set-cloud-enabled').checked=appSettings.cloud?.enabled===true;
+    document.getElementById('set-chunk-size').value=loc.chunk_size_bytes||1048576;
+  });
+}
+
+async function saveSettings(e){
+  e.preventDefault();
+  const body={
+    local_ai:{
+      provider:document.getElementById('set-provider').value,
+      base_url:document.getElementById('set-base-url').value.trim(),
+      model:document.getElementById('set-model').value.trim(),
+      temperature:parseFloat(document.getElementById('set-temp').value),
+      max_tokens:parseInt(document.getElementById('set-max-tokens').value,10),
+      timeout_seconds:parseInt(document.getElementById('set-timeout').value,10),
+      stream:document.getElementById('set-stream').checked,
+    },
+    local:{
+      models_dir:document.getElementById('set-models-dir').value.trim(),
+      audit_dir:document.getElementById('set-audit-dir').value.trim(),
+      chunk_size_bytes:parseInt(document.getElementById('set-chunk-size').value,10),
+    },
+    privacy:{enabled:document.getElementById('set-privacy-enabled').checked},
+    cloud:{enabled:document.getElementById('set-cloud-enabled').checked},
+  };
+  const res=await fetch('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data=await res.json();
+  if(!res.ok){ toast('Save failed: '+(data.detail||res.statusText)); return; }
+  appSettings=data.settings;
+  document.getElementById('provider-select').value=body.local_ai.provider;
+  document.getElementById('provider-url').value=body.local_ai.base_url;
+  toast('Settings saved');
+  connectLocalAI();
+}
+
+async function loadIntegrity(){
+  const list=document.getElementById('integrity-list');
+  list.innerHTML='<div class="empty"><span class="spinner"></span> hashing...</div>';
+  try{
+    const data=await fetch('/api/integrity/scan').then(r=>r.json());
+    document.getElementById('integrity-dir').textContent=data.models_dir;
+    const c=data.counts||{};
+    document.getElementById('integrity-cards').style.display='grid';
+    document.getElementById('cnt-trusted').textContent=c.TRUSTED||0;
+    document.getElementById('cnt-unverified').textContent=c.UNVERIFIED||0;
+    const poisoned=c.POISONED||0;
+    document.getElementById('cnt-poisoned').textContent=poisoned;
+    document.getElementById('cnt-poisoned').className='metric-val'+(poisoned?' err':'');
+    const hint=document.getElementById('integrity-demo-hint');
+    if(poisoned>0){ hint.style.display='block'; hint.textContent='Demo: '+poisoned+' poisoned model(s) — hash mismatch vs baseline. Click Eject to quarantine.'; }
+    else hint.style.display='none';
+    const entries=data.entries||[];
+    if(!entries.length){ list.innerHTML='<div class="empty">No models. Run .\\scripts\\setup_demo_integrity.ps1</div>'; return; }
+    list.innerHTML=entries.map(e=>{
+      const canEject=e.status==='POISONED'||e.status==='UNVERIFIED';
+      const statusCls=e.status==='POISONED'?'poisoned':e.status==='TRUSTED'?'trusted':'unverified';
+      const cls='model-card '+statusCls;
+      const okTag=e.status==='TRUSTED'?'<span class="verified-tag"><i class="ti ti-check"></i> baseline match</span>':'';
+      return '<div class="'+cls+'"><div><h4>'+esc(e.name)+' '+pill(e.status)+'</h4><div class="meta">'+e.size_bytes.toLocaleString()+' bytes</div>'
+        +'<div class="hash">'+e.current_hash.slice(0,16)+'…</div>'+okTag+'</div>'
+        +(canEject?'<button class="btn danger eject-btn" data-name="'+esc(e.name)+'"><i class="ti ti-trash"></i> Eject</button>':'')+'</div>';
+    }).join('');
+    document.getElementById('integrity-pin').style.display='block';
+    document.getElementById('pin-model').innerHTML=entries.map(e=>'<option value="'+esc(e.name)+'">'+esc(e.name)+'</option>').join('');
+    list.querySelectorAll('.eject-btn').forEach(btn=>btn.addEventListener('click',async()=>{
+      if(!confirm('Quarantine '+btn.dataset.name+'?')) return;
+      btn.disabled=true;
+      await fetch('/api/integrity/eject',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model_name:btn.dataset.name})});
+      toast('Quarantined: '+btn.dataset.name);
+      loadIntegrity(); loadModels();
+    }));
+  }catch(e){ list.innerHTML='<div class="empty" style="color:var(--err)">'+esc(e.message)+'</div>'; }
+}
+
+function flowClass(s){if(s==='PASS')return'pass';if(s==='WARN')return'warn-state';if(s==='FAIL'||s==='ERROR')return'fail';if(s==='running')return'running';return'idle';}
+function setStage(id,state,status){const el=document.getElementById(id);el.className='flow-stage '+flowClass(state);el.querySelector('.flow-status').innerHTML=pill(status==='running'?'...':status);}
+function addLog(line,cls){const a=document.getElementById('log-area');const d=document.createElement('div');d.className='console-line'+(cls?' '+cls:'');d.textContent=line;a.appendChild(d);a.scrollTop=a.scrollHeight;}
+function logClass(s){if(s==='PASS')return'ok';if(s==='WARN')return'warn';if(s==='FAIL'||s==='ERROR')return'err';return'';}
+
+async function loadAudit(){
+  const tbody=document.getElementById('audit-tbody');
+  try{
+    const rows=await fetch('/api/audit').then(r=>r.json());
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="empty">no runs</td></tr>';return;}
+    tbody.innerHTML=rows.map(row=>{
+      const stages={};(row.stages||[]).forEach(s=>{stages[s.stage]=s.status;});
+      return '<tr><td>'+esc(row.run_id||'—')+'</td><td>'+esc(row.target_name||row.target||'—')+'</td>'
+        +'<td>'+pill(stages.integrity)+'</td><td>'+pill(stages.threat_scanner)+'</td><td>'+pill(stages.privacy)+'</td><td>'+pill(stages.audit)+'</td><td>'+pill(row.overall_status)+'</td></tr>';
+    }).join('');
+  }catch{tbody.innerHTML='<tr><td colspan="7" class="empty">failed</td></tr>';}
+}
+
+async function runScan(){
+  const path=document.getElementById('scan-path').value.trim();
+  const prompt=document.getElementById('scan-prompt').value;
+  if(!path){addLog('['+ts()+'] enter path','warn');return;}
+  document.getElementById('log-area').innerHTML='';
+  Object.values(STAGE_IDS).forEach(id=>setStage(id,'running','running'));
+  addLog('['+ts()+'] started');
+  try{
+    const res=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target_path:path,prompt_text:prompt})});
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.detail);
+    (data.stages||[]).forEach(s=>{if(STAGE_IDS[s.stage])setStage(STAGE_IDS[s.stage],s.status,s.status);addLog('['+ts()+'] '+s.stage+': '+s.message,logClass(s.status));});
+    document.getElementById('m-result').textContent=data.overall_status;
+    document.getElementById('m-pii').textContent=String(data.pii_span_count??0);
+    document.getElementById('m-hash').textContent=data.hash_summary||'n/a';
+  }catch(e){addLog('['+ts()+'] '+e.message,'err');}
+}
+
+async function loadModels(dir){
+  const status=document.getElementById('model-status');
+  const url=dir?'/api/models?dir='+encodeURIComponent(dir):'/api/models';
+  try{
+    const data=await fetch(url).then(r=>r.json());
+    const sel=document.getElementById('model-select');
+    sel.innerHTML='<option value="">— pick model —</option>';
+    (data.models||[]).forEach(m=>{const o=document.createElement('option');o.value=m.path;o.textContent=m.name+' ('+m.size_mb+' MB)';sel.appendChild(o);});
+    status.textContent=data.count?data.count+' in '+data.models_dir:'no models';
+    if(data.default_path&&!document.getElementById('scan-path').value) document.getElementById('scan-path').value=data.default_path;
+  }catch{status.textContent='could not list models';}
+}
+
+document.getElementById('connect-btn').addEventListener('click',connectLocalAI);
+document.getElementById('provider-select').addEventListener('change',onProviderChange);
+document.getElementById('chat-send-btn').addEventListener('click',sendChat);
+document.getElementById('chat-model').addEventListener('change', updateActiveModelBar);
+document.getElementById('chat-prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}});
+document.getElementById('settings-form').addEventListener('submit',saveSettings);
+document.getElementById('set-reset-btn').addEventListener('click',async()=>{await fetch('/api/settings/reset',{method:'POST'});toast('Reset to defaults');loadSettingsForm();connectLocalAI();});
+document.getElementById('set-test-conn').addEventListener('click',async()=>{
+  const url=document.getElementById('set-base-url').value.trim();
+  const st=document.getElementById('set-conn-status');
+  st.className='conn-badge probing'; st.innerHTML='<span class="spinner"></span>';
+  const d=await fetch('/api/local-llm/status?base_url='+encodeURIComponent(url)).then(r=>r.json());
+  if(d.reachable&&d.models?.length){st.className='conn-badge connected';st.innerHTML='<span class="dot on"></span> '+d.models.length+' models';}
+  else if(d.reachable){st.className='conn-badge probing';st.innerHTML='No models';}
+  else{st.className='conn-badge offline';st.innerHTML='<span class="dot off"></span> Offline';}
+});
+document.getElementById('integrity-scan-btn').addEventListener('click',loadIntegrity);
+document.getElementById('pin-btn').addEventListener('click',async()=>{await fetch('/api/integrity/baseline',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model_name:document.getElementById('pin-model').value})});loadIntegrity();});
+document.getElementById('run-btn').addEventListener('click',runScan);
+document.getElementById('model-select').addEventListener('change',function(){if(this.value)document.getElementById('scan-path').value=this.value;});
+document.getElementById('pick-file-btn').addEventListener('click',async()=>{const d=await fetch('/api/pick-file').then(r=>r.json());if(d.path)document.getElementById('scan-path').value=d.path;});
+document.getElementById('pick-folder-btn').addEventListener('click',async()=>{const d=await fetch('/api/pick-folder').then(r=>r.json());if(d.path){await loadModels(d.path);if(d.default_path)document.getElementById('scan-path').value=d.default_path;}});
+
+loadSettings().then(()=>connectLocalAI());
 loadModels();
+renderChat();
 </script>
 </body>
 </html>
