@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
@@ -22,10 +23,10 @@ from lakanvault.orchestration.gateway import Gateway
 from lakanvault.shared.config import clear_local_config_keys, save_local_config
 from lakanvault.shared.url_policy import assert_localhost_url
 
-STATIC_DIR = Path(__file__).resolve().parent / "static"
-
 
 def _find_repo_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
     here = Path(__file__).resolve()
     candidates = [
         here.parents[3],
@@ -38,8 +39,18 @@ def _find_repo_root() -> Path:
     return here.parents[3].resolve()
 
 
+def _resolve_static_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        meipass = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+        bundled = meipass / "lakanvault" / "app" / "static"
+        if bundled.is_dir():
+            return bundled
+    return Path(__file__).resolve().parent / "static"
+
+
 REPO_ROOT = _find_repo_root()
 CONFIG_DIR = REPO_ROOT / "config"
+STATIC_DIR = _resolve_static_dir()
 
 app = FastAPI(title="LakanVault", version="0.1.0")
 _gateway: Gateway | None = None
@@ -176,6 +187,22 @@ def api_lmstudio_status(base_url: str | None = Query(default=None)) -> dict:
     return api_local_llm_status(base_url=base_url)
 
 
+@app.get("/api/runtime/status")
+def api_runtime_status() -> dict:
+    return get_gateway().runtime_status()
+
+
+@app.post("/api/runtime/select")
+def api_runtime_select(body: dict) -> dict:
+    model = (body or {}).get("model", "")
+    try:
+        return get_gateway().runtime_select(model)
+    except ValueError as exc:
+        raise HTTPException(status_code=400 if "Unknown" in str(exc) else 409, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
 @app.post("/api/chat")
 def api_chat(request: ChatRequest) -> ChatResponse:
     if not request.prompt.strip():
@@ -200,6 +227,8 @@ def api_chat(request: ChatRequest) -> ChatResponse:
         provider_url=result.get("provider_url", ""),
         latency_ms=result.get("latency_ms", 0.0),
         sanitize_ms=result.get("sanitize_ms", 0.0),
+        blocked=bool(result.get("blocked")),
+        block_reason=result.get("block_reason") or "",
     )
 
 

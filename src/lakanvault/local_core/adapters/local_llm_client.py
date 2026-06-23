@@ -118,10 +118,15 @@ class LocalLLMClient:
         stream: bool,
         temperature: float | None,
         max_tokens: int | None,
+        system: str | None = None,
     ) -> dict:
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
         return {
             "model": model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
             "temperature": temperature if temperature is not None else self._temperature,
             "max_tokens": max_tokens if max_tokens is not None else self._max_tokens,
             "stream": stream,
@@ -135,6 +140,7 @@ class LocalLLMClient:
         temperature: float | None = None,
         max_tokens: int | None = None,
         stream: bool | None = None,
+        system: str | None = None,
     ) -> ChatCompletionResult:
         root = assert_localhost_url(base_url) if base_url else self._base_url
         use_stream = self._stream if stream is None else stream
@@ -150,6 +156,7 @@ class LocalLLMClient:
                 base_url=root,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                system=system,
             ):
                 if chunk.delta:
                     parts.append(chunk.delta)
@@ -173,6 +180,7 @@ class LocalLLMClient:
         payload = self._build_payload(
             prompt, resolved_model, stream=False,
             temperature=temperature, max_tokens=max_tokens,
+            system=system,
         )
         req = urllib.request.Request(
             url,
@@ -207,6 +215,7 @@ class LocalLLMClient:
         base_url: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        system: str | None = None,
     ) -> Iterator[StreamChunk]:
         root = assert_localhost_url(base_url) if base_url else self._base_url
         resolved_model = self._resolve_model(model, base_url)
@@ -214,6 +223,7 @@ class LocalLLMClient:
         payload = self._build_payload(
             prompt, resolved_model, stream=True,
             temperature=temperature, max_tokens=max_tokens,
+            system=system,
         )
         req = urllib.request.Request(
             url,

@@ -1,9 +1,26 @@
+# ── Assessment / submission (LMS zip only — not public GitHub) ──
+docs/submission/
+205_Assessment2.pdf
+205_*.pdf
+*_Assessment*.pdf
+**/205_Report*.md
+**/IMPLEMENTATION_CHECKLIST.md
+**/GITIGNORE_ADDITIONS.md
+
+# ── AI / planning artifacts ──
 .cursor/
 .cursorrules
 ai_planning/
 *.plan.md
-docs/SYSTEM_GUIDE.md
+agent-transcripts/
+scripts/privacy_research/experiments.log
 
+# ── Internal dev docs (team only — markers use docs/demo/GUIDE.md in LMS zip) ──
+docs/SYSTEM_GUIDE.md
+docs/DEV_ONBOARDING.md
+docs/PROJECT_FILES.md
+
+# ── Python / env ──
 __pycache__/
 *.py[cod]
 .venv/
@@ -12,13 +29,20 @@ venv/
 .env.*
 !.env.example
 
+# ── Runtime data ──
 data/
 *.db
 logs/
+!demo_assets/**
 
+# ── Bundled LLM runtime (large — fetch via scripts/fetch_demo_model.ps1) ──
+/runtime/
+*.gguf
+!demo_assets/**/*.gguf
+
+# ── OS / build ──
 .DS_Store
 Thumbs.db
-
 .pytest_cache/
 .mypy_cache/
 dist/

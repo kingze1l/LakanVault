@@ -16,16 +16,31 @@ pipeline:
 
 privacy:
   enabled: true
+  engine: auto  # auto | regex | spacy | pattern — auto uses regex + local spaCy NER if installed
 
 local_ai:
   base_url: http://localhost:1234
   model: ""
-  timeout_seconds: 120
-  temperature: 0.7
-  max_tokens: 256
+  timeout_seconds: 60
+  temperature: 0.2
+  max_tokens: 120
   stream: true
   provider: lm_studio
   presets:
     lm_studio: http://localhost:1234
     ollama: http://localhost:11434
-    llama_cpp: http://localhost:8080
+    llama_cpp: http://localhost:8081
+
+# Optional bundled llama.cpp server for the standalone .exe.
+# When runtime/llama-server.exe + a .gguf in runtime/models exist, the launcher
+# auto-starts a local OpenAI-compatible server so the demo works with zero setup.
+local_runtime:
+  enabled: true
+  host: 127.0.0.1
+  port: 8081
+  server_exe: runtime/llama-server.exe
+  models_dir: runtime/models
+  model: ""            # filename in models_dir; empty = first .gguf found
+  context_size: 2048
+  threads: 0           # 0 = auto-detect cores
+  extra_args: []

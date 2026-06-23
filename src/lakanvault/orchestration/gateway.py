@@ -15,11 +15,17 @@ from lakanvault.local_core.audit.stage import AuditStage
 from lakanvault.local_core.integrity.registry import ModelRegistry
 from lakanvault.local_core.integrity.stage import IntegrityStage
 from lakanvault.local_core.privacy.anonymizer import ReversibleAnonymizer
+from lakanvault.local_core.security.prompt_guard import (
+    BLOCKED_USER_MESSAGE,
+    detect_prompt_injection,
+    wrap_user_message,
+)
 from lakanvault.local_core.privacy.stage import PrivacyStage
 from lakanvault.local_core.threat_scanner.stage import ThreatScannerStage
 from lakanvault.orchestration.bus import EventBus
 from lakanvault.orchestration.pipeline import Pipeline
 from lakanvault.shared.config import load_config
+from lakanvault.shared.system_prompt import build_chat_system_prompt
 from lakanvault.shared.url_policy import assert_localhost_url
 
 logger = logging.getLogger(__name__)
@@ -48,8 +54,8 @@ class Gateway:
             base_url=ai.get("base_url", "http://localhost:1234"),
             model=ai.get("model", ""),
             timeout_seconds=float(ai.get("timeout_seconds", 120)),
-            temperature=float(ai.get("temperature", 0.7)),
-            max_tokens=int(ai.get("max_tokens", 256)),
+            temperature=float(ai.get("temperature", 0.2)),
+            max_tokens=int(ai.get("max_tokens", 120)),
             stream=bool(ai.get("stream", True)),
         )
 
@@ -151,6 +157,7 @@ class Gateway:
                 "stage": s.stage,
                 "status": s.status.value,
                 "message": s.message,
+                "metadata": s.metadata,
             })
 
         hash_short = ""
@@ -168,6 +175,7 @@ class Gateway:
             hash_summary=hash_short,
             pii_span_count=pii_count,
             cloud_forwarded=self._cfg.get("cloud", {}).get("enabled", False),
+            duration_ms=duration_ms,
         )
 
     def local_llm_status(self, base_url: str | None = None) -> dict:
@@ -185,47 +193,93 @@ class Gateway:
     def lmstudio_reachable(self) -> bool:
         return bool(self._local_llm.list_models())
 
+    def _prepare_chat(self, prompt: str) -> dict:
+        t0 = monotonic()
+        block_reason = detect_prompt_injection(prompt)
+        sanitized, mapping, detection_engine = self._anonymizer.anonymize(prompt)
+        sanitize_ms = round((monotonic() - t0) * 1000, 1)
+        system_hint = build_chat_system_prompt(
+            ReversibleAnonymizer.placeholder_system_hint(mapping)
+        )
+        return {
+            "block_reason": block_reason,
+            "sanitized": sanitized,
+            "mapping": mapping,
+            "detection_engine": detection_engine,
+            "sanitize_ms": sanitize_ms,
+            "system_hint": system_hint,
+            "llm_prompt": wrap_user_message(sanitized),
+        }
+
+    def _blocked_chat_result(self, prep: dict, model: str | None, base_url: str | None) -> dict:
+        reason = prep["block_reason"] or "prompt injection"
+        message = BLOCKED_USER_MESSAGE.format(reason=reason)
+        return {
+            "sanitized_prompt": prep["sanitized"],
+            "mapping": prep["mapping"],
+            "raw_response": message,
+            "restored_response": message,
+            "pii_span_count": len(prep["mapping"]),
+            "detection_engine": prep["detection_engine"],
+            "model_used": model or self._cfg.get("local_ai", {}).get("model", ""),
+            "provider_url": base_url or self._local_llm.base_url,
+            "latency_ms": 0.0,
+            "sanitize_ms": prep["sanitize_ms"],
+            "error": None,
+            "blocked": True,
+            "block_reason": reason,
+        }
+
     def chat(
         self,
         prompt: str,
         model: str | None = None,
         base_url: str | None = None,
     ) -> dict:
-        t0 = monotonic()
-        sanitized, mapping = self._anonymizer.anonymize(prompt)
-        sanitize_ms = round((monotonic() - t0) * 1000, 1)
+        prep = self._prepare_chat(prompt)
+        if prep["block_reason"]:
+            return self._blocked_chat_result(prep, model, base_url)
 
         try:
             result = self._local_llm.chat(
-                sanitized, model=model, base_url=base_url
+                prep["llm_prompt"],
+                model=model,
+                base_url=base_url,
+                system=prep["system_hint"],
             )
         except (ConnectionError, ValueError) as exc:
             return {
-                "sanitized_prompt": sanitized,
-                "mapping": mapping,
+                "sanitized_prompt": prep["sanitized"],
+                "mapping": prep["mapping"],
                 "raw_response": "",
                 "restored_response": "",
-                "pii_span_count": len(mapping),
+                "pii_span_count": len(prep["mapping"]),
+                "detection_engine": prep["detection_engine"],
                 "model_used": model or self._cfg.get("local_ai", {}).get("model", ""),
                 "provider_url": base_url or self._local_llm.base_url,
                 "latency_ms": 0.0,
-                "sanitize_ms": sanitize_ms,
+                "sanitize_ms": prep["sanitize_ms"],
                 "error": str(exc),
+                "blocked": False,
+                "block_reason": "",
             }
 
-        restored = ReversibleAnonymizer.restore(result.content, mapping)
+        restored = ReversibleAnonymizer.restore(result.content, prep["mapping"])
 
         return {
-            "sanitized_prompt": sanitized,
-            "mapping": mapping,
+            "sanitized_prompt": prep["sanitized"],
+            "mapping": prep["mapping"],
             "raw_response": result.content,
             "restored_response": restored,
-            "pii_span_count": len(mapping),
+            "pii_span_count": len(prep["mapping"]),
+            "detection_engine": prep["detection_engine"],
             "model_used": result.model_used,
             "provider_url": result.provider_url,
             "latency_ms": result.latency_ms,
-            "sanitize_ms": sanitize_ms,
+            "sanitize_ms": prep["sanitize_ms"],
             "error": None,
+            "blocked": False,
+            "block_reason": "",
         }
 
     def chat_stream_events(
@@ -235,17 +289,32 @@ class Gateway:
         base_url: str | None = None,
     ):
         """Yield SSE-friendly dict events: meta, token, done, error."""
-        t0 = monotonic()
-        sanitized, mapping = self._anonymizer.anonymize(prompt)
-        sanitize_ms = round((monotonic() - t0) * 1000, 1)
+        prep = self._prepare_chat(prompt)
 
         yield {
             "type": "meta",
-            "sanitized_prompt": sanitized,
-            "pii_span_count": len(mapping),
-            "placeholders": sorted(mapping.keys()),
-            "sanitize_ms": sanitize_ms,
+            "sanitized_prompt": prep["sanitized"],
+            "pii_span_count": len(prep["mapping"]),
+            "placeholders": sorted(prep["mapping"].keys()),
+            "sanitize_ms": prep["sanitize_ms"],
+            "detection_engine": prep["detection_engine"],
+            "blocked": bool(prep["block_reason"]),
+            "block_reason": prep["block_reason"] or "",
         }
+
+        if prep["block_reason"]:
+            message = BLOCKED_USER_MESSAGE.format(reason=prep["block_reason"])
+            yield {
+                "type": "done",
+                "raw_response": message,
+                "restored_response": message,
+                "model_used": model or "",
+                "provider_url": base_url or self._local_llm.base_url,
+                "latency_ms": 0.0,
+                "sanitize_ms": prep["sanitize_ms"],
+                "blocked": True,
+            }
+            return
 
         try:
             parts: list[str] = []
@@ -254,7 +323,10 @@ class Gateway:
             llm_start = monotonic()
 
             for chunk in self._local_llm.chat_stream(
-                sanitized, model=model, base_url=base_url
+                prep["llm_prompt"],
+                model=model,
+                base_url=base_url,
+                system=prep["system_hint"],
             ):
                 if chunk.model_used:
                     model_used = chunk.model_used
@@ -262,10 +334,16 @@ class Gateway:
                     provider_url = chunk.provider_url
                 if chunk.delta:
                     parts.append(chunk.delta)
-                    yield {"type": "token", "delta": chunk.delta}
+                    raw_so_far = "".join(parts)
+                    restored_so_far = ReversibleAnonymizer.restore(raw_so_far, prep["mapping"])
+                    yield {
+                        "type": "token",
+                        "delta": chunk.delta,
+                        "restored": restored_so_far,
+                    }
                 if chunk.done:
                     raw = chunk.full_content or "".join(parts)
-                    restored = ReversibleAnonymizer.restore(raw, mapping)
+                    restored = ReversibleAnonymizer.restore(raw, prep["mapping"])
                     llm_ms = round((monotonic() - llm_start) * 1000, 1)
                     yield {
                         "type": "done",
@@ -274,12 +352,12 @@ class Gateway:
                         "model_used": model_used,
                         "provider_url": provider_url,
                         "latency_ms": llm_ms,
-                        "sanitize_ms": sanitize_ms,
+                        "sanitize_ms": prep["sanitize_ms"],
                     }
                     return
 
             raw = "".join(parts)
-            restored = ReversibleAnonymizer.restore(raw, mapping)
+            restored = ReversibleAnonymizer.restore(raw, prep["mapping"])
             llm_ms = round((monotonic() - llm_start) * 1000, 1)
             yield {
                 "type": "done",
@@ -288,7 +366,7 @@ class Gateway:
                 "model_used": model_used,
                 "provider_url": provider_url,
                 "latency_ms": llm_ms,
-                "sanitize_ms": sanitize_ms,
+                "sanitize_ms": prep["sanitize_ms"],
             }
         except (ConnectionError, ValueError) as exc:
             yield {"type": "error", "error": str(exc)}
@@ -301,3 +379,23 @@ class Gateway:
 
     def set_model_baseline(self, model_name: str, sha256_hex: str) -> None:
         self._registry.set_baseline(model_name, sha256_hex)
+
+    def runtime_status(self) -> dict:
+        from lakanvault.local_core.runtime import get_runtime
+
+        runtime = get_runtime()
+        if runtime is None:
+            return {"available": False, "running": False, "models": [], "active_model": ""}
+        return runtime.status()
+
+    def runtime_select(self, model: str) -> dict:
+        from lakanvault.local_core.runtime import get_runtime
+
+        runtime = get_runtime()
+        if runtime is None or not runtime.available():
+            raise ValueError("No bundled runtime available")
+        if not model or model not in runtime.list_models():
+            raise ValueError("Unknown bundled model")
+        if not runtime.restart(model):
+            raise RuntimeError("Failed to switch model")
+        return runtime.status()

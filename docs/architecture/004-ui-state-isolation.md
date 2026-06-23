@@ -1,18 +1,20 @@
 # 004 — UI vs gateway (my rules)
 
-Phase 1a — Streamlit is display only; gateway must survive without it (Phase 2 `.exe`).
+Phase 1a — The HTML UI (`app/static/index.html`) is display only; gateway must survive without it (Phase 2 `.exe`).
+
+> **Note:** An earlier Streamlit shell was removed. The same boundary rules apply to the FastAPI + HTML UI.
 
 ## Why
 
-Streamlit reruns the whole script on clicks. Hashing a 30GB model inline would freeze the dashboard. I want gateway logic I can run in a background process later.
+UI reruns and blocking calls would freeze the dashboard if heavy work ran inline. Gateway logic stays in plain Python so it can run in a background process or bundled runtime later.
 
 ## `orchestration/gateway.py` — plain Python only
 
-- In: `str`, `Path`, dict, contract types — **no** `st.session_state`, `st.button`, etc.
-- Out: DTOs / status enums — **no** Streamlit widgets
+- In: `str`, `Path`, dict, contract types — **no** UI framework imports
+- Out: DTOs / status enums — **no** UI widgets
 - Zero UI imports in this file
 
-## `app/` — thin Streamlit shell
+## `app/` — thin HTML + FastAPI shell
 
 - UI calls `Gateway.receive(...)`
 - UI renders results
@@ -20,14 +22,14 @@ Streamlit reruns the whole script on clicks. Hashing a 30GB model inline would f
 
 ## Heavy work (Phase 2)
 
-Hashing / scanning runs outside the Streamlit rerun loop — subprocess, thread, or `.exe`. UI polls gateway for status.
+Hashing / scanning runs outside the UI request loop — subprocess, thread, or bundled runtime. UI polls gateway for status.
 
-## Streamlit habits I'm avoiding
+## UI habits I'm avoiding
 
-- Don't stash prompts/paths in `session_state` longer than needed
-- Don't `st.write` sensitive stuff when debugging
+- Don't stash prompts/paths in browser state longer than needed
+- Don't log sensitive stuff to the browser console when debugging
 - Flow is always: **UI → gateway → pipeline**
 
 ## Payoff
 
-Gateway stays portable. Streamlit is just the CISO dashboard skin.
+Gateway stays portable. The HTML UI is just the dashboard skin.

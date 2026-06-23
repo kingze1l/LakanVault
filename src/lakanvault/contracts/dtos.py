@@ -18,6 +18,7 @@ class ScanResponse(BaseModel):
     hash_summary: str = ""
     pii_span_count: int = 0
     cloud_forwarded: bool = False
+    duration_ms: float = 0.0
 
 
 class ChatRequest(BaseModel):
@@ -45,6 +46,8 @@ class ChatResponse(BaseModel):
     provider_url: str = ""
     latency_ms: float = 0.0
     sanitize_ms: float = 0.0
+    blocked: bool = False
+    block_reason: str = ""
 
 
 class IntegrityEjectRequest(BaseModel):

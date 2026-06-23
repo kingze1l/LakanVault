@@ -1,10 +1,15 @@
 """Shared config loader — merges default.yaml with optional local.yaml overrides."""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+# Set by the standalone launcher when a bundled llama.cpp runtime is started.
+# Precedence: default.yaml < this runtime URL < local.yaml (explicit user save wins).
+RUNTIME_BASE_URL_ENV = "LAKANVAULT_RUNTIME_BASE_URL"
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
@@ -24,6 +29,12 @@ def load_config(config_dir: str | Path = "./config") -> dict[str, Any]:
 
     with open(default_path) as f:
         config = yaml.safe_load(f)
+
+    runtime_url = os.environ.get(RUNTIME_BASE_URL_ENV)
+    if runtime_url:
+        ai = config.setdefault("local_ai", {})
+        ai["base_url"] = runtime_url
+        ai["provider"] = "llama_cpp"
 
     if local_path.exists():
         with open(local_path) as f:
