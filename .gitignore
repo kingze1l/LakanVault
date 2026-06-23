@@ -13,7 +13,6 @@ docs/submission/
 ai_planning/
 *.plan.md
 agent-transcripts/
-scripts/privacy_research/experiments.log
 
 # ── Internal dev docs (team only — markers use docs/demo/GUIDE.md in LMS zip) ──
 docs/SYSTEM_GUIDE.md

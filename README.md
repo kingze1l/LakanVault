@@ -13,7 +13,7 @@ pip install -e .
 .\scripts\run_ui.ps1
 ```
 
-Open **http://127.0.0.1:8080** — HTML dashboard (primary UI).
+Open **http://127.0.0.1:8080** — HTML dashboard (primary demo UI).
 
 ## Quick start (markers / LMS zip)
 
@@ -26,13 +26,30 @@ Open **http://127.0.0.1:8080** — HTML dashboard (primary UI).
 Full instructions: [`docs/demo/GUIDE.md`](docs/demo/GUIDE.md)  
 Architecture: [`docs/demo/PROJECT_OVERVIEW.md`](docs/demo/PROJECT_OVERVIEW.md)
 
-Build the LMS zip (before submission):
+## Scripts
+
+| Script | Purpose | Needed for demo? |
+|--------|---------|------------------|
+| `RUN_DEMO.bat` → `scripts/RUN_DEMO.ps1` | One-click start: venv, install, demo models, UI | **Yes** |
+| `scripts/setup_demo_integrity.ps1` | Copy demo TRUSTED/POISONED stubs → `data/models/` | **Yes** (called by RUN_DEMO) |
+| `scripts/fetch_demo_model.ps1` | Download llama-server + chat GGUF into `runtime/` | **Yes** for chat (or use LMS zip) |
+| `scripts/build_demo_package.ps1` | Build `dist/LakanVault_DEMO.zip` for LMS | **Yes** (run once before upload) |
+| `scripts/run_ui.ps1` | Dev hot-reload on :8080 | No — developers only |
+| `scripts/verify_boundaries.py` | Architecture import checks (also runs in CI) | No — dev/CI only |
+
+Optional Streamlit shell (ADR-004, not used by `RUN_DEMO.bat`):
 
 ```powershell
-.\scripts\build_demo_package.ps1
+pip install -e ".[ui]"
+streamlit run src/lakanvault/app/dashboard.py
 ```
 
-Output: `dist/LakanVault_DEMO.zip`
+Optional stronger PII detection (spaCy NER):
+
+```powershell
+pip install -e ".[ner]"
+python -m spacy download en_core_web_sm
+```
 
 ## Run demo locally
 
