@@ -2,7 +2,7 @@
 
 Hybrid, locally deployable AI security gateway. Air-gapped by default.
 
-**Repository:** [GITHUB URL — placeholder]
+
 
 ## Quick start (developers)
 
@@ -86,7 +86,51 @@ Cloud is **off by default**. Nothing leaves the machine unless `config/local.yam
 
 ## Local AI providers
 
-OpenAI-compatible **localhost** only (LM Studio, Ollama, llama.cpp). Configure in Settings or the Chat connect bar.
+LakanVault requires a running **local LLM service** to power the Sanitized Chat feature.  
+The security pipeline (integrity, threat scan, PII, audit) works without a model — but chat responses need one.
+
+### Supported providers
+
+| Provider | Default URL | Notes |
+|----------|------------|-------|
+| [LM Studio](https://lmstudio.ai) | `http://localhost:1234` | Download app → load any GGUF → Start server |
+| [Ollama](https://ollama.com) | `http://localhost:11434` | `ollama pull llama3` then `ollama serve` |
+| [llama.cpp server](https://github.com/ggml-org/llama.cpp) | `http://localhost:8081` | Bundled in `LakanVault_DEMO.zip` (run `fetch_demo_model.ps1`) |
+
+### Setup steps (recommended: LM Studio)
+
+1. Download and install **LM Studio** from https://lmstudio.ai
+2. Search for a model — any instruction-tuned GGUF works (e.g. `Llama-3.2-3B-Instruct`, `Phi-3-mini`, `Qwen2.5-3B-Instruct`)
+3. Download the model inside LM Studio
+4. Go to **Local Server** tab → click **Start Server**
+5. Server starts at `http://localhost:1234` — LakanVault connects automatically
+
+### Setup steps (Ollama)
+
+```powershell
+# Install Ollama from https://ollama.com, then:
+ollama pull llama3.2
+ollama serve
+```
+
+Ollama runs at `http://localhost:11434` — select **Ollama** in the LakanVault connect bar.
+
+### Setup steps (bundled llama.cpp — demo zip only)
+
+```powershell
+.\scripts\fetch_demo_model.ps1
+```
+
+This downloads the llama.cpp server binary and a small GGUF model into `runtime/`. `RUN_DEMO.bat` starts it automatically on port 8081.
+
+### Connecting in the UI
+
+1. Open the **Sanitized Chat** tab
+2. Click the **Connect** bar at the top
+3. Select your provider and verify the URL matches your running service
+4. Click **Connect** — a green indicator confirms the model is reachable
+
+> **Note for markers on other computers:** Install LM Studio or Ollama, start the server with any instruction model, then run `RUN_DEMO.bat`. The security pipeline features (integrity, pipeline scan, audit log) work fully without any model.
 
 ## Build LMS demo package
 
