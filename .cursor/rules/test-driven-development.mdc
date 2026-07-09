@@ -1,0 +1,28 @@
+---
+description: TDD for LakanVault — tests before or with every behavior change
+alwaysApply: true
+---
+
+# Test-Driven Development
+
+## Cycle
+RED (failing test) → GREEN (minimal code) → REFACTOR (tests still pass)
+
+## LakanVault test layout
+- Unit: `tests/unit/test_*.py` — pure logic, no server
+- Integration: pipeline/gateway tests with temp dirs
+- Smoke: `python scripts/smoke_test.py` after API changes
+
+## Bug fixes
+Write reproduction test first (Prove-It pattern), then fix.
+
+## Before marking done
+```powershell
+python scripts/verify_boundaries.py
+python -m pytest tests/ -q
+```
+
+## Avoid
+- Code without tests for new behavior
+- Mocking `local_core` from `app/` tests (test via gateway/contracts)
+- Skipping boundary check because "it's a small change"

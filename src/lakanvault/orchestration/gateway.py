@@ -10,11 +10,18 @@ from pathlib import Path
 from time import monotonic
 
 from lakanvault.contracts.dtos import ScanRequest, ScanResponse
+from lakanvault.contracts.mcp import (
+    ClassifyRequest,
+    ClassifyResponse,
+    DataTier,
+    PolicyAction,
+)
 from lakanvault.local_core.adapters.local_llm_client import LocalLLMClient
 from lakanvault.local_core.audit.stage import AuditStage
 from lakanvault.local_core.integrity.registry import ModelRegistry
 from lakanvault.local_core.integrity.stage import IntegrityStage
 from lakanvault.local_core.privacy.anonymizer import ReversibleAnonymizer
+from lakanvault.local_core.privacy.classifier import classify_content
 from lakanvault.local_core.security.prompt_guard import (
     BLOCKED_USER_MESSAGE,
     detect_prompt_injection,
@@ -176,6 +183,24 @@ class Gateway:
             pii_span_count=pii_count,
             cloud_forwarded=self._cfg.get("cloud", {}).get("enabled", False),
             duration_ms=duration_ms,
+        )
+
+    def classify_text(
+        self,
+        text: str,
+        source: str = "unknown",
+    ) -> ClassifyResponse:
+        """Classify content for MCP/IDE integrations. No raw PII in response."""
+        _ = ClassifyRequest(text=text, source=source)  # validate bounds
+        result = classify_content(text)
+        return ClassifyResponse(
+            tier=DataTier(result.tier),
+            action=PolicyAction(result.action),
+            reason=result.reason,
+            pii_span_count=result.pii_span_count,
+            entity_types=result.entity_types,
+            injection_blocked=result.injection_blocked,
+            injection_category=result.injection_category,
         )
 
     def local_llm_status(self, base_url: str | None = None) -> dict:

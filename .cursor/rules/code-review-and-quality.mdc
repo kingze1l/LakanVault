@@ -1,0 +1,24 @@
+---
+description: Five-axis review before merge or sprint sign-off
+alwaysApply: false
+---
+
+# Code Review (Five Axes)
+
+Review every non-trivial change: **correctness, readability, architecture, security, performance**.
+
+## LakanVault-specific checks
+- [ ] `verify_boundaries.py` passes
+- [ ] No raw PII in audit metadata
+- [ ] Threat scanner does not read prompt text (ADR-002)
+- [ ] UI has no business logic (ADR-004)
+- [ ] PyInstaller paths use runtime helper, not hardcoded `parents[n]`
+- [ ] New deps justified and minimal
+
+## Severity labels
+- **Critical** — blocks merge (security, data loss)
+- *(no prefix)* — required fix
+- **Optional** / **Nit** — author may defer
+
+## Sprint gate
+Get real peer review (Kartik) before starting next sprint.

@@ -1,0 +1,24 @@
+---
+description: Build LakanVault v2 in thin vertical slices
+alwaysApply: true
+---
+
+# Incremental Implementation
+
+Build one complete slice → test → verify → commit → next slice.
+
+## Rules
+- One logical change per commit; keep tests green between slices
+- Vertical slices preferred (contract → gateway → core → test)
+- Simplest thing that works; no abstractions before third use case
+- Touch only files required by the current ticket
+- Note out-of-scope improvements; do not fix them in the same commit
+
+## LakanVault verification after each slice
+```powershell
+python scripts/verify_boundaries.py
+python -m pytest tests/ -q
+```
+
+## Slice size
+Target ~100 lines changed. If larger, split the ticket.

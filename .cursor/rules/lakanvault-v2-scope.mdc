@@ -1,0 +1,37 @@
+---
+description: LakanVault v2 product scope and architecture boundaries
+alwaysApply: true
+---
+
+# LakanVault v2 Scope
+
+## Product
+Local-first AI DLP gateway: block secrets/PII/IP before they reach ChatGPT, Copilot, Cursor, or Claude.
+
+## IN scope (v2)
+- 4-tier classification: Public / Internal / Confidential / Secret
+- Action matrix: Allow / Warn / Redact / Block / Log
+- MCP server: `classify` + `audit` only (read-only)
+- Windows tray daemon (`pystray`) + PyInstaller `.exe` with tested `sys._MEIPASS` paths
+- Clipboard/prompt interception (Cursor/VS Code first)
+- Self-Test Mode: on-demand Garak/PyRIT, human-triggered only
+- Reuse CS205 pipeline: integrity → threat → privacy → audit
+
+## OUT of scope (v2)
+- Okta / ISPM / identity posture engine
+- Local credential/token vault (use Windows DPAPI or customer's password manager)
+- Autonomous idle attack threads / Shadow-Agent jailbreak generator
+- Web-proxy + MCP unification layer
+- Absolute claims ("100% sovereignty") without QA evidence
+
+## Architecture (non-negotiable)
+- UI → `orchestration/gateway.py` → `local_core/` via `contracts/` only
+- No direct `app/` → `local_core/` imports (ADR-001)
+- Run before commit: `python scripts/verify_boundaries.py` and `python -m pytest tests/ -q`
+- Cloud off by default; audit stores counts/metadata, not raw PII
+
+## Review
+Real peer review (Kartik) at sprint boundaries — not simulated personas.
+
+## Claims discipline
+Use testable language: "verified via network capture" not marketing absolutes.

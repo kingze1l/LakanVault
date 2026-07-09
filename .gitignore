@@ -9,6 +9,8 @@ docs/submission/
 
 # ── AI / planning artifacts ──
 .cursor/
+!.cursor/rules/
+!.cursor/rules/**
 .cursorrules
 ai_planning/
 *.plan.md
