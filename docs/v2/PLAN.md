@@ -110,5 +110,7 @@ Okta/ISPM · token vault · autonomous Shadow-Agent · web-proxy unification
 ## 9. References
 
 - Full backlog: [`PHASE2_PLAN.md`](./PHASE2_PLAN.md)
+- Research / all-sides controls: [`RESEARCH_BACKLOG.md`](./RESEARCH_BACKLOG.md)
+- IDE extension + Marketplace: [`IDE_EXTENSION_NOTES.md`](./IDE_EXTENSION_NOTES.md)
 - CS205 demo: [`../demo/GUIDE.md`](../demo/GUIDE.md)
 - Cursor rules: [agent-skills setup](https://github.com/addyosmani/agent-skills/blob/main/docs/cursor-setup.md)
