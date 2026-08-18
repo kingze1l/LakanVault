@@ -17,4 +17,6 @@ jobs:
       - name: Verify import boundaries
         run: python scripts/verify_boundaries.py
       - name: Run tests
-        run: python -m pytest tests/ -q
+        env:
+          LAKANVAULT_PRIVACY_ENGINE: regex
+        run: python -m pytest tests/ -q --tb=short

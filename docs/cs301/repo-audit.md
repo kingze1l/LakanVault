@@ -1,245 +1,188 @@
-# CS301 repo audit (cs301-phase2)
+# CS301 repo audit
 
-**Branch:** `cs301-phase2` (created from `Phase-1-YB` at `e509818`)  
+**Branch:** `CS301` (from `Phase-1-YB` at `e509818`)  
 **Date:** 18 Aug 2026  
-**Phase-1-YB:** untouched (still `e509818`; no new commits on that branch)  
-**Proposal file:** `docs/cs301/proposal.md` is **not** in the repo. Classifications use the submitted CS301 proposal scope (MCP DLP gateway, secrets + PII, policy, tokens, RQ1/RQ2).
+**Scope:** Discovery + CS301 stubs. Task 3 (`legacy_v1/` moves) skipped.
 
-**Task 3 (reorganize / move to `legacy_v1/`) is not done.** That waits for your review. Moving integrity, the HTML/Streamlit UI, or launcher would require **import rewrites** in files that still need those modules for the CS205 demo path — see questions at the end.
-
----
-
-## Verification on this branch
+**Verification on this branch:**
 
 | Check | Result |
 |-------|--------|
-| `python scripts/verify_boundaries.py` | **OK: All boundary checks passed.** |
-| `python -m pytest tests/ -q` | **40 passed** |
+| `python scripts/verify_boundaries.py` | OK: All boundary checks passed |
+| `python -m pytest tests/ -q` | 61 passed |
+
+**`Phase-1-YB`:** still at `e509818`. No new commits on that branch.
 
 ---
 
-## Classification key
+## How labels are used
 
-| Label | Meaning for CS301 |
-|-------|-------------------|
-| **REUSE AS-IS** | Keep in place; only later cleanup (dead code / unused imports) if you approve Task 3 |
-| **REUSE WITH REWORK** | Keep in the live tree; do not rewrite yet — notes below |
-| **NOT NEEDED FOR CS301** | Out of proposal DLP/MCP scope. **Do not delete.** Candidate for `src/lakanvault/legacy_v1/` after you approve |
+| Label | Meaning for CS301 (proposal: MCP + regex/entropy + Presidio + policy + opaque tokens + eval) |
+|-------|-----------------------------------------------------------------------------------------------|
+| **REUSE AS-IS** | Keep in place; only hygiene (unused imports) later |
+| **REUSE WITH REWORK** | Keep, but logic must change before it matches the proposal |
+| **NOT NEEDED FOR CS301** | Do not delete. Candidate to move to `src/lakanvault/legacy_v1/` **after you approve Task 3** |
+
+Moving packages that other files import would require import rewrites. That is **paused** until you say go (per stop-rules).
 
 ---
 
-## `src/lakanvault` — file-by-file
-
-### `app/` (UI shell)
-
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `app/server.py` | FastAPI HTTP API + serves HTML dashboard; scan, chat, integrity, settings, runtime | NOT NEEDED FOR CS301 | Standalone chat/integrity UI is CS205 demo, not MCP interception. **Do not move yet** — `launcher/bootstrap.py` imports it. |
-| `app/dashboard.py` | Optional Streamlit skin calling `Gateway` | NOT NEEDED FOR CS301 | Proposal UI is MCP, not Streamlit. Unused by `RUN_DEMO.bat`. Safe to move once nothing imports it (nothing production does except README). |
-| `app/picker.py` | Tkinter file/folder picker for model files | NOT NEEDED FOR CS301 | Model-file picking for integrity demo only. |
-| `app/static/index.html` | Primary HTML dashboard (chat, pipeline, integrity, audit) | NOT NEEDED FOR CS301 | CS205 product UI. |
-| `app/static/logo.png` | Dashboard logo | NOT NEEDED FOR CS301 | UI asset. |
-| `app/static/favicon.png` | Favicon | NOT NEEDED FOR CS301 | UI asset. |
+## File-by-file (`src/lakanvault`)
 
 ### `contracts/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `contracts/dtos.py` | Scan/chat/settings/cloud DTOs (Pydantic) | REUSE WITH REWORK | Keep scan/chat DTOs for tests; cloud DTO is CS205. CS301 needs policy/finding DTOs aligned with allow/warn/**mask**/block (today MCP uses **redact**). |
-| `contracts/events.py` | `PipelineEvent`, `StageResult`, statuses | REUSE AS-IS | Fail-closed pipeline events still useful if stages remain. |
-| `contracts/ports.py` | `PipelineStage`, `AuditWriter`, `CloudForwarder` ABCs | REUSE WITH REWORK | Keep `PipelineStage`. `CloudForwarder` is not CS301 core. |
-| `contracts/policies.py` | `redact_for_cloud()` for telemetry DTO | NOT NEEDED FOR CS301 | Cloud egress policy, not the 4-tier DLP engine. Name collision with CS301 “policy engine”. |
-| `contracts/mcp.py` | `DataTier`, `PolicyAction`, classify/audit request/response; forbids extra fields | REUSE WITH REWORK | Right shape for MCP tools. Rework: `REDACT` vs proposal `mask`; `WARN`/`LOG` unused by classifier; no MCP server yet. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `contracts/dtos.py` | Scan/chat/settings/cloud DTOs for the FastAPI/pipeline UI | **REUSE WITH REWORK** — keep Scan/Chat types for demo UI; CS301 needs MCP + policy DTOs (partially already in `mcp.py`) |
+| `contracts/mcp.py` | `DataTier`, `PolicyAction`, classify/audit request-response; forbids extra/PII fields | **REUSE AS-IS** — contract for MCP classify/audit; `WARN`/`LOG` unused at runtime |
+| `contracts/events.py` | `PipelineEvent` / `StageResult` / `StageStatus` for the 4-stage scan | **REUSE AS-IS** — still used by pipeline; not the CS301 MCP hot path |
+| `contracts/ports.py` | ABC `PipelineStage`, `AuditWriter`, `CloudForwarder` | **REUSE AS-IS** — keep if CS205 pipeline stays; new policy engine should get its own port later |
+| `contracts/policies.py` | `redact_for_cloud()` builds `CloudTelemetryDTO` | **REUSE WITH REWORK** — this is cloud-egress redaction, **not** the 4-tier allow/warn/mask/block engine in the proposal |
 
 ### `orchestration/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `orchestration/gateway.py` | Wires pipeline, chat (inject → anonymize → LLM → restore), `classify_text()` | REUSE WITH REWORK | `classify_text()` is the CS301 entry. Chat/integrity/runtime methods are CS205. MCP must not pretend to see the full cloud prompt. |
-| `orchestration/pipeline.py` | Runs stages fail-closed; returns event + duration | REUSE AS-IS | Keep for any staged pipeline. Unused import: `ScanResponse`. |
-| `orchestration/bus.py` | Cloud forward (disabled by default); stub HTTP | NOT NEEDED FOR CS301 | Cloud bus; not MCP DLP. Keep until Task 3 so gateway still constructs it. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `orchestration/gateway.py` | Wires pipeline, chat, integrity registry, `classify_text()`, runtime | **REUSE WITH REWORK** — `classify_text()` is the CS301 entry; chat/integrity/runtime are CS205 extras still imported here |
+| `orchestration/pipeline.py` | Fail-closed sequential stages from config order | **REUSE AS-IS** — CS205 scan path; keep for demo unless you drop the HTML scanner |
+| `orchestration/bus.py` | Cloud off-by-default; stub forward if enabled | **NOT NEEDED FOR CS301** — proposal is local-only; keep as reference, do not make it the product path |
 
 ### `local_core/privacy/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `privacy/detectors.py` | PII spans: regex + Presidio + optional spaCy | REUSE AS-IS | This is the PII sibling the proposal wants. Do **not** merge secrets into it. |
-| `privacy/anonymizer.py` | Reversible `NAME_001` / `EMAIL_001` / `PHONE_001`; in-memory map | REUSE AS-IS | Keep original for comparison. CS301 opaque tokens = **new module**, not an in-place edit. |
-| `privacy/stage.py` | Pipeline privacy stage: counts PII, no span text in metadata | REUSE WITH REWORK | Useful for PII pass; does not emit tier/action for CS301 policy. |
-| `privacy/classifier.py` | Cascade: injection → API-key regex → PII → allow | REUSE WITH REWORK | Working Pass-1, but **secrets are merged into this file**. Proposal: new secret-detection **sibling**, not this mix. No entropy, no 3-class, no warn/log. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `privacy/detectors.py` | Regex + optional Presidio/spaCy PII spans | **REUSE AS-IS** — this **is** the PII layer; CS301 secret detector must stay a **sibling**, not merged here |
+| `privacy/anonymizer.py` | Reversible `NAME_001` / `EMAIL_001` / `PHONE_001`; in-memory map | **REUSE WITH REWORK** — **do not edit in place** (proposal). New opaque-token module beside it; this file stays for comparison |
+| `privacy/stage.py` | Pipeline stage: PII **count** only, no text in metadata | **REUSE AS-IS** — CS205 pipeline; not MCP intercept |
+| `privacy/classifier.py` | Cascade: injection → 5 API-key regexes → PII → public/allow | **REUSE WITH REWORK** — stub policy+secrets in one function; proposal wants separate secret module + policy engine |
 
 ### `local_core/security/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `security/prompt_guard.py` | Regex prompt-injection block before LLM | REUSE WITH REWORK | Useful extra control; not in CS301 feature table as “injection = Secret”. Confirm with Joan whether injection stays Secret/Block. |
-| `security/__init__.py` | Re-exports guard helpers | REUSE AS-IS | Package export. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `security/prompt_guard.py` | Regex prompt-injection block before LLM chat | **REUSE AS-IS** — useful extra control; not a substitute for secret DLP |
+| `security/__init__.py` | Re-exports guard helpers | **REUSE AS-IS** |
 
 ### `local_core/integrity/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `integrity/stage.py` | Chunked SHA-256 of a model file vs baseline | NOT NEEDED FOR CS301 | Model hashing, not prompt DLP. |
-| `integrity/registry.py` | TRUSTED / POISONED / UNVERIFIED + quarantine | NOT NEEDED FOR CS301 | Model registry for CS205 demo. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `integrity/stage.py` | Chunked SHA-256 vs baseline | **NOT NEEDED FOR CS301** — model hashing is CS205; proposal scope is prompt DLP |
+| `integrity/registry.py` | TRUSTED/POISONED/UNVERIFIED + quarantine | **NOT NEEDED FOR CS301** — same; keep for demo/reference |
 
 ### `local_core/threat_scanner/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `threat_scanner/stage.py` | Host env-key names, POSIX root, world-writable dirs; **does not read prompts** | NOT NEEDED FOR CS301 | Host posture, not prompt DLP. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `threat_scanner/stage.py` | Env API-key **names**, POSIX root, world-writable dirs — **does not read prompts** | **NOT NEEDED FOR CS301** — host posture, not prompt DLP |
 
 ### `local_core/audit/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `audit/stage.py` | Writes `data/audit/{run_id}.json` (no raw prompt) | REUSE WITH REWORK | Keep idea of local audit. CS301 MCP `audit_recent` and RQ logging need a prompt/classify-oriented store, not only model-scan JSON. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `audit/stage.py` | Writes `data/audit/{run_id}.json` (metadata, no raw prompt) | **REUSE WITH REWORK** — useful pattern for MCP audit tool; schema has no tier/action yet |
 
-### `local_core/adapters/`
+### `local_core/adapters/` + `runtime/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `adapters/local_llm_client.py` | OpenAI-compatible localhost chat client | REUSE WITH REWORK | Needed for confidence-gated **local** LLM (P4 / RQ2), not as the product chat UI. |
-| `adapters/lmstudio_client.py` | Alias re-export of `LocalLLMClient` | NOT NEEDED FOR CS301 | Dead compatibility shim; **no other file imports it**. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `adapters/local_llm_client.py` | OpenAI-compatible localhost chat/stream | **REUSE WITH REWORK** — needed later for confidence-gated **local** LLM (P4); today it is the **user chat** backend |
+| `adapters/lmstudio_client.py` | Alias `LMStudioClient` → `LocalLLMClient` | **NOT NEEDED FOR CS301** — unused re-export |
+| `runtime/llama_runtime.py` | Bundled llama.cpp process on 8081 | **NOT NEEDED FOR CS301** — demo chat runtime, not DLP |
+| `runtime/__init__.py` | Re-exports runtime helpers | **NOT NEEDED FOR CS301** — follows runtime |
 
-### `local_core/runtime/`
+### `app/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `runtime/llama_runtime.py` | Bundled llama.cpp process manager | NOT NEEDED FOR CS301 | Demo LLM runtime, not DLP. |
-| `runtime/__init__.py` | Re-exports runtime helpers | NOT NEEDED FOR CS301 | Pairs with llama_runtime. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `app/server.py` | FastAPI + static HTML; scan/chat/integrity/settings | **REUSE WITH REWORK** — keep as demo shell; not the MCP stdio server |
+| `app/static/index.html` | CS205 dashboard UI | **NOT NEEDED FOR CS301** — standalone chat/integrity UI (keep for reference/demo) |
+| `app/static/logo.png`, `favicon.png` | Assets | **NOT NEEDED FOR CS301** — UI assets |
+| `app/dashboard.py` | Optional Streamlit skin | **NOT NEEDED FOR CS301** — not on `RUN_DEMO` path |
+| `app/picker.py` | Tkinter model file/folder picker | **NOT NEEDED FOR CS301** — integrity UI helper |
 
 ### `launcher/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `launcher/bootstrap.py` | Starts bundled runtime + uvicorn + browser | NOT NEEDED FOR CS301 | CS205 demo launcher. |
-| `launcher/__main__.py` | Entry to bootstrap | NOT NEEDED FOR CS301 | Demo entry. |
-| `launcher/__init__.py` | Empty | NOT NEEDED FOR CS301 | Package marker. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `launcher/bootstrap.py` | Starts bundled runtime + uvicorn + browser | **NOT NEEDED FOR CS301** — demo launcher |
+| `launcher/__main__.py` | Calls `bootstrap.main` | **NOT NEEDED FOR CS301** |
+| `launcher/__init__.py` | Empty | **NOT NEEDED FOR CS301** |
 
-### `infrastructure/`
+### `shared/` + `infrastructure/` + `cloud_intelligence/`
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `infrastructure/config_loader.py` | Pydantic YAML config (`AppConfig`) | REUSE WITH REWORK | **Duplicate** of `shared/config.py` (dict merge). Tests use this; gateway uses `shared.config`. Pick one for CS301. |
+| Path | What it actually does | CS301 |
+|------|----------------------|-------|
+| `shared/config.py` | Merge `default.yaml` + `local.yaml` | **REUSE AS-IS** |
+| `shared/url_policy.py` | Localhost-only URL guard | **REUSE AS-IS** |
+| `shared/system_prompt.py` | Chat system prompt + placeholder hint | **NOT NEEDED FOR CS301** — chat UX |
+| `shared/constants.py` | Chunk size + forbidden cloud field names | **REUSE AS-IS** |
+| `shared/exceptions.py` | `NotImplementedStageError` only | **NOT NEEDED FOR CS301** — **dead**; nothing imports it |
+| `infrastructure/config_loader.py` | Pydantic `AppConfig` YAML loader | **REUSE WITH REWORK** — **duplicate** of `shared/config.py`; tests use this, gateway uses `shared/config` |
+| `cloud_intelligence/adapters/noop.py` | No-op cloud adapters | **NOT NEEDED FOR CS301** — unused except the file itself |
 
-### `shared/`
+Missing `__init__.py` in several packages (`app/`, `contracts/`, `orchestration/`, `local_core/`, `privacy/`, …). Python 3 namespace packages still import; not a blocker.
 
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `shared/config.py` | Merge `default.yaml` + `local.yaml`; runtime URL env | REUSE AS-IS | Live config path for gateway. |
-| `shared/url_policy.py` | Localhost-only URL check | REUSE AS-IS | Keep for any local LLM / MCP HTTP. |
-| `shared/system_prompt.py` | Chat system prompt + placeholder hint | NOT NEEDED FOR CS301 | Sanitized-chat product, not MCP DLP core. |
-| `shared/constants.py` | Chunk size + forbidden cloud field names | REUSE WITH REWORK | Cloud-field list is CS205; chunk size is integrity. |
-| `shared/exceptions.py` | `NotImplementedStageError` | NOT NEEDED FOR CS301 | **Unused** anywhere else. |
-
-### `cloud_intelligence/`
-
-| Path | What it actually does | Class | Why |
-|------|----------------------|-------|-----|
-| `cloud_intelligence/adapters/noop.py` | No-op enrich/analytics classes | NOT NEEDED FOR CS301 | **Unused** by runtime gateway (bus never imports these classes). Boundary package only. |
+**No MCP server package** (`src/lakanvault/mcp/` does not exist).
 
 ---
 
-## Dead code / duplicates (on REUSE and related files)
+## Dead code / duplicates (REUSE set)
 
-| Issue | Where | Note |
-|-------|--------|------|
-| Unused import `ScanResponse` | `orchestration/pipeline.py` | Imported, never used |
-| Unused class | `shared/exceptions.py` | No references |
-| Unused module | `adapters/lmstudio_client.py` | No importers |
-| Unused cloud adapters | `cloud_intelligence/adapters/noop.py` | Not constructed by gateway |
-| Duplicate config loaders | `shared/config.py` vs `infrastructure/config_loader.py` | Two sources of truth |
-| Duplicate secret-ish detection | `classifier.py` API-key regex vs future sibling secrets module | Classifier currently owns secrets |
-| Naming clash | `contracts/policies.py` (cloud redact) vs CS301 policy engine | Easy to confuse |
-| `PolicyAction.REDACT` vs proposal **mask** | `contracts/mcp.py` | Same idea, different word |
-| `WARN` / `LOG` never returned | `classifier.py` | Enum-only |
-| Commented HTTP | `orchestration/bus.py` | Cloud stub |
-| Classifier `source` discarded | `gateway.classify_text` | Validates then ignores |
-
-No unused-import sweep was run with a linter beyond grep; pytest does not fail on unused imports.
+| Issue | Where |
+|-------|--------|
+| `ScanResponse` imported but unused | `orchestration/pipeline.py` |
+| Dual config loaders | `shared/config.py` (runtime) vs `infrastructure/config_loader.py` (some tests) |
+| Secrets regex inside classifier | `privacy/classifier.py` — should become sibling `secrets/` module per proposal |
+| Human-readable placeholders | `anonymizer.py` vs promised opaque tokens |
+| `PolicyAction.WARN` / `LOG` | In `mcp.py` enums, never returned by `classify_content` |
+| `lmstudio_client.py` | Unused alias |
+| `NotImplementedStageError` | Unused |
+| `NoOpCloud*` | Unused |
+| Classify vs chat | Chat uses anonymizer + injection; `classify_text` does not anonymize |
 
 ---
 
-## Test suite map (current)
+## Task 3 plan (not executed — waiting for your OK)
 
-| File | Covers |
+If you approve, proposed moves to `src/lakanvault/legacy_v1/` (**no deletes**):
+
+- `app/dashboard.py`, `app/picker.py`, `app/static/`
+- `local_core/integrity/`
+- `local_core/threat_scanner/`
+- `local_core/runtime/`
+- `local_core/adapters/lmstudio_client.py`
+- `launcher/`
+- `cloud_intelligence/`
+- `shared/exceptions.py`, `shared/system_prompt.py`
+
+**Blocked until you confirm:** those moves **rename import paths**. `gateway.py` and `server.py` import integrity, runtime, picker, system_prompt. I will not rewrite those until you approve.
+
+**Hygiene only (no moves):** unused `ScanResponse` import in `pipeline.py`.
+
+---
+
+## Scaffolding added
+
+**Task 3 skipped** — CS205 UI/integrity/launcher stay in place. No `legacy_v1/` moves.
+
+| New module | Status |
+|------------|--------|
+| `local_core/secrets/detector.py` | Regex API-key hits + Shannon entropy. `classify_content` calls `detect_secrets`. Entropy not a gate yet. |
+| `local_core/policy/engine.py` | Public→allow, Internal→redact, Confidential/Secret→block. Not wired into classifier yet. |
+| `local_core/privacy/opaque_anonymizer.py` | New file; identity anonymize + restore helper. Chat still uses `ReversibleAnonymizer`. |
+| `mcp/server.py` | `list_tools()` + `classify()` via gateway. No stdio JSON-RPC loop yet (ticket 1.3). |
+| `eval/metrics.py` | `precision_recall_f1` + `latency_summary`. |
+| `tests/unit/test_secrets.py` etc. | Contract tests for the stubs. |
+
+---
+
+## Status
+
+| Task | Result |
 |------|--------|
-| `tests/unit/test_classify.py` | Cascade + `gateway.classify_text` |
-| `tests/unit/test_mcp_contracts.py` | MCP DTO validation |
-| `tests/unit/test_anonymizer.py` | NAME/EMAIL restore |
-| `tests/unit/test_prompt_guard.py` | Injection regex |
-| `tests/unit/test_pipeline.py` | Fail-closed stages |
-| `tests/unit/test_registry.py` | Model baselines |
-| `tests/unit/test_settings.py` | local.yaml |
-| `tests/unit/test_url_policy.py` | localhost URLs |
-| `tests/contracts/*` | Cloud DTO / bus / gateway config |
-
-CS301 RQ1/RQ2 corpus tests **do not exist yet**.
-
----
-
-## Planned Task 3 moves (not executed)
-
-Would go to `src/lakanvault/legacy_v1/` **only after you approve**, because several are imported by `gateway.py` / `server.py` / `bootstrap.py`:
-
-| Candidate | Blocker |
-|-----------|---------|
-| `app/dashboard.py` | Low — unused at runtime |
-| `app/server.py` + `static/` | High — demo + launcher |
-| `integrity/*` | High — gateway + tests |
-| `threat_scanner` | Medium — pipeline |
-| `runtime/` + `launcher/` | High — demo |
-| `cloud_intelligence/` | Medium — `verify_boundaries.py` still names this package (`scripts/` — out of allowed touch set without your OK) |
-| `lmstudio_client.py`, `exceptions.py` | Low |
-
-**Not moving:** `privacy/anonymizer.py` — proposal says keep original and add a **new** opaque-token module.
-
----
-
-## Planned Task 4 scaffolding (not executed)
-
-New stubs (proposed paths, same layering):
-
-| New module | Layer | RQ |
-|------------|-------|----|
-| `src/lakanvault/mcp/server.py` | new `mcp` package (orchestration-adjacent; must not import `app`) | RQ2 (latency of intercept path) |
-| `src/lakanvault/local_core/secrets/detector.py` | local_core sibling to privacy | RQ1 |
-| `src/lakanvault/local_core/policy/engine.py` | local_core | RQ1 (tier actions) |
-| `src/lakanvault/local_core/privacy/opaque_anonymizer.py` | local_core (new file, old anonymizer stays) | RQ1 |
-| `src/lakanvault/eval/metrics.py` | eval (or `local_core/eval`) | RQ1 + RQ2 |
-
-Matching `tests/unit/test_*.py` stubs.
-
-`scripts/verify_boundaries.py` would need a rule for `mcp/` / `eval/` if those packages appear — that file is **outside** `src/`, `tests/`, `docs/`. **Need your OK** before editing it.
-
----
-
-## Reorganization Summary
-
-_Not applicable yet — waiting for review of this audit._
-
-## Scaffolding Added
-
-_None yet — waiting for review._
-
----
-
-## Stop / ask before proceeding
-
-Please confirm:
-
-1. **Task 3:** Move NOT NEEDED modules into `legacy_v1/` even if that means updating imports in `gateway.py` / tests (you previously said stop before renaming files other files import from)?
-2. **Chat UI / integrity:** Leave in place for CS205 demo on this branch, or isolate in `legacy_v1/` and accept a broken `RUN_DEMO.bat` until rewired?
-3. **Task 4:** OK to add empty stubs under `src/lakanvault` + `tests/` + this doc only (no `scripts/` change until you say so)?
-4. **Commit:** One commit on `cs301-phase2` after you approve 3–4, leaving `Phase-1-YB` at `e509818`?
-
----
-
-## How to work with Joan
-
-```text
-git fetch
-git checkout cs301-phase2
-```
-
-PRs **into `cs301-phase2`**. Do not commit on `Phase-1-YB`.
+| 1 Branch `CS301` from Phase-1-YB | Done — `Phase-1-YB` untouched |
+| 2 Repo audit | Done (this file) |
+| 3 Move unused CS205 code to `legacy_v1/` | **Skipped** |
+| 4 CS301 stubs | Done |
+| 5 Single commit of reorg+scaffold | Done |

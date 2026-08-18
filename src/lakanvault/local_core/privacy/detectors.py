@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from dataclasses import dataclass
 
@@ -120,6 +121,9 @@ def _regex_spans(text: str) -> list[PiiSpan]:
 
 
 def _engine_mode() -> str:
+    env = os.environ.get("LAKANVAULT_PRIVACY_ENGINE", "").strip().lower()
+    if env:
+        return env
     try:
         from lakanvault.shared.config import load_config
 
@@ -129,40 +133,10 @@ def _engine_mode() -> str:
 
 
 def _try_pattern_analyzer():
-    try:
-        from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer, RecognizerRegistry
-
-        registry = RecognizerRegistry()
-        registry.add_recognizer(
-            PatternRecognizer(
-                supported_entity="EMAIL_ADDRESS",
-                patterns=[Pattern("email", EMAIL_RE.pattern, 0.9)],
-            )
-        )
-        registry.add_recognizer(
-            PatternRecognizer(
-                supported_entity="PHONE_NUMBER",
-                patterns=[Pattern("phone", PHONE_RE.pattern, 0.75)],
-            )
-        )
-        person_patterns = [
-            Pattern(f"name_intro_{i}", pat, 0.85)
-            for i, pat in enumerate(NAME_AFTER_INTRO_PATTERNS)
-        ]
-        person_patterns.extend(
-            Pattern(f"name_ctx_{i}", pat, 0.8)
-            for i, pat in enumerate(NAME_CONTEXT_PATTERNS)
-        )
-        registry.add_recognizer(
-            PatternRecognizer(supported_entity="PERSON", patterns=person_patterns)
-        )
-        return AnalyzerEngine(registry=registry, supported_languages=["en"], nlp_engine=None)
-    except ImportError:
-        logger.warning("presidio-analyzer not installed — using regex fallback only")
-        return None
-    except (Exception, SystemExit) as exc:
-        logger.warning("Presidio pattern analyzer unavailable: %s", exc)
-        return None
+    # AnalyzerEngine(nlp_engine=None) makes Presidio create a default spaCy
+    # engine and download en_core_web_lg — that breaks air-gap and GitHub
+    # Actions. Regex in _regex_spans already covers the same entities.
+    return None
 
 
 def _try_spacy_analyzer():

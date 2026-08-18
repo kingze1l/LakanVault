@@ -1,20 +1,13 @@
 """Content classification — maps text to tier + action for DLP policy."""
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 
 from lakanvault.local_core.privacy.detectors import PiiSpan, find_pii_spans
+from lakanvault.local_core.secrets.detector import detect_secrets
 from lakanvault.local_core.security.prompt_guard import detect_prompt_injection
 
 _DLP_ENTITY_TYPES = frozenset({"PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER"})
-_API_KEY_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(r"\bsk-[a-zA-Z0-9]{20,}\b"),
-    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
-    re.compile(r"\bghp_[a-zA-Z0-9]{36}\b"),
-    re.compile(r"\bxox[baprs]-[a-zA-Z0-9-]{10,}\b"),
-    re.compile(r"\bBearer\s+[a-zA-Z0-9._-]{20,}\b", re.IGNORECASE),
-)
 
 
 @dataclass(frozen=True)
@@ -29,7 +22,7 @@ class ClassificationResult:
 
 
 def _detect_api_key(text: str) -> bool:
-    return any(p.search(text) for p in _API_KEY_PATTERNS)
+    return bool(detect_secrets(text))
 
 
 def _entity_types(spans: list[PiiSpan]) -> list[str]:

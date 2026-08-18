@@ -3,7 +3,7 @@
 **Product:** Local-first AI DLP gateway for small NZ dev teams  
 **Branch:** `Phase-2` (create from `Phase-1-YB` when ready)  
 **Process:** [agent-skills Cursor setup](https://github.com/addyosmani/agent-skills/blob/main/docs/cursor-setup.md) + `.cursor/rules/`  
-**Review:** Real peer review with Kartik at end of each sprint
+**Review:** Real peer review with Joan  at end of each sprint
 
 ---
 
