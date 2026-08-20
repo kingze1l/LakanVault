@@ -1,6 +1,6 @@
 # LakanVault v2 — Implementation Plan (Plan Mode)
 
-**Status:** Active · **Branch:** `main` · **Last updated:** July 2026
+**Status:** Active · **Branch:** `CS301` · **Last updated:** August 2026
 
 This document is the single source of truth for Phase 2 execution. Follow `.cursor/rules/` when implementing.
 
@@ -37,12 +37,13 @@ All new v2 work lands on `main`. Do not fork parallel feature branches unless a 
 ## 4. Architecture (unchanged)
 
 ```
-IDE (Cursor MCP) ──→ MCP server ──→ gateway.classify_text()
-Browser (HTML UI) ──→ FastAPI ──→ gateway ──→ pipeline / chat
-                                         └──→ local_core (integrity, threat, privacy, audit)
+Continue / custom OpenAI client ──→ /v1/chat/completions ──→ proxy_gateway
+Cursor MCP child tools ──→ mcp stdio shim ──→ daemon /internal/v1/sanitize
+Browser (HTML UI) ──→ FastAPI /api/* ──→ gateway ──→ pipeline / chat
 ```
 
-**Rules:** `app/` never imports `local_core/` directly. Cloud off by default.
+**Rules:** `app/` never imports `local_core/` directly. Cloud telemetry off by default.  
+**Coverage claim:** only traffic routed through the proxy or MCP shim (see [`CLIENT_COMPAT.md`](./CLIENT_COMPAT.md)).
 
 ---
 
@@ -103,13 +104,16 @@ One slice → one commit → tests green.
 
 ## 8. OUT of v2 (do not build)
 
-Okta/ISPM · token vault · autonomous Shadow-Agent · web-proxy unification
+Okta/ISPM · API-key password manager · autonomous Shadow-Agent · silent TLS MITM
+
+CS301 Option 3 **does** add an explicit localhost reverse proxy and an in-memory session token map. See [`../architecture/005-option3-hybrid-gateway.md`](../architecture/005-option3-hybrid-gateway.md).
 
 ---
 
 ## 9. References
 
 - Full backlog: [`PHASE2_PLAN.md`](./PHASE2_PLAN.md)
+- Client matrix: [`CLIENT_COMPAT.md`](./CLIENT_COMPAT.md)
 - Research / all-sides controls: [`RESEARCH_BACKLOG.md`](./RESEARCH_BACKLOG.md)
 - IDE extension + Marketplace: [`IDE_EXTENSION_NOTES.md`](./IDE_EXTENSION_NOTES.md)
 - CS205 demo: [`../demo/GUIDE.md`](../demo/GUIDE.md)

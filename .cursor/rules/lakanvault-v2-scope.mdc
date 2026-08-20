@@ -11,18 +11,24 @@ Local-first AI DLP gateway: block secrets/PII/IP before they reach ChatGPT, Copi
 ## IN scope (v2)
 - 4-tier classification: Public / Internal / Confidential / Secret
 - Action matrix: Allow / Warn / Redact / Block / Log
-- MCP server: `classify` + `audit` only (read-only)
+- MCP server: `classify` + `audit` (read-only tools) plus CS301 MCP **stdio shim** that sanitizes child tool results via the daemon
 - Windows tray daemon (`pystray`) + PyInstaller `.exe` with tested `sys._MEIPASS` paths
 - Clipboard/prompt interception (Cursor/VS Code first)
 - Self-Test Mode: on-demand Garak/PyRIT, human-triggered only
 - Reuse CS205 pipeline: integrity → threat → privacy → audit
 
+## IN scope (CS301 Option 3 — additive, proposal-locked features stay)
+- Explicit localhost OpenAI-compatible reverse proxy (`/v1/chat/completions`) on the existing daemon port
+- In-memory session token **map** (reversible anonymization; not an API-key password manager)
+- MCP stdio wrapper that asks the daemon to tokenize tool outputs
+- Later: Anthropic codec (Sprint 2), local OCR of inline images with **block-first** (Sprint 3)
+
 ## OUT of scope (v2)
 - Okta / ISPM / identity posture engine
-- Local credential/token vault (use Windows DPAPI or customer's password manager)
+- Local credential/token **password manager** (use Windows DPAPI or the customer's password manager for provider keys)
 - Autonomous idle attack threads / Shadow-Agent jailbreak generator
-- Web-proxy + MCP unification layer
-- Absolute claims ("100% sovereignty") without QA evidence
+- Silent machine-wide TLS MITM / always-on HTTPS interception
+- Absolute claims ("100% DLP", "universal Cursor support") without capture evidence
 
 ## Architecture (non-negotiable)
 - UI → `orchestration/gateway.py` → `local_core/` via `contracts/` only

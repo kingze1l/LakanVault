@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
@@ -10,6 +11,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from lakanvault.app.picker import list_model_files, pick_model_file, pick_models_folder
+from lakanvault.app.proxy_routes import internal_router, router as proxy_router
 from lakanvault.contracts.dtos import (
     BaselineRequest,
     ChatRequest,
@@ -20,15 +22,22 @@ from lakanvault.contracts.dtos import (
     SettingsUpdate,
 )
 from lakanvault.orchestration.gateway import Gateway
-from lakanvault.shared.config import clear_local_config_keys, save_local_config
+from lakanvault.orchestration.proxy_gateway import ProxyGateway
+from lakanvault.infrastructure.token_vault import InMemoryTokenVault
+from lakanvault.infrastructure.upstream.openai import OpenAIUpstream
+from lakanvault.shared.config import clear_local_config_keys, load_config, save_local_config
+from lakanvault.shared.paths import resource_path, writable_data_root
 from lakanvault.shared.url_policy import assert_localhost_url
 
 
 def _find_repo_root() -> Path:
-    if getattr(sys, "frozen", False):
+    from lakanvault.shared.paths import bundle_root, is_frozen
+
+    if is_frozen():
         return Path(sys.executable).resolve().parent
     here = Path(__file__).resolve()
     candidates = [
+        bundle_root(),
         here.parents[3],
         Path.cwd(),
         Path.cwd().parent,
@@ -40,20 +49,64 @@ def _find_repo_root() -> Path:
 
 
 def _resolve_static_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        meipass = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
-        bundled = meipass / "lakanvault" / "app" / "static"
-        if bundled.is_dir():
-            return bundled
-    return Path(__file__).resolve().parent / "static"
+    bundled = resource_path("lakanvault", "app", "static")
+    if bundled.is_dir():
+        return bundled
+    local = Path(__file__).resolve().parent / "static"
+    if local.is_dir():
+        return local
+    return bundled
 
 
 REPO_ROOT = _find_repo_root()
 CONFIG_DIR = REPO_ROOT / "config"
 STATIC_DIR = _resolve_static_dir()
-
-app = FastAPI(title="LakanVault", version="0.1.0")
 _gateway: Gateway | None = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    import httpx
+
+    cfg = load_config(CONFIG_DIR if CONFIG_DIR.exists() else Path("./config"))
+    proxy_cfg = cfg.get("proxy") or {}
+    vault = InMemoryTokenVault(
+        max_entries=int(proxy_cfg.get("vault_max_entries", 10_000)),
+        max_bytes=int(proxy_cfg.get("vault_max_bytes", 10 * 1024 * 1024)),
+    )
+    client = httpx.AsyncClient()
+    allowlist = list(proxy_cfg.get("allowlist") or ["https://api.openai.com"])
+    openai_base = str(proxy_cfg.get("openai_base_url") or "https://api.openai.com")
+    try:
+        upstream = OpenAIUpstream(
+            client,
+            openai_base,
+            allowlist,
+            timeout_seconds=float(proxy_cfg.get("timeout_seconds", 120)),
+        )
+    except ValueError:
+        upstream = None
+    app.state.token_vault = vault
+    app.state.httpx = client
+    app.state.proxy_max_body = int(proxy_cfg.get("max_body_bytes", 1_048_576))
+    app.state.proxy_gateway = ProxyGateway(
+        vault,
+        upstream,
+        strict=bool(proxy_cfg.get("strict_mode", True)),
+        ttl_seconds=float(proxy_cfg.get("vault_ttl_seconds", 3600)),
+        allow_images=bool(proxy_cfg.get("allow_images", False)),
+    )
+    writable_data_root().mkdir(parents=True, exist_ok=True)
+    try:
+        yield
+    finally:
+        await client.aclose()
+        vault.close()
+
+
+app = FastAPI(title="LakanVault", version="0.1.0", lifespan=lifespan)
+app.include_router(proxy_router)
+app.include_router(internal_router)
 
 
 def get_gateway() -> Gateway:

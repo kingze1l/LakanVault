@@ -26,9 +26,11 @@ def test_latency_summary() -> None:
     assert summary["n"] == 3
     assert summary["mean_ms"] == 20.0
     assert summary["p50_ms"] == 20.0
+    assert summary["p95_ms"] == pytest.approx(29.0)
 
 
 def test_latency_summary_empty() -> None:
     summary = latency_summary([])
     assert summary["n"] == 0
     assert summary["mean_ms"] == 0.0
+    assert summary["p95_ms"] == 0.0

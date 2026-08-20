@@ -17,6 +17,7 @@ ai_planning/
 agent-transcripts/
 
 # ── Internal dev docs (team only — markers use docs/demo/GUIDE.md in LMS zip) ──
+docs/internal/
 docs/SYSTEM_GUIDE.md
 docs/DEV_ONBOARDING.md
 docs/PROJECT_FILES.md

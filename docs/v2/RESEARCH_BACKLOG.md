@@ -69,7 +69,7 @@
 
 MITM + MV3 as a **default** product path fails hard on: cert pinning, WebSockets/Workers bypassing fetch hooks, proxy/VPN/Docker conflicts, SSE token fragmentation, LLM rewriting placeholders, ReDoS/entropy FPs, ONNX OOM fail-open vs fail-closed, Shadow DOM races, RAM on huge prompts.
 
-**Decision:** Browser + MITM remain **opt-in research / Lab Mode**, not the silent core. Clipboard + MCP + (optional) IDE extension are the proportionate all-sides strategy for the capstone.
+**Decision:** Browser + silent HTTPS MITM remain **opt-in Lab Mode**, not the silent core. CS301 Option 3 adds an **explicit localhost reverse proxy** (client must set `apiBase` / equivalent) plus an MCP stdio shim. Clipboard + MCP + (optional) IDE extension remain complementary. See [`CLIENT_COMPAT.md`](./CLIENT_COMPAT.md).
 
 ---
 

@@ -84,6 +84,50 @@ except urllib.error.HTTPError as e:
 except Exception as e:
     print(f"  Guard check failed: {e}")
 
+print("\n=== Internal sanitize ===")
+san_payload = json.dumps({"text": "hello world", "request_id": "smoke1"}).encode()
+san_req = urllib.request.Request(
+    f"{BASE}/internal/v1/sanitize",
+    data=san_payload,
+    headers={"Content-Type": "application/json"},
+    method="POST",
+)
+try:
+    resp = urllib.request.urlopen(san_req, timeout=10)
+    data = json.loads(resp.read())
+    if data.get("blocked"):
+        print("  FAIL     clean text was blocked")
+        ok = False
+    else:
+        print("  200 OK   /internal/v1/sanitize")
+except Exception as e:
+    print(f"  FAIL     /internal/v1/sanitize  ({e})")
+    ok = False
+
+print("\n=== Proxy secret block (no upstream) ===")
+key_payload = json.dumps({
+    "messages": [{"role": "user", "content": "My key is sk-abcdefghijklmnopqrstuvwxyz1234567890"}]
+}).encode()
+key_req = urllib.request.Request(
+    f"{BASE}/v1/chat/completions",
+    data=key_payload,
+    headers={"Content-Type": "application/json"},
+    method="POST",
+)
+try:
+    resp = urllib.request.urlopen(key_req, timeout=10)
+    print(f"  FAIL     secret was forwarded (HTTP {resp.status})")
+    ok = False
+except urllib.error.HTTPError as e:
+    if e.code == 403:
+        print("  403 OK   /v1/chat/completions blocked API key")
+    else:
+        print(f"  {e.code} ERR  /v1/chat/completions ({e.reason})")
+        ok = False
+except Exception as e:
+    print(f"  FAIL     /v1/chat/completions  ({e})")
+    ok = False
+
 proc.terminate()
 proc.wait()
 print(f"\n{'ALL CHECKS PASSED' if ok else 'SOME CHECKS FAILED — see above'}")

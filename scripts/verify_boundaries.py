@@ -8,7 +8,8 @@ Rules (from docs/architecture/001-hybrid-boundary.md):
   local_core   → must NOT import cloud_intelligence or app
   cloud_intelligence → must NOT import local_core or app
   contracts    → must NOT import local_core, cloud_intelligence, app, orchestration
-  mcp          → must NOT import local_core or cloud_intelligence (same as app)
+  mcp          → must NOT import local_core, cloud_intelligence, or infrastructure
+                 (sanitize via daemon HTTP; vault stays in the daemon process)
 """
 from __future__ import annotations
 
@@ -24,8 +25,8 @@ RULES: list[tuple[str, list[str]]] = [
     ("orchestration",     ["cloud_intelligence"]),
     ("local_core",        ["cloud_intelligence", "app"]),
     ("cloud_intelligence",["local_core", "app"]),
-    ("contracts",         ["local_core", "cloud_intelligence", "app", "orchestration"]),
-    ("mcp",               ["local_core", "cloud_intelligence"]),
+    ("contracts",         ["local_core", "cloud_intelligence", "app", "orchestration", "infrastructure"]),
+    ("mcp",               ["local_core", "cloud_intelligence", "infrastructure"]),
 ]
 
 

@@ -5,6 +5,7 @@ UI calls Gateway.receive(); gateway calls Pipeline; gateway returns ScanResponse
 from __future__ import annotations
 
 import logging
+import uuid
 from dataclasses import asdict
 from pathlib import Path
 from time import monotonic
@@ -16,12 +17,15 @@ from lakanvault.contracts.mcp import (
     DataTier,
     PolicyAction,
 )
+from lakanvault.infrastructure.token_vault import InMemoryTokenVault
 from lakanvault.local_core.adapters.local_llm_client import LocalLLMClient
 from lakanvault.local_core.audit.stage import AuditStage
+from lakanvault.local_core.dlp.transformer import transform_text
 from lakanvault.local_core.integrity.registry import ModelRegistry
 from lakanvault.local_core.integrity.stage import IntegrityStage
 from lakanvault.local_core.privacy.anonymizer import ReversibleAnonymizer
 from lakanvault.local_core.privacy.classifier import classify_content
+from lakanvault.local_core.privacy.opaque_anonymizer import OpaqueAnonymizer
 from lakanvault.local_core.security.prompt_guard import (
     BLOCKED_USER_MESSAGE,
     detect_prompt_injection,
@@ -50,6 +54,7 @@ class Gateway:
         self._pipeline = self._build_pipeline()
         self._bus = self._build_bus()
         self._anonymizer = ReversibleAnonymizer()
+        self._token_vault = InMemoryTokenVault()
         self._local_llm = self._build_local_llm()
         local = self._cfg.get("local", {})
         models_dir = self._resolve_path(local.get("models_dir", "./data/models"), self._config_dir)
@@ -220,11 +225,27 @@ class Gateway:
 
     def _prepare_chat(self, prompt: str) -> dict:
         t0 = monotonic()
-        block_reason = detect_prompt_injection(prompt)
-        sanitized, mapping, detection_engine = self._anonymizer.anonymize(prompt)
+        req_id = uuid.uuid4().hex[:12]
+        dlp = transform_text(prompt, self._token_vault, request_id=req_id)
+        if dlp.blocked:
+            mapping: dict[str, str] = {}
+            sanitized = ""
+            block_reason = dlp.reason
+            detection_engine = "dlp"
+        else:
+            block_reason = detect_prompt_injection(prompt)
+            sanitized = dlp.text
+            mapping = {
+                token: value
+                for token in dlp.tokens_minted
+                if (value := self._token_vault.get(token))
+            }
+            detection_engine = "dlp"
         sanitize_ms = round((monotonic() - t0) * 1000, 1)
         system_hint = build_chat_system_prompt(
             ReversibleAnonymizer.placeholder_system_hint(mapping)
+            if mapping and any(k.startswith("NAME_") for k in mapping)
+            else None
         )
         return {
             "block_reason": block_reason,
@@ -234,6 +255,7 @@ class Gateway:
             "sanitize_ms": sanitize_ms,
             "system_hint": system_hint,
             "llm_prompt": wrap_user_message(sanitized),
+            "request_id": req_id,
         }
 
     def _blocked_chat_result(self, prep: dict, model: str | None, base_url: str | None) -> dict:
@@ -289,7 +311,7 @@ class Gateway:
                 "block_reason": "",
             }
 
-        restored = ReversibleAnonymizer.restore(result.content, prep["mapping"])
+        restored = OpaqueAnonymizer.restore(result.content, prep["mapping"])
 
         return {
             "sanitized_prompt": prep["sanitized"],
@@ -360,7 +382,7 @@ class Gateway:
                 if chunk.delta:
                     parts.append(chunk.delta)
                     raw_so_far = "".join(parts)
-                    restored_so_far = ReversibleAnonymizer.restore(raw_so_far, prep["mapping"])
+                    restored_so_far = OpaqueAnonymizer.restore(raw_so_far, prep["mapping"])
                     yield {
                         "type": "token",
                         "delta": chunk.delta,
@@ -368,7 +390,7 @@ class Gateway:
                     }
                 if chunk.done:
                     raw = chunk.full_content or "".join(parts)
-                    restored = ReversibleAnonymizer.restore(raw, prep["mapping"])
+                    restored = OpaqueAnonymizer.restore(raw, prep["mapping"])
                     llm_ms = round((monotonic() - llm_start) * 1000, 1)
                     yield {
                         "type": "done",
@@ -382,7 +404,7 @@ class Gateway:
                     return
 
             raw = "".join(parts)
-            restored = ReversibleAnonymizer.restore(raw, prep["mapping"])
+            restored = OpaqueAnonymizer.restore(raw, prep["mapping"])
             llm_ms = round((monotonic() - llm_start) * 1000, 1)
             yield {
                 "type": "done",
