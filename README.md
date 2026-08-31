@@ -35,7 +35,11 @@ Architecture: [`docs/demo/PROJECT_OVERVIEW.md`](docs/demo/PROJECT_OVERVIEW.md)
 | `scripts/fetch_demo_model.ps1` | Download llama-server + chat GGUF into `runtime/` | **Yes** for chat (or use LMS zip) |
 | `scripts/build_demo_package.ps1` | Build `dist/LakanVault_DEMO.zip` for LMS | **Yes** (run once before upload) |
 | `scripts/run_ui.ps1` | Dev hot-reload on :8080 | No — developers only |
-| `scripts/verify_boundaries.py` | Architecture import checks (also runs in CI) | No — dev/CI only |
+| `scripts/smoke_test.py` | Live server endpoint + proxy block checks | No — dev/QA |
+| `scripts/build_tray_exe.ps1` | PyInstaller onedir daemon + MCP console exe | No — packaging |
+| `scripts/verify_boundaries.py` | Architecture import checks | No — dev/CI only |
+
+See [`scripts/README.md`](scripts/README.md) for the full index.
 
 Optional Streamlit shell (ADR-004, not used by `RUN_DEMO.bat`):
 
@@ -76,13 +80,21 @@ Demo integrity models ship in `demo_assets/models/` and are copied automatically
 
 ## Architecture
 
-- `contracts/` — DTOs, events, ports, policies (no business logic)
-- `local_core/` — integrity hashing, threat scanner, privacy (PII), audit
-- `orchestration/` — pipeline runner, gateway (pure Python), event bus
-- `app/` — FastAPI + HTML UI shell; zero business logic in UI
-- `cloud_intelligence/` — optional cloud enrichment (disabled by default)
+Layered design — see [`docs/REPO_STRUCTURE.md`](docs/REPO_STRUCTURE.md) for the full map.
+
+| Layer | Path | Role |
+|-------|------|------|
+| Contracts | `contracts/` | DTOs, ports, policies (no business logic) |
+| App | `app/` | FastAPI + HTML UI; `/api/*` and `/v1/*` routes |
+| Orchestration | `orchestration/` | `gateway.py`, `proxy_gateway.py`, pipeline |
+| Core | `local_core/` | DLP, PII, secrets, integrity, audit |
+| Infrastructure | `infrastructure/` | In-memory token vault, OpenAI upstream, SSE |
+| MCP | `mcp/` | Classify/audit tools + stdio sanitizing shim |
+| Shared | `shared/` | Config, paths, URL policy |
 
 Cloud is **off by default**. Nothing leaves the machine unless `config/local.yaml` sets `cloud.enabled: true`.
+
+**Option 3 (CS301):** OpenAI-compatible proxy on `:8080/v1`, in-memory token map, MCP shim. See [`docs/architecture/005-option3-hybrid-gateway.md`](docs/architecture/005-option3-hybrid-gateway.md).
 
 ## Local AI providers
 
@@ -155,7 +167,10 @@ Fail-closed: any FAIL or ERROR halts the pipeline immediately.
 
 ## Documentation
 
+- **Index:** [`docs/README.md`](docs/README.md)
+- **Code layout:** [`docs/REPO_STRUCTURE.md`](docs/REPO_STRUCTURE.md)
 - **Demo:** [`docs/demo/GUIDE.md`](docs/demo/GUIDE.md) · [`docs/demo/PROJECT_OVERVIEW.md`](docs/demo/PROJECT_OVERVIEW.md)
+- **Sprint plan:** [`docs/v2/PHASE2_PLAN.md`](docs/v2/PHASE2_PLAN.md)
 - Architecture ADRs: `docs/architecture/`
 - Technical report stays local only (`docs/submission/` — gitignored)
 
@@ -163,7 +178,7 @@ Fail-closed: any FAIL or ERROR halts the pipeline immediately.
 
 | Role | Name |
 |------|------|
-| Cybersecurity lead | [ Samiullah ] |
-| LLM integration reviewer | Kartik Goel |
-| Scrum Master | [Rouwa Yalda] |
-| Product Owner | [ Samiullah ] |
+| Cybersecurity lead | Samiullah |
+| Detection / anonymizer / peer review | Joan Allysen |
+| Scrum Master | Rouwa Yalda |
+| Product Owner | Samiullah |

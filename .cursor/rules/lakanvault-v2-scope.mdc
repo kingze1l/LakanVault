@@ -37,7 +37,7 @@ Local-first AI DLP gateway: block secrets/PII/IP before they reach ChatGPT, Copi
 - Cloud off by default; audit stores counts/metadata, not raw PII
 
 ## Review
-Real peer review (Kartik) at sprint boundaries — not simulated personas.
+Real peer review (Joan Allysen) at sprint boundaries — not simulated personas.
 
 ## Claims discipline
 Use testable language: "verified via network capture" not marketing absolutes.

@@ -53,11 +53,14 @@ Browser (HTML UI) ──→ FastAPI /api/* ──→ gateway ──→ pipeline 
 |---|--------|--------|-------------|
 | 1.1 | MCP contracts | ✅ Done | `contracts/mcp.py` + tests |
 | 1.2 | Classify service | ✅ Done | `gateway.classify_text()` |
-| 1.3 | MCP server | 🔄 **Next** | stdio server, 2 tools |
+| 1.3 | MCP server + shim | 🔄 Partial | tools + `stdio_proxy.py`; full stdio loop deferred |
 | 1.4 | Tray daemon | ⏳ | `pystray` + subprocess |
-| 1.5 | PyInstaller | ⏳ | `.exe` + path tests |
+| 1.5 | PyInstaller | 🔄 Partial | script + path tests; exe smoke pending |
+| — | Option 3 proxy | ✅ Done | vault, `/v1`, SSE, DLP — see ADR-005 |
 
-**Sprint 1 gate:** Kartik reviews MCP classify demo + tray launch before Sprint 2.
+**Detail:** see [`PHASE2_PLAN.md`](./PHASE2_PLAN.md) for full checklist.
+
+**Sprint 1 gate:** Joan reviews MCP classify demo + tray launch before Sprint 2.
 
 ---
 

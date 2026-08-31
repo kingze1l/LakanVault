@@ -5,7 +5,7 @@
 **Frozen:** `Phase-1-YB` — do not modify  
 **Target merge:** `CS301` → `main` via PR (not merged yet)  
 **Process:** [agent-skills Cursor setup](https://github.com/addyosmani/agent-skills/blob/main/docs/cursor-setup.md) + `.cursor/rules/`  
-**Review:** Real peer review with Kartik at end of each sprint; Joan on detection/RQ1
+**Review:** Real peer review with Joan Allysen at end of each sprint (detection, anonymizer, RQ1)
 
 ---
 
@@ -137,7 +137,7 @@ Delivered on branch `CS301` (commit `bd46584`):
 
 **Not claimed:** universal Cursor support, 100% DLP, Anthropic proxy (Sprint 2), real OCR engine (Sprint 3).
 
-### Sprint 1 gate (Kartik review)
+### Sprint 1 gate (Joan review)
 
 - [ ] Demo: MCP classify from terminal
 - [ ] Demo: tray launches, dashboard opens
@@ -145,7 +145,7 @@ Delivered on branch `CS301` (commit `bd46584`):
 - [x] `smoke_test.py` — dashboard, injection block, internal sanitize, `/v1` secret 403
 - [x] No scope creep into Sprint 2 clipboard hooks
 - [ ] PR `CS301` → `main` merged
-- [ ] Kartik sign-off
+- [ ] Joan sign-off
 
 ---
 
@@ -192,7 +192,7 @@ Delivered on branch `CS301` (commit `bd46584`):
 ### Sprint 2 gate
 
 - [ ] 60-second demo works end-to-end
-- [ ] Kartik review
+- [ ] Joan review
 
 ---
 
@@ -255,7 +255,7 @@ python -m pytest tests/ -q            # must pass
 
 - One logical commit per slice
 - No placeholders or TODO in shipped code
-- Peer review note in commit or sprint doc if Kartik flagged something
+- Peer review note in commit or sprint doc if Joan flagged something
 
 ---
 
@@ -285,14 +285,14 @@ Add `code-review-and-quality` before merge. Add security rule when touching DLP/
 | 1.4 Tray daemon          | ⏳ Not started | Blocks north-star demo |
 | 1.5 PyInstaller          | 🔄 Partial | Script + path tests; no frozen exe smoke yet |
 | CS301 Option 3 proxy     | ✅ Done | On `CS301`; not merged to `main` |
-| Sprint 1 gate            | 🔄 Partial | Tests green; Kartik + tray + PR pending |
+| Sprint 1 gate            | 🔄 Partial | Tests green; Joan review + tray + PR pending |
 | Sprint 2 DLP core        | 🔄 Partial | Transformer/policy in place; clipboard not started |
 
 ### Sprint 1 — what's left to close
 
 1. **Tray** (`pystray`) — ticket 1.4  
 2. **Frozen `.exe` smoke** — run `scripts/build_tray_exe.ps1`, verify dashboard + MCP console  
-3. **Kartik demo** — MCP classify + `/v1` API-key block + dashboard audit  
+3. **Joan demo** — MCP classify + `/v1` API-key block + dashboard audit  
 4. **Merge PR** — `CS301` → `main` (after review)
 
 ### Already shipped (do not rebuild)
