@@ -1,9 +1,11 @@
 # LakanVault v2 — Phase 2 Plan
 
 **Product:** Local-first AI DLP gateway for small NZ dev teams  
-**Branch:** `Phase-2` (create from `Phase-1-YB` when ready)  
+**Active branch:** `CS301` (Option 3 hybrid gateway)  
+**Frozen:** `Phase-1-YB` — do not modify  
+**Target merge:** `CS301` → `main` via PR (not merged yet)  
 **Process:** [agent-skills Cursor setup](https://github.com/addyosmani/agent-skills/blob/main/docs/cursor-setup.md) + `.cursor/rules/`  
-**Review:** Real peer review with Joan  at end of each sprint
+**Review:** Real peer review with Kartik at end of each sprint; Joan on detection/RQ1
 
 ---
 
@@ -67,19 +69,20 @@
 
 
 
-## Sprint 1 — Tray + MCP + packaging
+## Sprint 1 — Tray + MCP + packaging (+ CS301 Option 3)
 
-**Goal:** Installable Windows background app exposing MCP tools to IDEs.
+**Goal:** Installable Windows background app exposing MCP tools to IDEs.  
+**CS301 add-on (approved):** localhost OpenAI proxy, in-memory token map, MCP stdio sanitizing shim. See ADR-005.
 
-### Ticket 1.1 — MCP contracts ✅ START HERE
+### Ticket 1.1 — MCP contracts ✅ DONE
 
-- [ ] `contracts/mcp.py` — Pydantic models for MCP classify/audit
-- [ ] `tests/unit/test_mcp_contracts.py` — schema validation tests
-- [ ] No server logic yet — contracts only
+- [x] `contracts/mcp.py` — Pydantic models for MCP classify/audit
+- [x] `tests/unit/test_mcp_contracts.py` — schema validation tests
+- [x] No server logic in contracts layer
 
 **Acceptance:** DTOs validate; forbidden fields rejected; tests pass.
 
-### Ticket 1.2 — Classify service (gateway) ✅
+### Ticket 1.2 — Classify service (gateway) ✅ DONE
 
 - [x] `gateway.classify_text(text)` — wraps privacy + prompt_guard
 - [x] `local_core/privacy/classifier.py` — tier + action mapping
@@ -87,16 +90,18 @@
 
 **Acceptance:** Known API key string → `Block`; clean text → `Allow`.
 
-### Ticket 1.3 — MCP server module
+### Ticket 1.3 — MCP server module 🔄 PARTIAL
 
-- [ ] `src/lakanvault/mcp/server.py` — stdio MCP server
-- [ ] Tools: `lakanvault_classify`, `lakanvault_audit_recent`
-- [ ] Read-only; no prompt forwarding to cloud
-- [ ] `tests/unit/test_mcp_server.py` (tool list + classify round-trip)
+- [x] `src/lakanvault/mcp/server.py` — `lakanvault_classify`, `lakanvault_audit_recent`
+- [x] Read-only; no prompt forwarding to cloud
+- [x] `tests/unit/test_mcp_server.py` (tool list + classify + audit metadata)
+- [x] `src/lakanvault/mcp/stdio_proxy.py` — console shim sanitizes child `tools/call` via daemon HTTP
+- [x] `tests/unit/test_mcp_stdio_proxy.py`
+- [ ] Full stdio JSON-RPC loop inside `mcp/server.py` (deferred — shim is the canonical MCP wrapper for now)
 
-**Acceptance:** `cursor` / MCP client can call classify locally.
+**Acceptance:** IDE can call classify locally; tool outputs sanitizable via `lakanvault-mcp` shim.
 
-### Ticket 1.4 — Tray daemon shell
+### Ticket 1.4 — Tray daemon shell ⏳ NOT STARTED
 
 - [ ] `src/lakanvault/tray/` — `pystray` icon (green/amber/red)
 - [ ] Start/stop gateway subprocess from tray
@@ -104,20 +109,43 @@
 
 **Acceptance:** Tray icon appears; click opens dashboard URL.
 
-### Ticket 1.5 — PyInstaller + path routing
+### Ticket 1.5 — PyInstaller + path routing 🔄 PARTIAL
 
-- [ ] `scripts/build_tray_exe.ps1`
-- [ ] `shared/paths.py` — `resource_path()` with `sys._MEIPASS` support
-- [ ] Tests: asset path resolves in dev and frozen mode (mock `_MEIPASS`)
+- [x] `scripts/build_tray_exe.ps1` — onedir windowed daemon + console `lakanvault-mcp`
+- [x] `shared/paths.py` — `resource_path()` + `writable_data_root()` with `_MEIPASS` support
+- [x] `tests/unit/test_paths.py` — dev vs frozen path mocks
+- [x] `tests/unit/test_packaging.py` — build script contract
+- [ ] Manual smoke: built `.exe` launches dashboard; MCP console exe stdio purity verified on real machine
 
-**Acceptance:** `.exe` launches tray; static assets load; audit dir writable.
+**Acceptance:** `.exe` launches; static assets load; audit dir writable beside exe (not in `_MEIPASS`).
+
+### CS301 Option 3 — Hybrid gateway ✅ DONE (code + tests)
+
+Delivered on branch `CS301` (commit `bd46584`):
+
+- [x] `contracts/proxy.py` — vault port, transform DTOs, forbidden log fields
+- [x] `infrastructure/token_vault.py` — in-memory SQLite `:memory:`, TTL, cap
+- [x] `local_core/dlp/transformer.py` — unified secrets + PII + policy + opaque tokens
+- [x] `local_core/dlp/openai_payload.py` — OpenAI JSON walk; restore assistant text only
+- [x] `orchestration/proxy_gateway.py` — sanitize → upstream → restore lifecycle
+- [x] `app/proxy_routes.py` — `/v1/chat/completions`, `/v1/models`, `/internal/v1/sanitize`
+- [x] `infrastructure/upstream/openai.py` + `sse.py` — allowlisted upstream + sliding-tail SSE restore
+- [x] `orchestration/gateway.py` — `/api/chat` uses same DLP (API keys block)
+- [x] `local_core/dlp/image_inspector.py` — block-first scaffold (OCR engine not wired; `allow_images: false`)
+- [x] `docs/architecture/005-option3-hybrid-gateway.md`, `docs/v2/CLIENT_COMPAT.md`
+- [x] 128 pytest tests + `verify_boundaries.py` + `smoke_test.py` green
+
+**Not claimed:** universal Cursor support, 100% DLP, Anthropic proxy (Sprint 2), real OCR engine (Sprint 3).
 
 ### Sprint 1 gate (Kartik review)
 
 - [ ] Demo: MCP classify from terminal
 - [ ] Demo: tray launches, dashboard opens
-- [ ] `verify_boundaries.py` + full pytest green
-- [ ] No scope creep into Sprint 2 clipboard hooks
+- [x] `verify_boundaries.py` + full pytest green (128 passed)
+- [x] `smoke_test.py` — dashboard, injection block, internal sanitize, `/v1` secret 403
+- [x] No scope creep into Sprint 2 clipboard hooks
+- [ ] PR `CS301` → `main` merged
+- [ ] Kartik sign-off
 
 ---
 
@@ -125,22 +153,24 @@
 
 ## Sprint 2 — 4-tier DLP + clipboard
 
+**Note:** Option 3 already delivered core DLP for chat + proxy paths. Sprint 2 focuses on clipboard, pipeline metadata, and client evidence.
+
+### Ticket 2.1 — Classification engine 🔄 PARTIAL (ahead of schedule)
+
+- [x] `contracts/mcp.py` — `DataTier` + `PolicyAction` enums
+- [x] `local_core/policy/engine.py` — action matrix
+- [x] `tests/unit/test_policy_engine.py`
+- [ ] Dedicated `tiers.py` / `policy.py` modules (optional refactor)
+- [ ] Config in `config/default.yaml` under `privacy.tiers` (editable profiles)
 
 
-### Ticket 2.1 — Classification engine
 
-- [ ] `local_core/privacy/tiers.py` — Public / Internal / Confidential / Secret
-- [ ] `local_core/privacy/policy.py` — action matrix (Allow/Warn/Redact/Block/Log)
-- [ ] Config in `config/default.yaml` under `privacy.tiers`
-- [ ] Tests for each tier + action combination
-
-
-
-### Ticket 2.2 — Integrate tiers into pipeline + chat
+### Ticket 2.2 — Integrate tiers into pipeline + chat 🔄 PARTIAL
 
 - [ ] Privacy stage emits tier + action in metadata
-- [ ] Gateway chat path respects `Block` before LLM call
-- [ ] Audit records tier + action (not raw text)
+- [x] Gateway chat path respects `Block` before LLM call (`transform_text` in `_prepare_chat`)
+- [x] Proxy path respects `Block` / `Redact` (`proxy_gateway` + `transformer`)
+- [ ] Audit records tier + action consistently (not raw text)
 
 
 
@@ -243,18 +273,35 @@ Add `code-review-and-quality` before merge. Add security rule when touching DLP/
 
 
 
-## Current status
+## Current status (updated 2026-08-31)
 
 
-| Ticket                   | Status    |
-| ------------------------ | --------- |
-| Cursor rules + this plan | ✅ Done    |
-| 1.1 MCP contracts        | ✅ Done    |
-| 1.2 Classify service     | ✅ Done    |
-| 1.3 MCP server           | 🔄 Option 3 shim + classify tools |
-| 1.4 Tray daemon          | ⏳ Pending |
-| 1.5 PyInstaller          | 🔄 onedir daemon + MCP console |
-| Option 3 proxy           | 🔄 Sprint 1 |
+| Ticket / area            | Status | Notes |
+| ------------------------ | ------ | ----- |
+| Cursor rules + this plan | ✅ Done | |
+| 1.1 MCP contracts        | ✅ Done | |
+| 1.2 Classify service     | ✅ Done | |
+| 1.3 MCP server           | 🔄 Partial | Tools + shim done; full stdio server loop deferred |
+| 1.4 Tray daemon          | ⏳ Not started | Blocks north-star demo |
+| 1.5 PyInstaller          | 🔄 Partial | Script + path tests; no frozen exe smoke yet |
+| CS301 Option 3 proxy     | ✅ Done | On `CS301`; not merged to `main` |
+| Sprint 1 gate            | 🔄 Partial | Tests green; Kartik + tray + PR pending |
+| Sprint 2 DLP core        | 🔄 Partial | Transformer/policy in place; clipboard not started |
+
+### Sprint 1 — what's left to close
+
+1. **Tray** (`pystray`) — ticket 1.4  
+2. **Frozen `.exe` smoke** — run `scripts/build_tray_exe.ps1`, verify dashboard + MCP console  
+3. **Kartik demo** — MCP classify + `/v1` API-key block + dashboard audit  
+4. **Merge PR** — `CS301` → `main` (after review)
+
+### Already shipped (do not rebuild)
+
+- OpenAI `/v1/chat/completions` proxy with SSE restore  
+- In-memory token vault + opaque `[LV_…]` tokens  
+- MCP stdio sanitizing shim (`lakanvault-mcp`)  
+- Unified DLP on `/api/chat` and proxy paths  
+- ADR-005 + client compatibility matrix
 
 
 ---
