@@ -7,17 +7,15 @@ How the LakanVault repo is organized. **Active branch:** `CS301`.
 ```
 LakanVault/
 ├── config/              # YAML settings (default + local overrides)
-├── demo_assets/         # Small demo models for integrity scan (shipped in zip)
 ├── docs/                # All documentation — start at docs/README.md
 ├── scripts/             # Runnable scripts — see scripts/README.md
 ├── src/lakanvault/      # Python package (all product code)
 ├── tests/               # pytest suite
-├── RUN_DEMO.bat         # One-click demo entry (markers)
 ├── pyproject.toml       # Package definition + dependencies
 └── README.md            # Project overview
 ```
 
-**Not in git:** `data/` (runtime), `runtime/` (llama-server + GGUF), `dist/`, `.venv/`, `docs/internal/`
+**Not in git:** `data/` (runtime), `runtime/` (optional llama sidecar), `dist/`, `.venv/`, `docs/internal/`, `docs/submission/`
 
 ---
 
@@ -27,9 +25,9 @@ Imports flow **down** the stack. `scripts/verify_boundaries.py` enforces this.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  app/          HTTP shell — FastAPI routes, static HTML   │
+│  app/          HTTP shell — FastAPI routes only (UI TBD)   │
 │  mcp/          MCP tools + stdio sanitizing shim          │
-│  launcher/     Demo bootstrap (uvicorn, browser)          │
+│  launcher/     Daemon bootstrap (uvicorn, optional browser)│
 └──────────────────────────┬──────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────┐
@@ -50,20 +48,20 @@ Imports flow **down** the stack. `scripts/verify_boundaries.py` enforces this.
                   eval/       (RQ metrics helpers)
 ```
 
-### `app/` — HTTP API + dashboard UI
+### `app/` — HTTP API (dashboard UI TBD)
 
 | File | Role |
 |------|------|
 | `server.py` | FastAPI app, lifespan (vault + proxy), `/api/*` routes |
 | `proxy_routes.py` | `/v1/chat/completions`, `/v1/models`, `/internal/v1/sanitize` |
-| `static/index.html` | Primary HTML dashboard |
+| `static/` | Reserved assets (logo/favicon) for future UI |
 | `picker.py` | Windows file/folder dialogs |
 
 ### `orchestration/` — wiring only
 
 | File | Role |
 |------|------|
-| `gateway.py` | CS205 entry: scan, chat, classify, settings |
+| `gateway.py` | Scan, chat, classify, settings |
 | `proxy_gateway.py` | Option 3: sanitize → upstream → restore |
 | `pipeline.py` | integrity → threat → privacy → audit |
 | `bus.py` | Cloud egress (redacted metadata only) |
@@ -81,7 +79,7 @@ Imports flow **down** the stack. `scripts/verify_boundaries.py` enforces this.
 | `threat_scanner/` | Host/env checks |
 | `audit/` | JSON audit records |
 | `adapters/` | Local LLM HTTP clients (localhost only) |
-| `runtime/` | Bundled llama.cpp sidecar |
+| `runtime/` | Optional bundled llama.cpp sidecar |
 
 ### `infrastructure/` — IO and external systems
 
@@ -150,7 +148,8 @@ See [`scripts/README.md`](../scripts/README.md).
 
 | Path | Layer |
 |------|--------|
-| `/`, `/static/*` | Dashboard UI |
-| `/api/*` | CS205 demo API (scan, chat, integrity, audit) |
+| `/` | API status JSON (UI pending) |
+| `/static/*` | Reserved static assets |
+| `/api/*` | Gateway API (scan, chat, integrity, audit) |
 | `/v1/chat/completions`, `/v1/models` | Option 3 OpenAI proxy |
 | `/internal/v1/sanitize` | MCP shim → daemon DLP |

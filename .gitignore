@@ -1,4 +1,4 @@
-# ── Assessment / submission (LMS zip only — not public GitHub) ──
+# ── Assessment / submission (CS205 — local only, not public GitHub) ──
 docs/submission/
 205_Assessment2.pdf
 205_*.pdf
@@ -16,7 +16,7 @@ ai_planning/
 *.plan.md
 agent-transcripts/
 
-# ── Internal dev docs (team only — markers use docs/demo/GUIDE.md in LMS zip) ──
+# ── Internal dev docs (team only) ──
 docs/internal/
 docs/SYSTEM_GUIDE.md
 docs/DEV_ONBOARDING.md
@@ -35,12 +35,10 @@ venv/
 data/
 *.db
 logs/
-!demo_assets/**
 
-# ── Bundled LLM runtime (large — fetch via scripts/fetch_demo_model.ps1) ──
+# ── Optional bundled LLM runtime (large — not in git) ──
 /runtime/
 *.gguf
-!demo_assets/**/*.gguf
 
 # ── OS / build ──
 .DS_Store

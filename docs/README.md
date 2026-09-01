@@ -6,8 +6,6 @@ Start here. Each folder has a single purpose.
 
 | I want to… | Read |
 |------------|------|
-| Run the demo | [`demo/GUIDE.md`](demo/GUIDE.md) |
-| Understand the product (markers) | [`demo/PROJECT_OVERVIEW.md`](demo/PROJECT_OVERVIEW.md) |
 | See current sprint status | [`v2/PHASE2_PLAN.md`](v2/PHASE2_PLAN.md) |
 | Understand Option 3 gateway | [`architecture/005-option3-hybrid-gateway.md`](architecture/005-option3-hybrid-gateway.md) |
 | Configure Continue / Cursor / MCP | [`v2/CLIENT_COMPAT.md`](v2/CLIENT_COMPAT.md) |
@@ -22,7 +20,6 @@ docs/
 ├── REPO_STRUCTURE.md         ← code layout (src/, tests/, scripts/)
 ├── architecture/             ← ADRs (decisions, boundaries, Option 3)
 ├── cs301/                    ← CS301 course / discovery artifacts
-├── demo/                     ← LMS marker guides (public in zip)
 └── v2/                       ← Phase 2 plans, backlog, client compat
 ```
 
@@ -41,16 +38,14 @@ docs/
 | File | Purpose |
 |------|---------|
 | [PHASE2_PLAN.md](v2/PHASE2_PLAN.md) | Sprint tickets, done/remaining checklist |
-| [PLAN.md](v2/PLAN.md) | High-level execution plan |
 | [CLIENT_COMPAT.md](v2/CLIENT_COMPAT.md) | Continue, Cursor, Claude Code hooks |
 | [RESEARCH_BACKLOG.md](v2/RESEARCH_BACKLOG.md) | RQ1/RQ2 research items |
 | [IDE_EXTENSION_NOTES.md](v2/IDE_EXTENSION_NOTES.md) | Future IDE extension notes |
 
-## Not in git (local / LMS only)
+## Not in git (local only)
 
-- `docs/submission/` — assessment reports (gitignored)
+- `docs/submission/` — CS205 assessment reports (gitignored)
 - `docs/internal/` — team-only wiring maps (gitignored)
-- `docs/SYSTEM_GUIDE.md`, `docs/PROJECT_FILES.md` — dev guides (gitignored)
 
 ## Peer review
 

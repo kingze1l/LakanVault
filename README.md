@@ -1,43 +1,29 @@
 # LakanVault
 
-Hybrid, locally deployable AI security gateway. Air-gapped by default.
+Local-first AI DLP gateway: block secrets and PII before they reach ChatGPT, Copilot, Cursor, or Claude.
 
-
+**Active branch:** `CS301` (Option 3 hybrid gateway + tray packaging)  
+**Product plan:** [`docs/v2/PHASE2_PLAN.md`](docs/v2/PHASE2_PLAN.md)
 
 ## Quick start (developers)
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -e .
+pip install -e ".[dev]"
 .\scripts\run_ui.ps1
 ```
 
-Open **http://127.0.0.1:8080** — HTML dashboard (primary demo UI).
-
-## Quick start (markers / LMS zip)
-
-**Recommended** — no `.exe` required (works on company laptops):
-
-1. Download **`LakanVault_DEMO.zip`** from LMS / GitHub Release, **or** clone this repo.
-2. Double-click **`RUN_DEMO.bat`** at the project root.
-3. Browser opens at **http://127.0.0.1:8080**.
-
-Full instructions: [`docs/demo/GUIDE.md`](docs/demo/GUIDE.md)  
-Architecture: [`docs/demo/PROJECT_OVERVIEW.md`](docs/demo/PROJECT_OVERVIEW.md)
+API daemon: **http://127.0.0.1:8080** (dashboard UI is being rebuilt — use `/api/*` and `/v1/*` for now).
 
 ## Scripts
 
-| Script | Purpose | Needed for demo? |
-|--------|---------|------------------|
-| `RUN_DEMO.bat` → `scripts/RUN_DEMO.ps1` | One-click start: venv, install, demo models, UI | **Yes** |
-| `scripts/setup_demo_integrity.ps1` | Copy demo TRUSTED/POISONED stubs → `data/models/` | **Yes** (called by RUN_DEMO) |
-| `scripts/fetch_demo_model.ps1` | Download llama-server + chat GGUF into `runtime/` | **Yes** for chat (or use LMS zip) |
-| `scripts/build_demo_package.ps1` | Build `dist/LakanVault_DEMO.zip` for LMS | **Yes** (run once before upload) |
-| `scripts/run_ui.ps1` | Dev hot-reload on :8080 | No — developers only |
-| `scripts/smoke_test.py` | Live server endpoint + proxy block checks | No — dev/QA |
-| `scripts/build_tray_exe.ps1` | PyInstaller onedir daemon + MCP console exe | No — packaging |
-| `scripts/verify_boundaries.py` | Architecture import checks | No — dev/CI only |
+| Script | Purpose |
+|--------|---------|
+| `scripts/run_ui.ps1` | Dev hot-reload daemon on `:8080` |
+| `scripts/build_tray_exe.ps1` | PyInstaller onedir: `LakanVault.exe` + `lakanvault-mcp.exe` |
+| `scripts/smoke_test.py` | Live endpoint + proxy block checks |
+| `scripts/verify_boundaries.py` | Architecture import checks |
 
 See [`scripts/README.md`](scripts/README.md) for the full index.
 
@@ -48,37 +34,14 @@ pip install -e ".[ner]"
 python -m spacy download en_core_web_sm
 ```
 
-## Run demo locally
-
-```powershell
-.\scripts\RUN_DEMO.ps1
-# or double-click RUN_DEMO.bat
-```
-
-Demo integrity models ship in `demo_assets/models/` and are copied automatically.
-
-1. **Model Integrity** → Scan → show poisoned hash mismatch  
-2. **Sanitized Chat** → starter chips or PII demo (needs bundled runtime or LM Studio)  
-3. **Pipeline Scan** → run on `demo-trusted.gguf`  
-4. **Audit Log** → view recorded run  
-
-## Cybersecurity features (205 elective)
-
-| Area | Implementation |
-|------|----------------|
-| Cryptography | SHA-256 model hashing, baseline verification |
-| CIA | PII confidentiality, integrity checks, local availability, localhost-only policy |
-| Threat scanning | Threat scanner stage, poisoned model detection |
-| Privacy | PII anonymization before local LLM inference |
-
 ## Architecture
 
-Layered design — see [`docs/REPO_STRUCTURE.md`](docs/REPO_STRUCTURE.md) for the full map.
+Layered design — see [`docs/REPO_STRUCTURE.md`](docs/REPO_STRUCTURE.md).
 
 | Layer | Path | Role |
 |-------|------|------|
 | Contracts | `contracts/` | DTOs, ports, policies (no business logic) |
-| App | `app/` | FastAPI + HTML UI; `/api/*` and `/v1/*` routes |
+| App | `app/` | FastAPI routes: `/api/*` and `/v1/*` |
 | Orchestration | `orchestration/` | `gateway.py`, `proxy_gateway.py`, pipeline |
 | Core | `local_core/` | DLP, PII, secrets, integrity, audit |
 | Infrastructure | `infrastructure/` | In-memory token vault, OpenAI upstream, SSE |
@@ -89,61 +52,24 @@ Cloud is **off by default**. Nothing leaves the machine unless `config/local.yam
 
 **Option 3 (CS301):** OpenAI-compatible proxy on `:8080/v1`, in-memory token map, MCP shim. See [`docs/architecture/005-option3-hybrid-gateway.md`](docs/architecture/005-option3-hybrid-gateway.md).
 
-## Local AI providers
+## Local AI (optional chat)
 
-LakanVault requires a running **local LLM service** to power the Sanitized Chat feature.  
-The security pipeline (integrity, threat scan, PII, audit) works without a model — but chat responses need one.
+Sanitized chat via `/api/chat` needs a local LLM service (LM Studio, Ollama, or bundled runtime). The DLP gateway, proxy, and MCP classify path work without a model.
 
-### Supported providers
+| Provider | Default URL |
+|----------|-------------|
+| [LM Studio](https://lmstudio.ai) | `http://localhost:1234` |
+| [Ollama](https://ollama.com) | `http://localhost:11434` |
 
-| Provider | Default URL | Notes |
-|----------|------------|-------|
-| [LM Studio](https://lmstudio.ai) | `http://localhost:1234` | Download app → load any GGUF → Start server |
-| [Ollama](https://ollama.com) | `http://localhost:11434` | `ollama pull llama3` then `ollama serve` |
-| [llama.cpp server](https://github.com/ggml-org/llama.cpp) | `http://localhost:8081` | Bundled in `LakanVault_DEMO.zip` (run `fetch_demo_model.ps1`) |
+Configure via `/api/settings` or `config/local.yaml` (`local_ai.base_url`).
 
-### Setup steps (recommended: LM Studio)
-
-1. Download and install **LM Studio** from https://lmstudio.ai
-2. Search for a model — any instruction-tuned GGUF works (e.g. `Llama-3.2-3B-Instruct`, `Phi-3-mini`, `Qwen2.5-3B-Instruct`)
-3. Download the model inside LM Studio
-4. Go to **Local Server** tab → click **Start Server**
-5. Server starts at `http://localhost:1234` — LakanVault connects automatically
-
-### Setup steps (Ollama)
+## Build tray `.exe`
 
 ```powershell
-# Install Ollama from https://ollama.com, then:
-ollama pull llama3.2
-ollama serve
+.\scripts\build_tray_exe.ps1
 ```
 
-Ollama runs at `http://localhost:11434` — select **Ollama** in the LakanVault connect bar.
-
-### Setup steps (bundled llama.cpp — demo zip only)
-
-```powershell
-.\scripts\fetch_demo_model.ps1
-```
-
-This downloads the llama.cpp server binary and a small GGUF model into `runtime/`. `RUN_DEMO.bat` starts it automatically on port 8081.
-
-### Connecting in the UI
-
-1. Open the **Sanitized Chat** tab
-2. Click the **Connect** bar at the top
-3. Select your provider and verify the URL matches your running service
-4. Click **Connect** — a green indicator confirms the model is reachable
-
-> **Note for markers on other computers:** Install LM Studio or Ollama, start the server with any instruction model, then run `RUN_DEMO.bat`. The security pipeline features (integrity, pipeline scan, audit log) work fully without any model.
-
-## Build LMS demo package
-
-```powershell
-.\scripts\build_demo_package.ps1
-```
-
-Output: `dist/LakanVault_DEMO.zip` — see [`docs/demo/BUILD_ZIP.md`](docs/demo/BUILD_ZIP.md)
+Output: `dist/LakanVault/LakanVault.exe` and `dist/lakanvault-mcp/lakanvault-mcp.exe`.
 
 ## Tests
 
@@ -162,10 +88,9 @@ Fail-closed: any FAIL or ERROR halts the pipeline immediately.
 
 - **Index:** [`docs/README.md`](docs/README.md)
 - **Code layout:** [`docs/REPO_STRUCTURE.md`](docs/REPO_STRUCTURE.md)
-- **Demo:** [`docs/demo/GUIDE.md`](docs/demo/GUIDE.md) · [`docs/demo/PROJECT_OVERVIEW.md`](docs/demo/PROJECT_OVERVIEW.md)
 - **Sprint plan:** [`docs/v2/PHASE2_PLAN.md`](docs/v2/PHASE2_PLAN.md)
+- **CS301 notes:** [`docs/cs301/README.md`](docs/cs301/README.md)
 - Architecture ADRs: `docs/architecture/`
-- Technical report stays local only (`docs/submission/` — gitignored)
 
 ## Team
 

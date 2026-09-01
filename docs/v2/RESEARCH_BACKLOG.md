@@ -211,7 +211,6 @@ See also: [IDE_EXTENSION_NOTES.md](./IDE_EXTENSION_NOTES.md).
 
 ## 10. Related docs
 
-- [PLAN.md](./PLAN.md) — Phase 2 execution plan (Path A)  
-- [PHASE2_PLAN.md](./PHASE2_PLAN.md) — Sprint backlog  
+- [PHASE2_PLAN.md](./PHASE2_PLAN.md) — Sprint backlog and execution plan
 - [IDE_EXTENSION_NOTES.md](./IDE_EXTENSION_NOTES.md) — Extension + Marketplace process  
 - `.cursor/rules/lakanvault-v2-scope.mdc` — Always-on product boundaries  

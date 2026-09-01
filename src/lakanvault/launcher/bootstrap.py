@@ -99,10 +99,9 @@ def run_demo(
         print(f"  Bundled model server: {runtime.base_url} ({runtime.active_model})")
         print("  Chat: ready (offline bundled model)")
     else:
-        print("  Chat: no bundled model — Integrity, Pipeline Scan, and Audit still work.")
-        print("  Tip: use the LMS zip with runtime\\ or connect LM Studio/Ollama in Settings.")
+        print("  Chat: connect LM Studio or Ollama via /api/settings (local_ai.base_url).")
 
-    print(f"\n  LakanVault running at {url}\n  Press Ctrl+C to stop.\n")
+    print(f"\n  LakanVault API at {url}\n  Press Ctrl+C to stop.\n")
     if open_browser_flag:
         open_browser(url)
 
@@ -121,13 +120,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Start LakanVault gateway demo")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
-    parser.add_argument("--no-browser", action="store_true")
+    parser.add_argument("--browser", action="store_true", help="Open API root URL in browser")
     parser.add_argument("--no-runtime", action="store_true", help="Skip bundled llama.cpp startup")
     args = parser.parse_args(argv)
     return run_demo(
         host=args.host,
         port=args.port,
-        open_browser_flag=not args.no_browser,
+        open_browser_flag=args.browser,
         start_runtime=not args.no_runtime,
     )
 

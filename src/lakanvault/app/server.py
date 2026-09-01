@@ -1,4 +1,4 @@
-"""HTTP API + static HTML dashboard (ADR-004: thin UI shell, logic in Gateway)."""
+"""HTTP API daemon (ADR-004: thin shell; logic in Gateway). UI shell TBD."""
 from __future__ import annotations
 
 import json
@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from lakanvault.app.picker import list_model_files, pick_model_file, pick_models_folder
@@ -133,8 +133,13 @@ def _resolve_models_dir(custom_dir: str | None = None) -> Path:
 
 
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+def index() -> dict:
+    return {
+        "service": "LakanVault",
+        "version": "0.1.0",
+        "status": "api-only",
+        "message": "Dashboard UI pending — use /api/* and /v1/* endpoints.",
+    }
 
 
 @app.get("/api/config")
@@ -361,4 +366,5 @@ def api_audit() -> list[dict]:
     return rows
 
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+if STATIC_DIR.is_dir():
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

@@ -40,8 +40,7 @@ for ep in GET_CHECKS:
 
 # ── pipeline scan ────────────────────────────────────────────────────────────
 print("\n=== Pipeline scan ===")
-models = list((ROOT / "demo_assets" / "models").glob("*.gguf"))
-target = str(models[0]) if models else str(ROOT / "pyproject.toml")
+target = str(ROOT / "pyproject.toml")
 payload = json.dumps({
     "target_path": target,
     "prompt": "Hi my name is John, email me at john@example.com"
