@@ -73,14 +73,14 @@ def open_browser(url: str) -> None:
     webbrowser.open(url)
 
 
-def run_demo(
+def run_daemon(
     *,
     host: str = "127.0.0.1",
     port: int = 8080,
-    open_browser_flag: bool = True,
+    open_browser_flag: bool = False,
     start_runtime: bool = True,
 ) -> int:
-    """Start bundled runtime (if any) + gateway; block until Ctrl+C."""
+    """Start optional bundled runtime + gateway API; block until Ctrl+C."""
     root_dir = repo_root()
     os.chdir(root_dir)
     src = root_dir / "src"
@@ -117,13 +117,13 @@ def run_demo(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Start LakanVault gateway demo")
+    parser = argparse.ArgumentParser(description="Start LakanVault gateway daemon")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--browser", action="store_true", help="Open API root URL in browser")
     parser.add_argument("--no-runtime", action="store_true", help="Skip bundled llama.cpp startup")
     args = parser.parse_args(argv)
-    return run_demo(
+    return run_daemon(
         host=args.host,
         port=args.port,
         open_browser_flag=args.browser,

@@ -44,7 +44,6 @@ docs/
 
 ## Not in git (local only)
 
-- `docs/submission/` — CS205 assessment reports (gitignored)
 - `docs/internal/` — team-only wiring maps (gitignored)
 
 ## Peer review

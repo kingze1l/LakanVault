@@ -11,7 +11,7 @@ Local-first AI DLP gateway: block secrets and PII before they reach ChatGPT, Cop
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-.\scripts\run_ui.ps1
+python -m uvicorn lakanvault.app.server:app --reload --host 127.0.0.1 --port 8080
 ```
 
 API daemon: **http://127.0.0.1:8080** (dashboard UI is being rebuilt — use `/api/*` and `/v1/*` for now).
@@ -20,7 +20,7 @@ API daemon: **http://127.0.0.1:8080** (dashboard UI is being rebuilt — use `/a
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/run_ui.ps1` | Dev hot-reload daemon on `:8080` |
+| `python -m uvicorn lakanvault.app.server:app --reload` | Dev daemon on `:8080` (after `pip install -e .`) |
 | `scripts/build_tray_exe.ps1` | PyInstaller onedir: `LakanVault.exe` + `lakanvault-mcp.exe` |
 | `scripts/smoke_test.py` | Live endpoint + proxy block checks |
 | `scripts/verify_boundaries.py` | Architecture import checks |

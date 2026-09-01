@@ -1,12 +1,3 @@
-# ── Assessment / submission (CS205 — local only, not public GitHub) ──
-docs/submission/
-205_Assessment2.pdf
-205_*.pdf
-*_Assessment*.pdf
-**/205_Report*.md
-**/IMPLEMENTATION_CHECKLIST.md
-**/GITIGNORE_ADDITIONS.md
-
 # ── AI / planning artifacts ──
 .cursor/
 !.cursor/rules/

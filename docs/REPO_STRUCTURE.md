@@ -15,7 +15,7 @@ LakanVault/
 └── README.md            # Project overview
 ```
 
-**Not in git:** `data/` (runtime), `runtime/` (optional llama sidecar), `dist/`, `.venv/`, `docs/internal/`, `docs/submission/`
+**Not in git:** `data/` (runtime), `runtime/` (optional llama sidecar), `dist/`, `.venv/`, `docs/internal/`
 
 ---
 

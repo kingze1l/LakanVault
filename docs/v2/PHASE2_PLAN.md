@@ -2,10 +2,9 @@
 
 **Product:** Local-first AI DLP gateway for small NZ dev teams  
 **Active branch:** `CS301` (Option 3 hybrid gateway)  
-**Frozen:** `Phase-1-YB` — do not modify  
-**Target merge:** `CS301` → `main` via PR (not merged yet)  
-**Process:** [agent-skills Cursor setup](https://github.com/addyosmani/agent-skills/blob/main/docs/cursor-setup.md) + `.cursor/rules/`  
-**Review:** Real peer review with Joan Allysen at end of each sprint (detection, anonymizer, RQ1)
+**Frozen (historical):** `Phase-1-YB` — CS205 snapshot; do not modify  
+**Target merge:** `CS301` → `main` via PR  
+**Review:** Joan Allysen at sprint gates (detection, anonymizer, RQ1)
 
 ---
 
@@ -14,14 +13,12 @@
 1. LakanVault tray icon running (green)
 2. User copies fake API key → tries to paste in Cursor
 3. **BLOCKED** — `Confidential — API key pattern detected`
-4. Dashboard audit log shows the event
+4. Audit log shows the event
 5. Pitch: *"No cloud. No enterprise contract. Runs on your laptop."*
 
 ---
 
-
-
-## What we reuse from CS205 (do not rebuild)
+## Inherited pipeline (kept, not rebuilt)
 
 
 | Module       | Path                                  | Role                          |

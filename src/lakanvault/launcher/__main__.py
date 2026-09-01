@@ -1,4 +1,4 @@
-"""LakanVault demo bootstrap entry point."""
+"""LakanVault daemon entry point."""
 from lakanvault.launcher.bootstrap import main
 
 if __name__ == "__main__":
