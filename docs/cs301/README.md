@@ -2,6 +2,8 @@
 
 Course-specific notes and discovery artifacts for the CS301 branch.
 
+> **Note:** [`repo-audit.md`](repo-audit.md) is a **pre-implementation discovery** snapshot (Aug 2026). Implementation status is in [`../v2/PHASE2_PLAN.md`](../v2/PHASE2_PLAN.md).
+
 | Document | Purpose |
 |----------|---------|
 | [repo-audit.md](repo-audit.md) | Initial repo audit (pre-implementation) |

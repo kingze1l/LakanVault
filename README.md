@@ -41,13 +41,6 @@ Architecture: [`docs/demo/PROJECT_OVERVIEW.md`](docs/demo/PROJECT_OVERVIEW.md)
 
 See [`scripts/README.md`](scripts/README.md) for the full index.
 
-Optional Streamlit shell (ADR-004, not used by `RUN_DEMO.bat`):
-
-```powershell
-pip install -e ".[ui]"
-streamlit run src/lakanvault/app/dashboard.py
-```
-
 Optional stronger PII detection (spaCy NER):
 
 ```powershell

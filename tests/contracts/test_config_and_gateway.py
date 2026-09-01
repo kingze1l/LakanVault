@@ -17,7 +17,7 @@ def test_gateway_receive_with_prompt_detects_pii() -> None:
     gateway = Gateway(config_dir=root / "config")
     result = gateway.receive(
         ScanRequest(
-            target_path=str(root / "requirements.txt"),
+            target_path=str(root / "pyproject.toml"),
             prompt_text="Contact me at user@example.com",
         )
     )

@@ -3,7 +3,7 @@
 Phase 1a — UI is display only; gateway must survive without any UI shell (Phase 2 `.exe`).
 
 **Shipped demo UI:** FastAPI + HTML (`app/static/index.html`, `RUN_DEMO.bat`).  
-**Proposal UI shell:** Streamlit (`app/dashboard.py`) — same Gateway, optional alternate skin per original design.
+**Primary UI shell:** FastAPI + HTML (`app/server.py`, `app/static/index.html`) — same Gateway, no business logic in the shell.
 
 ## Why
 
@@ -33,4 +33,4 @@ Hashing / scanning runs outside the UI rerun/request loop — subprocess, thread
 
 ## Payoff
 
-Gateway stays portable. HTML or Streamlit is just the dashboard skin.
+Gateway stays portable. The HTML dashboard is the primary UI skin.

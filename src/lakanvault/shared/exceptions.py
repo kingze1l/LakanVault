@@ -1,2 +1,0 @@
-class NotImplementedStageError(NotImplementedError):
-    pass

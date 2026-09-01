@@ -37,13 +37,13 @@ Imports flow **down** the stack. `scripts/verify_boundaries.py` enforces this.
 └──────────────────────────┬────────────────────────────────────┘
                            │
         ┌──────────────────┼──────────────────┐
-        ▼                  ▼                  ▼
-┌───────────────┐  ┌───────────────┐  ┌──────────────────┐
-│  local_core/  │  │infrastructure/│  │ cloud_intelligence│
-│  DLP, PII,    │  │ token vault,  │  │ (off by default)  │
-│  integrity,   │  │ upstream httpx│  │                   │
-│  audit        │  │               │  │                   │
-└───────────────┘  └───────────────┘  └──────────────────┘
+        ▼                  ▼                  │
+┌───────────────┐  ┌───────────────┐         │
+│  local_core/  │  │infrastructure/│         │
+│  DLP, PII,    │  │ token vault,  │         │
+│  integrity,   │  │ upstream httpx│         │
+│  audit        │  │               │         │
+└───────────────┘  └───────────────┘         │
         ▲                  ▲
         └──────── contracts/  (DTOs, ports — no logic)
                   shared/     (config, paths, url policy)
@@ -58,7 +58,6 @@ Imports flow **down** the stack. `scripts/verify_boundaries.py` enforces this.
 | `proxy_routes.py` | `/v1/chat/completions`, `/v1/models`, `/internal/v1/sanitize` |
 | `static/index.html` | Primary HTML dashboard |
 | `picker.py` | Windows file/folder dialogs |
-| `dashboard.py` | Optional Streamlit UI (legacy; not used by RUN_DEMO) |
 
 ### `orchestration/` — wiring only
 
