@@ -40,6 +40,9 @@ Write-Host "[..] Building windowed daemon (onedir, not for MCP stdio) ..."
     --hidden-import uvicorn.logging `
     --hidden-import uvicorn.protocols.http.auto `
     --hidden-import lakanvault.app.server `
+    --hidden-import lakanvault.tray.app `
+    --hidden-import pystray._win32 `
+    --hidden-import PIL.Image `
     src/lakanvault/launcher/__main__.py
 
 Write-Host "[..] Building console MCP shim (stdout reserved for JSON-RPC) ..."

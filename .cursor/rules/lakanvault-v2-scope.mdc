@@ -14,6 +14,7 @@ Local-first AI DLP gateway: block secrets/PII/IP before they reach ChatGPT, Copi
 - MCP server: `classify` + `audit` (read-only tools) plus CS301 MCP **stdio shim** that sanitizes child tool results via the daemon
 - Windows tray daemon (`pystray`) + PyInstaller `.exe` with tested `sys._MEIPASS` paths
 - Clipboard/prompt interception (Cursor/VS Code first)
+- macOS tray port is a later goal (keep APIs portable); iOS is out of scope
 - Self-Test Mode: on-demand Garak/PyRIT, human-triggered only
 - Reuse CS205 pipeline: integrity → threat → privacy → audit
 

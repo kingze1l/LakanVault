@@ -12,6 +12,7 @@ def test_build_script_keeps_mcp_console_separate() -> None:
     assert "lakanvault-mcp" in text
     assert "LakanVault" in text
     assert "--onedir" in text
+    assert "lakanvault.tray.app" in text
     # MCP must not reuse the windowed daemon stdout.
     windowed_idx = text.index("--windowed")
     console_idx = text.index("--console")

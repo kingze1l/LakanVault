@@ -16,6 +16,14 @@ python -m uvicorn lakanvault.app.server:app --reload --host 127.0.0.1 --port 808
 
 API daemon: **http://127.0.0.1:8080** (dashboard UI is being rebuilt — use `/api/*` and `/v1/*` for now).
 
+Tray mode (Windows):
+
+```powershell
+python -m lakanvault.launcher --tray --no-runtime
+```
+
+Left-click / **Open Dashboard** opens the API URL; **Quit** exits.
+
 ## Scripts
 
 | Script | Purpose |

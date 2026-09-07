@@ -116,13 +116,58 @@ def run_daemon(
     return 0
 
 
+def run_tray_daemon(
+    *,
+    host: str = "127.0.0.1",
+    port: int = 8080,
+    start_runtime: bool = True,
+) -> int:
+    """Start gateway in a background thread and show the system tray icon."""
+    from lakanvault.tray.app import run_tray_loop
+    from lakanvault.tray.state import TrayController, TrayStatus
+
+    root_dir = repo_root()
+    os.chdir(root_dir)
+    src = root_dir / "src"
+    if src.is_dir() and str(src) not in sys.path:
+        sys.path.insert(0, str(src))
+
+    ensure_data_dirs(root_dir)
+    runtime = start_bundled_runtime(root_dir) if start_runtime else None
+    url = f"http://{host}:{port}"
+    start_gateway_server(host, port)
+    ready = wait_for_url(url)
+
+    controller = TrayController(host=host, port=port)
+    controller.set_status(TrayStatus.RUNNING if ready else TrayStatus.ERROR)
+
+    def on_quit() -> None:
+        if runtime is not None:
+            runtime.stop()
+
+    run_tray_loop(controller, on_quit=on_quit)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Start LakanVault gateway daemon")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--browser", action="store_true", help="Open API root URL in browser")
     parser.add_argument("--no-runtime", action="store_true", help="Skip bundled llama.cpp startup")
+    parser.add_argument(
+        "--tray",
+        action="store_true",
+        help="Show system tray icon (default when frozen as .exe)",
+    )
     args = parser.parse_args(argv)
+    use_tray = args.tray or getattr(sys, "frozen", False)
+    if use_tray:
+        return run_tray_daemon(
+            host=args.host,
+            port=args.port,
+            start_runtime=not args.no_runtime,
+        )
     return run_daemon(
         host=args.host,
         port=args.port,

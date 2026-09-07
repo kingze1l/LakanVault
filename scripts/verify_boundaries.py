@@ -10,6 +10,7 @@ Rules (from docs/architecture/001-hybrid-boundary.md):
   contracts    → must NOT import local_core, cloud_intelligence, app, orchestration
   mcp          → must NOT import local_core, cloud_intelligence, or infrastructure
                  (sanitize via daemon HTTP; vault stays in the daemon process)
+  tray         → must NOT import local_core or cloud_intelligence (shell only)
 """
 from __future__ import annotations
 
@@ -27,6 +28,7 @@ RULES: list[tuple[str, list[str]]] = [
     ("cloud_intelligence",["local_core", "app"]),
     ("contracts",         ["local_core", "cloud_intelligence", "app", "orchestration", "infrastructure"]),
     ("mcp",               ["local_core", "cloud_intelligence", "infrastructure"]),
+    ("tray",              ["local_core", "cloud_intelligence"]),
 ]
 
 

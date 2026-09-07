@@ -44,6 +44,9 @@
 - Autonomous idle attack / Shadow-Agent threads
 - Silent machine-wide TLS MITM
 - Marketing claims without QA evidence
+- **iOS / iPadOS** — not a tray/daemon platform for this product
+
+**Later (not Sprint 1):** macOS tray port (same daemon + MCP idea; different tray APIs). Windows is the v2 ship target.
 
 **CS301 Option 3 (approved additive):** explicit localhost API proxy + MCP stdio shim + in-memory token map. See [`../architecture/005-option3-hybrid-gateway.md`](../architecture/005-option3-hybrid-gateway.md) and [`CLIENT_COMPAT.md`](./CLIENT_COMPAT.md).
 
@@ -98,13 +101,14 @@
 
 **Acceptance:** IDE can call classify locally; tool outputs sanitizable via `lakanvault-mcp` shim.
 
-### Ticket 1.4 — Tray daemon shell ⏳ NOT STARTED
+### Ticket 1.4 — Tray daemon shell ✅ DONE
 
-- [ ] `src/lakanvault/tray/` — `pystray` icon (green/amber/red)
-- [ ] Start/stop gateway subprocess from tray
-- [ ] `tests/` for tray state machine (mock subprocess)
+- [x] `src/lakanvault/tray/` — `pystray` icon (green/amber/red via status colors)
+- [x] Gateway starts in-process; tray Quit stops runtime; Open Dashboard opens API URL
+- [x] `tests/unit/test_tray_state.py` + `test_tray_icons.py`
+- [x] `lakanvault --tray` (default when frozen `.exe`)
 
-**Acceptance:** Tray icon appears; click opens dashboard URL.
+**Acceptance:** Tray icon appears; click / menu opens dashboard URL.
 
 ### Ticket 1.5 — PyInstaller + path routing 🔄 PARTIAL
 
@@ -279,7 +283,7 @@ Add `code-review-and-quality` before merge. Add security rule when touching DLP/
 | 1.1 MCP contracts        | ✅ Done | |
 | 1.2 Classify service     | ✅ Done | |
 | 1.3 MCP server           | 🔄 Partial | Tools + shim done; full stdio server loop deferred |
-| 1.4 Tray daemon          | ⏳ Not started | Blocks north-star demo |
+| 1.4 Tray daemon          | ✅ Done | `tray/` state + pystray; `--tray` / frozen default |
 | 1.5 PyInstaller          | 🔄 Partial | Script + path tests; no frozen exe smoke yet |
 | CS301 Option 3 proxy     | ✅ Done | On `CS301`; not merged to `main` |
 | Sprint 1 gate            | 🔄 Partial | Tests green; Joan review + tray + PR pending |
@@ -287,10 +291,10 @@ Add `code-review-and-quality` before merge. Add security rule when touching DLP/
 
 ### Sprint 1 — what's left to close
 
-1. **Tray** (`pystray`) — ticket 1.4  
-2. **Frozen `.exe` smoke** — run `scripts/build_tray_exe.ps1`, verify dashboard + MCP console  
-3. **Joan demo** — MCP classify + `/v1` API-key block + dashboard audit  
-4. **Merge PR** — `CS301` → `main` (after review)
+1. **Frozen `.exe` smoke** — run `scripts/build_tray_exe.ps1`, verify tray + MCP console  
+2. **Joan demo** — MCP classify + `/v1` API-key block + audit  
+3. **Merge PR** — `CS301` → `main` (after review)  
+4. **New dashboard UI** — after foundation (Prompt Review mockup)
 
 ### Already shipped (do not rebuild)
 
