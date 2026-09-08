@@ -34,6 +34,8 @@ def _find_repo_root() -> Path:
     from lakanvault.shared.paths import bundle_root, is_frozen
 
     if is_frozen():
+        # Writable root beside the exe (local.yaml / data). default.yaml is seeded
+        # from _MEIPASS by launcher.ensure_data_dirs before uvicorn starts.
         return Path(sys.executable).resolve().parent
     here = Path(__file__).resolve()
     candidates = [
@@ -46,6 +48,18 @@ def _find_repo_root() -> Path:
         if (candidate / "config" / "default.yaml").exists():
             return candidate.resolve()
     return here.parents[3].resolve()
+
+
+def _config_dir_with_defaults() -> Path:
+    """Prefer CONFIG_DIR when default.yaml is present; else bundled read-only config."""
+    if (CONFIG_DIR / "default.yaml").is_file():
+        return CONFIG_DIR
+    from lakanvault.shared.paths import bundle_root
+
+    bundled = bundle_root() / "config"
+    if (bundled / "default.yaml").is_file():
+        return bundled
+    return CONFIG_DIR if CONFIG_DIR.exists() else Path("./config")
 
 
 def _resolve_static_dir() -> Path:
@@ -67,49 +81,70 @@ _gateway: Gateway | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import httpx
+    import traceback
 
-    if getattr(sys, "frozen", False):
+    def _flog(msg: str) -> None:
+        if not getattr(sys, "frozen", False):
+            return
         try:
-            (Path(sys.executable).resolve().parent / "lakanvault-daemon.log").write_text(
-                "lifespan enter\n", encoding="utf-8"
-            )
+            path = Path(sys.executable).resolve().parent / "lakanvault-daemon.log"
+            with path.open("a", encoding="utf-8") as fh:
+                fh.write(msg if msg.endswith("\n") else msg + "\n")
         except OSError:
             pass
 
-    cfg = load_config(CONFIG_DIR if CONFIG_DIR.exists() else Path("./config"))
-    proxy_cfg = cfg.get("proxy") or {}
-    vault = InMemoryTokenVault(
-        max_entries=int(proxy_cfg.get("vault_max_entries", 10_000)),
-        max_bytes=int(proxy_cfg.get("vault_max_bytes", 10 * 1024 * 1024)),
-    )
-    client = httpx.AsyncClient()
-    allowlist = list(proxy_cfg.get("allowlist") or ["https://api.openai.com"])
-    openai_base = str(proxy_cfg.get("openai_base_url") or "https://api.openai.com")
     try:
-        upstream = OpenAIUpstream(
-            client,
-            openai_base,
-            allowlist,
-            timeout_seconds=float(proxy_cfg.get("timeout_seconds", 120)),
+        from lakanvault.launcher.bootstrap import seed_bundled_config
+
+        seed_bundled_config(REPO_ROOT)
+    except Exception as exc:  # pragma: no cover - best-effort before load
+        _flog(f"lifespan: seed_bundled_config skipped: {exc}")
+
+    cfg_dir = _config_dir_with_defaults()
+    _flog(f"lifespan: CONFIG_DIR={cfg_dir} default={(cfg_dir / 'default.yaml').is_file()}")
+    try:
+        cfg = load_config(cfg_dir)
+        proxy_cfg = cfg.get("proxy") or {}
+        vault = InMemoryTokenVault(
+            max_entries=int(proxy_cfg.get("vault_max_entries", 10_000)),
+            max_bytes=int(proxy_cfg.get("vault_max_bytes", 10 * 1024 * 1024)),
         )
-    except ValueError:
-        upstream = None
-    app.state.token_vault = vault
-    app.state.httpx = client
-    app.state.proxy_max_body = int(proxy_cfg.get("max_body_bytes", 1_048_576))
-    app.state.proxy_gateway = ProxyGateway(
-        vault,
-        upstream,
-        strict=bool(proxy_cfg.get("strict_mode", True)),
-        ttl_seconds=float(proxy_cfg.get("vault_ttl_seconds", 3600)),
-        allow_images=bool(proxy_cfg.get("allow_images", False)),
-    )
-    writable_data_root().mkdir(parents=True, exist_ok=True)
+        client = httpx.AsyncClient()
+        allowlist = list(proxy_cfg.get("allowlist") or ["https://api.openai.com"])
+        openai_base = str(proxy_cfg.get("openai_base_url") or "https://api.openai.com")
+        try:
+            upstream = OpenAIUpstream(
+                client,
+                openai_base,
+                allowlist,
+                timeout_seconds=float(proxy_cfg.get("timeout_seconds", 120)),
+            )
+        except ValueError:
+            upstream = None
+        app.state.token_vault = vault
+        app.state.httpx = client
+        app.state.proxy_max_body = int(proxy_cfg.get("max_body_bytes", 1_048_576))
+        app.state.proxy_gateway = ProxyGateway(
+            vault,
+            upstream,
+            strict=bool(proxy_cfg.get("strict_mode", True)),
+            ttl_seconds=float(proxy_cfg.get("vault_ttl_seconds", 3600)),
+            allow_images=bool(proxy_cfg.get("allow_images", False)),
+        )
+        writable_data_root().mkdir(parents=True, exist_ok=True)
+        _flog("lifespan: startup ok")
+    except Exception:
+        _flog("lifespan: startup FAILED\n" + traceback.format_exc())
+        raise
     try:
         yield
     finally:
-        await client.aclose()
-        vault.close()
+        client = getattr(app.state, "httpx", None)
+        vault = getattr(app.state, "token_vault", None)
+        if client is not None:
+            await client.aclose()
+        if vault is not None:
+            vault.close()
 
 
 app = FastAPI(title="LakanVault", version="0.1.0", lifespan=lifespan)
@@ -120,8 +155,7 @@ app.include_router(internal_router)
 def get_gateway() -> Gateway:
     global _gateway
     if _gateway is None:
-        cfg = CONFIG_DIR if CONFIG_DIR.exists() else Path("./config")
-        _gateway = Gateway(config_dir=cfg)
+        _gateway = Gateway(config_dir=_config_dir_with_defaults())
     return _gateway
 
 
@@ -168,8 +202,8 @@ def api_put_settings(body: SettingsUpdate) -> dict:
             assert_localhost_url(partial["local_ai"]["base_url"])
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-    cfg_dir = CONFIG_DIR if CONFIG_DIR.exists() else Path("./config")
-    save_local_config(cfg_dir, partial)
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    save_local_config(CONFIG_DIR, partial)
     reset_gateway()
     gw = get_gateway()
     gw.apply_settings(partial)
@@ -178,8 +212,8 @@ def api_put_settings(body: SettingsUpdate) -> dict:
 
 @app.post("/api/settings/reset")
 def api_reset_settings() -> dict:
-    cfg_dir = CONFIG_DIR if CONFIG_DIR.exists() else Path("./config")
-    clear_local_config_keys(cfg_dir, ["local_ai", "local", "privacy", "cloud"])
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    clear_local_config_keys(CONFIG_DIR, ["local_ai", "local", "privacy", "cloud"])
     reset_gateway()
     return {"reset": True, "settings": get_gateway().get_settings()}
 

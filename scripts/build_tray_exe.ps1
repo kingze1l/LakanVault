@@ -1,10 +1,11 @@
 <#
 .SYNOPSIS
   Build separate onedir artifacts:
-    dist/LakanVault/LakanVault.exe     — windowed daemon/tray launcher (stdout not for MCP)
+    dist/LakanVault/LakanVault.exe     — windowed tray + spawns --daemon-only child
     dist/lakanvault-mcp/lakanvault-mcp.exe — console MCP stdio shim
 
-  One windowed executable cannot host MCP stdio (stdout is not a protocol stream).
+  Heavy optional ML stacks (spaCy/pandas/…) are excluded so the freeze stays lean.
+  DLP still works via regex engines (LAKANVAULT_PRIVACY_ENGINE=regex in the child).
 #>
 [CmdletBinding()]
 param(
@@ -33,6 +34,16 @@ if (-not $SkipInstall) {
     & $python -m pip install -e ".[packaging]"
 }
 
+$exclude = @(
+    "spacy", "thinc", "blis", "cymem", "preshed", "murmurhash", "srsly", "wasabi",
+    "pandas", "pyarrow", "matplotlib", "scipy", "sklearn", "torch", "tensorflow",
+    "pytest", "IPython", "notebook", "tkinter"
+)
+$excludeArgs = @()
+foreach ($mod in $exclude) {
+    $excludeArgs += @("--exclude-module", $mod)
+}
+
 Write-Host "[..] Building windowed daemon (onedir, not for MCP stdio) ..."
 & $python -m PyInstaller --noconfirm --clean --onedir --windowed --name LakanVault `
     --add-data "config;config" `
@@ -46,10 +57,12 @@ Write-Host "[..] Building windowed daemon (onedir, not for MCP stdio) ..."
     --hidden-import lakanvault.tray.app `
     --hidden-import pystray._win32 `
     --hidden-import PIL.Image `
+    @excludeArgs `
     src/lakanvault/launcher/__main__.py
 
 Write-Host "[..] Building console MCP shim (stdout reserved for JSON-RPC) ..."
 & $python -m PyInstaller --noconfirm --clean --onedir --console --name lakanvault-mcp `
+    @excludeArgs `
     src/lakanvault/mcp/stdio_proxy.py
 
 Write-Host ""
@@ -57,3 +70,4 @@ Write-Host "Artifacts:"
 Write-Host "  dist\LakanVault\LakanVault.exe"
 Write-Host "  dist\lakanvault-mcp\lakanvault-mcp.exe"
 Write-Host "Writable data must go next to the exe (never _MEIPASS)."
+Write-Host "Smoke: .\\scripts\\smoke_frozen_exe.ps1"

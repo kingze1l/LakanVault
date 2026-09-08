@@ -110,14 +110,17 @@
 
 **Acceptance:** Tray icon appears; click / menu opens dashboard URL.
 
-### Ticket 1.5 — PyInstaller + path routing 🔄 PARTIAL (smoke deferred)
+### Ticket 1.5 — PyInstaller + path routing ✅ DONE
 
 - [x] `scripts/build_tray_exe.ps1` — onedir windowed daemon + console `lakanvault-mcp`
 - [x] `shared/paths.py` — `resource_path()` + `writable_data_root()` with `_MEIPASS` support
 - [x] `tests/unit/test_paths.py` — dev vs frozen path mocks
 - [x] `tests/unit/test_packaging.py` — build script contract
 - [x] Windowed-exe hardening: null stdout/stderr guard, `log_config=None`, no signal handlers in tray thread, longer frozen ready-wait, daemon log beside exe
-- [ ] Manual smoke: frozen API listen still hangs after “binding uvicorn” (spaCy-heavy freeze). **Deferred** — use `python -m lakanvault.launcher --tray` until freeze is slimmed
+- [x] Frozen config seed: copy `_MEIPASS/config/default.yaml` → exe-adjacent `config/` (empty dir was killing lifespan)
+- [x] Frozen child `--daemon-only` + `scripts/smoke_frozen_exe.ps1` — **SMOKE OK** (`/api/config` 200, sanitize 200, secret proxy 403)
+
+**Acceptance:** Frozen `LakanVault.exe` serves API; MCP artifact builds; paths never write into `_MEIPASS`.
 
 **Acceptance (pending):** `.exe` launches; API listens; audit dir writable beside exe (not in `_MEIPASS`).
 
