@@ -68,6 +68,14 @@ _gateway: Gateway | None = None
 async def lifespan(app: FastAPI):
     import httpx
 
+    if getattr(sys, "frozen", False):
+        try:
+            (Path(sys.executable).resolve().parent / "lakanvault-daemon.log").write_text(
+                "lifespan enter\n", encoding="utf-8"
+            )
+        except OSError:
+            pass
+
     cfg = load_config(CONFIG_DIR if CONFIG_DIR.exists() else Path("./config"))
     proxy_cfg = cfg.get("proxy") or {}
     vault = InMemoryTokenVault(

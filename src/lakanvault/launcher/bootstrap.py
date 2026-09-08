@@ -45,11 +45,56 @@ def start_bundled_runtime(root_dir: Path):
 
 
 def run_gateway_server(host: str, port: int) -> None:
-    import uvicorn
+    import asyncio
+    import traceback
 
-    from lakanvault.app.server import app
+    log_path = (
+        Path(sys.executable).resolve().parent / "lakanvault-daemon.log"
+        if getattr(sys, "frozen", False)
+        else Path("lakanvault-daemon.log")
+    )
 
-    uvicorn.run(app, host=host, port=port, log_level="warning")
+    def _log(msg: str) -> None:
+        try:
+            log_path.write_text(msg, encoding="utf-8")
+        except OSError:
+            pass
+
+    try:
+        # Windowed PyInstaller builds have stdout/stderr = None; uvicorn formatters call isatty().
+        if getattr(sys, "frozen", False):
+            if sys.stdout is None:
+                sys.stdout = open(os.devnull, "w", encoding="utf-8")
+            if sys.stderr is None:
+                sys.stderr = open(os.devnull, "w", encoding="utf-8")
+            _log("starting gateway…\n")
+
+        import uvicorn
+
+        from lakanvault.app.server import app
+
+        _log("app imported; creating event loop\n")
+
+        config = uvicorn.Config(
+            app,
+            host=host,
+            port=port,
+            log_level="warning",
+            log_config=None,
+            loop="asyncio",
+            http="h11",
+            lifespan="on",
+        )
+        server = uvicorn.Server(config)
+        server.install_signal_handlers = False
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        _log("binding uvicorn\n")
+        loop.run_until_complete(server.serve())
+    except Exception:
+        _log(traceback.format_exc())
+        raise
 
 
 def start_gateway_server(host: str, port: int) -> threading.Thread:
@@ -67,6 +112,13 @@ def wait_for_url(url: str, attempts: int = 40, delay: float = 0.15) -> bool:
         except OSError:
             continue
     return False
+
+
+def wait_for_url_ready(url: str) -> bool:
+    """Frozen onedir cold-starts can take a long time (spaCy/presidio imports)."""
+    if getattr(sys, "frozen", False):
+        return wait_for_url(url, attempts=180, delay=0.5)
+    return wait_for_url(url)
 
 
 def open_browser(url: str) -> None:
@@ -93,7 +145,7 @@ def run_daemon(
     url = f"http://{host}:{port}"
 
     start_gateway_server(host, port)
-    wait_for_url(url)
+    wait_for_url_ready(url)
 
     if runtime is not None:
         print(f"  Bundled model server: {runtime.base_url} ({runtime.active_model})")
@@ -136,7 +188,7 @@ def run_tray_daemon(
     runtime = start_bundled_runtime(root_dir) if start_runtime else None
     url = f"http://{host}:{port}"
     start_gateway_server(host, port)
-    ready = wait_for_url(url)
+    ready = wait_for_url_ready(url)
 
     controller = TrayController(host=host, port=port)
     controller.set_status(TrayStatus.RUNNING if ready else TrayStatus.ERROR)

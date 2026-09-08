@@ -110,15 +110,16 @@
 
 **Acceptance:** Tray icon appears; click / menu opens dashboard URL.
 
-### Ticket 1.5 — PyInstaller + path routing 🔄 PARTIAL
+### Ticket 1.5 — PyInstaller + path routing 🔄 PARTIAL (smoke deferred)
 
 - [x] `scripts/build_tray_exe.ps1` — onedir windowed daemon + console `lakanvault-mcp`
 - [x] `shared/paths.py` — `resource_path()` + `writable_data_root()` with `_MEIPASS` support
 - [x] `tests/unit/test_paths.py` — dev vs frozen path mocks
 - [x] `tests/unit/test_packaging.py` — build script contract
-- [ ] Manual smoke: built `.exe` launches dashboard; MCP console exe stdio purity verified on real machine
+- [x] Windowed-exe hardening: null stdout/stderr guard, `log_config=None`, no signal handlers in tray thread, longer frozen ready-wait, daemon log beside exe
+- [ ] Manual smoke: frozen API listen still hangs after “binding uvicorn” (spaCy-heavy freeze). **Deferred** — use `python -m lakanvault.launcher --tray` until freeze is slimmed
 
-**Acceptance:** `.exe` launches; static assets load; audit dir writable beside exe (not in `_MEIPASS`).
+**Acceptance (pending):** `.exe` launches; API listens; audit dir writable beside exe (not in `_MEIPASS`).
 
 ### CS301 Option 3 — Hybrid gateway ✅ DONE (code + tests)
 
@@ -284,14 +285,14 @@ Add `code-review-and-quality` before merge. Add security rule when touching DLP/
 | 1.2 Classify service     | ✅ Done | |
 | 1.3 MCP server           | 🔄 Partial | Tools + shim done; full stdio server loop deferred |
 | 1.4 Tray daemon          | ✅ Done | `tray/` state + pystray; `--tray` / frozen default |
-| 1.5 PyInstaller          | 🔄 Partial | Script + path tests; no frozen exe smoke yet |
+| 1.5 PyInstaller          | 🔄 Partial | Script + path tests + windowed hardening; **frozen API smoke deferred** (hang) |
 | CS301 Option 3 proxy     | ✅ Done | On `CS301`; not merged to `main` |
 | Sprint 1 gate            | 🔄 Partial | Tests green; Joan review + tray + PR pending |
 | Sprint 2 DLP core        | 🔄 Partial | Transformer/policy in place; clipboard not started |
 
 ### Sprint 1 — what's left to close
 
-1. **Frozen `.exe` smoke** — run `scripts/build_tray_exe.ps1`, verify tray + MCP console  
+1. **Frozen `.exe` smoke** — deferred until freeze slimmed (tray via Python works now)  
 2. **Joan demo** — MCP classify + `/v1` API-key block + audit  
 3. **Merge PR** — `CS301` → `main` (after review)  
 4. **New dashboard UI** — after foundation (Prompt Review mockup)

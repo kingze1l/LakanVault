@@ -39,6 +39,9 @@ Write-Host "[..] Building windowed daemon (onedir, not for MCP stdio) ..."
     --add-data "src/lakanvault/app/static;lakanvault/app/static" `
     --hidden-import uvicorn.logging `
     --hidden-import uvicorn.protocols.http.auto `
+    --hidden-import uvicorn.protocols.http.h11_impl `
+    --hidden-import uvicorn.protocols.websockets.auto `
+    --hidden-import uvicorn.lifespan.on `
     --hidden-import lakanvault.app.server `
     --hidden-import lakanvault.tray.app `
     --hidden-import pystray._win32 `
