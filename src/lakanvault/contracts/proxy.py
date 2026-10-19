@@ -88,6 +88,22 @@ class SanitizeTextRequest(BaseModel):
     source: str = "mcp"
 
 
+class ChatPayloadClassifyResponse(BaseModel):
+    """Metadata from classifying a chat-completions payload. No prompt text."""
+
+    tier: DataTier
+    action: PolicyAction
+    reason: str = ""
+    pii_span_count: int = 0
+    entity_types: list[str] = Field(default_factory=list)
+    injection_blocked: bool = False
+    injection_category: str = ""
+    analyzed_char_count: int = 0
+    message_roles: list[str] = Field(default_factory=list)
+
+    model_config = {"extra": "forbid"}
+
+
 class SanitizeTextResponse(BaseModel):
     text: str = ""
     blocked: bool = False

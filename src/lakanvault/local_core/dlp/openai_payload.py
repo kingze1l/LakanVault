@@ -11,6 +11,44 @@ class UninspectedPayloadError(ValueError):
     """Strict mode: image/audio/file block cannot be scanned as text."""
 
 
+def _text_parts(content: Any) -> list[str]:
+    if isinstance(content, str):
+        return [content] if content else []
+    if not isinstance(content, list):
+        return []
+    parts: list[str] = []
+    for part in content:
+        if isinstance(part, str) and part:
+            parts.append(part)
+        elif isinstance(part, dict):
+            text = part.get("text")
+            if isinstance(text, str) and text:
+                parts.append(text)
+    return parts
+
+
+def orchestrated_prompt(payload: dict[str, Any]) -> str:
+    """One string of the IDE request: system, developer, user, and tool text.
+
+    This is the prompt that would leave the machine. Joan's detector takes this
+    string as input. Assistant replies are not included.
+    """
+    messages = payload.get("messages")
+    if not isinstance(messages, list):
+        return ""
+    blocks: list[str] = []
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        role = str(msg.get("role") or "user")
+        if role == "assistant":
+            continue
+        text = "\n".join(_text_parts(msg.get("content")))
+        if text:
+            blocks.append(f"{role}: {text}")
+    return "\n\n".join(blocks)
+
+
 def _transform_content(
     content: Any,
     transform: Callable[[str], TransformResult],

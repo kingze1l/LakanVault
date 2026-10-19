@@ -6,8 +6,13 @@ import uuid
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from lakanvault.contracts.proxy import SanitizeTextRequest, SanitizeTextResponse
+from lakanvault.contracts.proxy import (
+    ChatPayloadClassifyResponse,
+    SanitizeTextRequest,
+    SanitizeTextResponse,
+)
 from lakanvault.orchestration.proxy_gateway import ProxyGateway
+from lakanvault.shared.loopback import assert_loopback_client
 
 router = APIRouter()
 internal_router = APIRouter()
@@ -22,6 +27,20 @@ def _gateway(request: Request) -> ProxyGateway:
 
 def _header_map(request: Request) -> dict[str, str]:
     return {k: v for k, v in request.headers.items()}
+
+
+def _require_loopback(request: Request) -> None:
+    try:
+        assert_loopback_client(request.client)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="internal endpoint: loopback only") from exc
+
+
+def _enforce_body_limit(request: Request) -> None:
+    max_body = int(getattr(request.app.state, "proxy_max_body", 1_048_576))
+    raw_len = int(request.headers.get("content-length") or 0)
+    if raw_len > max_body:
+        raise HTTPException(status_code=413, detail="payload too large")
 
 
 @router.post("/v1/chat/completions", response_model=None)
@@ -64,8 +83,27 @@ async def list_models(request: Request) -> JSONResponse:
     return JSONResponse(data, status_code=status)
 
 
+@internal_router.post("/internal/v1/classify-chat-payload")
+async def classify_chat_payload(request: Request) -> ChatPayloadClassifyResponse:
+    """Classify a chat-completions payload. Response is metadata only."""
+    _require_loopback(request)
+    _enforce_body_limit(request)
+    gw = _gateway(request)
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="invalid json") from exc
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="invalid json")
+    try:
+        return await gw.classify_chat_payload_async(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=413, detail="payload too large") from exc
+
+
 @internal_router.post("/internal/v1/sanitize")
 def internal_sanitize(request: Request, body: SanitizeTextRequest) -> SanitizeTextResponse:
+    _require_loopback(request)
     gw = _gateway(request)
     result = gw.sanitize_text(body.text, body.request_id)
     return SanitizeTextResponse(

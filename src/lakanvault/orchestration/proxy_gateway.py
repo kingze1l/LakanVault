@@ -9,15 +9,22 @@ from dataclasses import dataclass
 from typing import Any
 
 from lakanvault.contracts.mcp import DataTier, PolicyAction
-from lakanvault.contracts.proxy import ProxyAuditRecord, TokenVaultPort, TransformResult
+from lakanvault.contracts.proxy import (
+    ChatPayloadClassifyResponse,
+    ProxyAuditRecord,
+    TokenVaultPort,
+    TransformResult,
+)
 from lakanvault.infrastructure.upstream.openai import OpenAIUpstream
 from lakanvault.infrastructure.upstream.sse import SlidingTokenRestorer, parse_sse_chunk, restore_sse_data_json, serialize_sse
 from lakanvault.local_core.dlp.openai_payload import (
     UninspectedPayloadError,
     collect_existing_tokens,
+    orchestrated_prompt,
     restore_chat_response,
     sanitize_chat_request,
 )
+from lakanvault.local_core.privacy.classifier import classify_content
 from lakanvault.local_core.dlp.transformer import transform_text
 from lakanvault.local_core.privacy.opaque_anonymizer import OpaqueAnonymizer
 
@@ -56,6 +63,34 @@ class ProxyGateway:
 
             image_inspector = ImageInspector()
         self._image_inspector = image_inspector
+
+    def classify_chat_payload(self, payload: dict[str, Any]) -> ChatPayloadClassifyResponse:
+        """Classify outbound chat text. The response never includes that text."""
+        text = orchestrated_prompt(payload)
+        if len(text) > 100_000:
+            raise ValueError("extracted text too large")
+        result = classify_content(text)
+        roles: list[str] = []
+        messages = payload.get("messages")
+        if isinstance(messages, list):
+            for msg in messages:
+                if isinstance(msg, dict):
+                    roles.append(str(msg.get("role") or "user"))
+        return ChatPayloadClassifyResponse(
+            tier=DataTier(result.tier),
+            action=PolicyAction(result.action),
+            reason=result.reason,
+            pii_span_count=result.pii_span_count,
+            entity_types=list(result.entity_types),
+            injection_blocked=result.injection_blocked,
+            injection_category=result.injection_category,
+            analyzed_char_count=len(text),
+            message_roles=roles,
+        )
+
+    async def classify_chat_payload_async(self, payload: dict[str, Any]) -> ChatPayloadClassifyResponse:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.classify_chat_payload, payload)
 
     def sanitize_text(self, text: str, request_id: str) -> TransformResult:
         return transform_text(
