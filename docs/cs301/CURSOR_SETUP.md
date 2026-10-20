@@ -26,13 +26,30 @@ Optional: start the daemon if you also use the sanitize shim or OpenAI proxy:
 python -m lakanvault.launcher --tray --no-runtime
 ```
 
+## Safe test environment (recommended)
+
+Do **not** put LakanVault into `%USERPROFILE%\.cursor\mcp.json` while experimenting — that affects every Cursor window.
+
+Use a **separate worktree + second Cursor window** instead:
+
+```powershell
+.\scripts\setup_mcp_sandbox.ps1
+```
+
+That creates `..\LakanVault-mcp-sandbox` on branch `CS301` with its own `.venv` and a **project-only** `.cursor/mcp.json` (gitignored). Open that folder in a new Cursor window; your daily workspace stays unchanged.
+
+Smoke without Cursor UI:
+
+```powershell
+cd ..\LakanVault-mcp-sandbox
+.venv\Scripts\python.exe -m pytest tests/unit/test_mcp_stdio_server_subprocess.py -q
+```
+
 ## Enable in Cursor (template — not auto-activated)
 
-1. Copy [`examples/cursor-mcp.json`](./examples/cursor-mcp.json) into either:
-   - Project: `.cursor/mcp.json`, or
-   - User: `%USERPROFILE%\.cursor\mcp.json`
+1. Prefer the sandbox above, **or** copy [`examples/cursor-mcp.json`](./examples/cursor-mcp.json) to **project** `.cursor/mcp.json` only (never user-global until you are sure).
 2. Adjust the Python path if your venv lives elsewhere.
-3. Restart Cursor or reload MCP servers (**Customize → MCPs**).
+3. Restart Cursor or reload MCP servers (**Customize → MCPs**) in that window only.
 4. Confirm **Available Tools** lists `lakanvault_classify` and `lakanvault_audit_recent`.
 5. Prompt Cursor to call `lakanvault_classify` on a fake key such as `sk-abcdefghijklmnopqrstuvwxyz1234567890` and expect `action: block` without the key echoed.
 
