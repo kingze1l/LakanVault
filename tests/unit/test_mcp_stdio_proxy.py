@@ -1,4 +1,4 @@
-"""MCP stdio shim — sanitize via daemon HTTP; stdout stays protocol-only."""
+"""MCP stdio shim — NDJSON framing; sanitize via daemon HTTP; stdout stays protocol-only."""
 from __future__ import annotations
 
 import io
@@ -19,20 +19,20 @@ def _frame(payload: dict) -> bytes:
     return buf.getvalue()
 
 
-def test_content_length_round_trip() -> None:
+def test_ndjson_round_trip() -> None:
     raw = _frame({"jsonrpc": "2.0", "id": 1, "method": "ping"})
+    assert raw.endswith(b"\n")
+    assert b"Content-Length" not in raw
     msg = _read_message(io.BytesIO(raw))
     assert msg == {"jsonrpc": "2.0", "id": 1, "method": "ping"}
 
 
 def test_malformed_json_returns_none() -> None:
-    body = b"{not-json"
-    raw = f"Content-Length: {len(body)}\r\n\r\n".encode() + body
-    assert _read_message(io.BytesIO(raw)) is None
+    assert _read_message(io.BytesIO(b"{not-json\n")) is None
 
 
 def test_oversized_message_dropped() -> None:
-    raw = f"Content-Length: {_MAX_MESSAGE + 1}\r\n\r\n".encode() + b"x"
+    raw = (b"x" * (_MAX_MESSAGE + 1)) + b"\n"
     assert _read_message(io.BytesIO(raw)) is None
 
 
@@ -74,11 +74,11 @@ def test_daemon_unavailable_fail_closed() -> None:
     assert out["content"][0]["text"] == ""
 
 
-def test_stdout_helpers_emit_only_framed_json() -> None:
+def test_stdout_helpers_emit_only_ndjson() -> None:
     buf = io.BytesIO()
     _write_message(buf, {"jsonrpc": "2.0", "id": 1, "result": {"ok": True}})
     text = buf.getvalue().decode("utf-8")
-    assert text.startswith("Content-Length:")
+    assert text.endswith("\n")
+    assert "Content-Length" not in text
     assert "INFO" not in text
-    assert "error" not in text.lower() or '"ok"' in text
-    assert text.count("\r\n\r\n") == 1
+    assert text.count("\n") == 1

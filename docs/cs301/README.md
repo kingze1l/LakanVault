@@ -6,6 +6,8 @@ Course-specific notes and discovery artifacts for the CS301 branch.
 
 | Document | Purpose |
 |----------|---------|
+| [CURSOR_SETUP.md](CURSOR_SETUP.md) | Cursor MCP template + enable steps (dev path) |
+| [examples/cursor-mcp.json](examples/cursor-mcp.json) | Non-active MCP config template |
 | [repo-audit.md](repo-audit.md) | Initial repo audit (pre-implementation) |
 | [../architecture/005-option3-hybrid-gateway.md](../architecture/005-option3-hybrid-gateway.md) | Approved ADR — architecture + claims |
 | [../v2/CLIENT_COMPAT.md](../v2/CLIENT_COMPAT.md) | Client setup (Continue, Cursor, MCP) |

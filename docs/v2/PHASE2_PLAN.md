@@ -90,14 +90,16 @@
 
 **Acceptance:** Known API key string → `Block`; clean text → `Allow`.
 
-### Ticket 1.3 — MCP server module 🔄 PARTIAL
+### Ticket 1.3 — MCP server module ✅ DONE
 
 - [x] `src/lakanvault/mcp/server.py` — `lakanvault_classify`, `lakanvault_audit_recent`
 - [x] Read-only; no prompt forwarding to cloud
 - [x] `tests/unit/test_mcp_server.py` (tool list + classify + audit metadata)
-- [x] `src/lakanvault/mcp/stdio_proxy.py` — console shim sanitizes child `tools/call` via daemon HTTP
+- [x] `src/lakanvault/mcp/stdio_proxy.py` — NDJSON shim sanitizes child `tools/call` results via daemon HTTP
 - [x] `tests/unit/test_mcp_stdio_proxy.py`
-- [ ] Full stdio JSON-RPC loop inside `mcp/server.py` (deferred — shim is the canonical MCP wrapper for now)
+- [x] `src/lakanvault/mcp/stdio_server.py` — official MCP SDK stdio server (`lakanvault-mcp-server`)
+- [x] `tests/unit/test_mcp_stdio_server.py` + subprocess integration; MCP Inspector `tools/list` verified
+- [x] Setup template: `docs/cs301/CURSOR_SETUP.md` + `docs/cs301/examples/cursor-mcp.json`
 
 **Acceptance:** IDE can call classify locally; tool outputs sanitizable via `lakanvault-mcp` shim.
 

@@ -27,7 +27,10 @@ def test_pyproject_has_mcp_console_script() -> None:
     text = pyproject.read_text(encoding="utf-8")
     assert "lakanvault-mcp" in text
     assert "lakanvault.mcp.stdio_proxy:main" in text
+    assert "lakanvault-mcp-server" in text
+    assert "lakanvault.mcp.stdio_server:main" in text
     assert "httpx" in text
+    assert "mcp>=" in text
 
 
 def test_stdio_proxy_logs_go_to_stderr_constant() -> None:

@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "lakanvault": {
+      "type": "stdio",
+      "command": "${workspaceFolder}${/}.venv${/}Scripts${/}python.exe",
+      "args": [
+        "-m",
+        "lakanvault.mcp.stdio_server",
+        "--config-dir",
+        "${workspaceFolder}${/}config"
+      ],
+      "env": {
+        "PYTHONUTF8": "1",
+        "PYTHONPATH": "${workspaceFolder}${/}src"
+      }
+    }
+  }
+}

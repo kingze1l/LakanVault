@@ -1,6 +1,7 @@
 """MCP stdio shim — wrap a child MCP server and sanitize tools/call results via the daemon.
 
-Stdout is JSON-RPC only. Logs go to stderr. Does not import local_core or infrastructure.
+Stdout is JSON-RPC only (newline-delimited). Logs go to stderr.
+Does not import local_core or infrastructure.
 """
 from __future__ import annotations
 
@@ -18,36 +19,24 @@ _MAX_MESSAGE = 2_000_000
 
 
 def _read_message(stream: BinaryIO) -> dict[str, Any] | None:
-    headers: dict[str, str] = {}
-    while True:
-        line = stream.readline()
-        if not line:
-            return None
-        if line in (b"\r\n", b"\n"):
-            break
-        decoded = line.decode("utf-8", errors="replace")
-        if ":" in decoded:
-            key, value = decoded.split(":", 1)
-            headers[key.strip().lower()] = value.strip()
-    try:
-        length = int(headers.get("content-length") or 0)
-    except ValueError:
+    """Read one newline-delimited JSON-RPC message (MCP stdio transport)."""
+    line = stream.readline()
+    if not line:
         return None
-    if length <= 0 or length > _MAX_MESSAGE:
-        return None
-    body = stream.read(length)
-    if not body:
+    if len(line) > _MAX_MESSAGE:
         return None
     try:
-        return json.loads(body.decode("utf-8"))
+        msg = json.loads(line.decode("utf-8"))
     except json.JSONDecodeError:
         return None
+    return msg if isinstance(msg, dict) else None
 
 
 def _write_message(stream: BinaryIO, payload: dict[str, Any]) -> None:
-    raw = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-    header = f"Content-Length: {len(raw)}\r\n\r\n".encode("ascii")
-    stream.write(header + raw)
+    raw = json.dumps(payload, separators=(",", ":")).encode("utf-8") + b"\n"
+    if len(raw) > _MAX_MESSAGE:
+        return
+    stream.write(raw)
     stream.flush()
 
 
