@@ -36,7 +36,9 @@ Use a **separate worktree + second Cursor window** instead:
 .\scripts\setup_mcp_sandbox.ps1
 ```
 
-That creates `..\LakanVault-mcp-sandbox` on branch `CS301` with its own `.venv` and a **project-only** `.cursor/mcp.json` (gitignored). Open that folder in a new Cursor window; your daily workspace stays unchanged.
+That creates `..\LakanVault-mcp-sandbox` on a local branch `personal/mcp-sandbox` (cut from the current branch) with its own `.venv` and a **project-only** `.cursor/mcp.json` (gitignored). Open that folder in a new Cursor window; your daily workspace stays unchanged.
+
+In that window: **Settings → MCP** (or **Customize → MCPs**), flip the `lakanvault` toggle on, wait for the status to read connected, and check that **Available Tools** lists both tools.
 
 Smoke without Cursor UI:
 
