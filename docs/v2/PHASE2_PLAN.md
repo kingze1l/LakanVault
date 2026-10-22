@@ -1,9 +1,8 @@
 # LakanVault v2 — Phase 2 Plan
 
 **Product:** Local-first AI DLP gateway for small NZ dev teams  
-**Active branch:** `CS301` (Option 3 hybrid gateway)  
+**Active branch:** `main` (Option 3 hybrid gateway; `CS301` merged Oct 2026). New work goes on short feature branches → PR to `main`  
 **Frozen (historical):** `Phase-1-YB` — CS205 snapshot; do not modify  
-**Target merge:** `CS301` → `main` via PR  
 **Review:** Joan Allysen at sprint gates (detection, anonymizer, RQ1)
 
 ---
