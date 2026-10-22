@@ -2,7 +2,7 @@
 
 Local-first AI DLP gateway: block secrets and PII before they reach ChatGPT, Copilot, Cursor, or Claude.
 
-**Active branch:** `CS301` (Option 3 hybrid gateway + tray packaging)  
+**What changed:** [`WHAT_CHANGED.md`](WHAT_CHANGED.md)  
 **Product plan:** [`docs/v2/PHASE2_PLAN.md`](docs/v2/PHASE2_PLAN.md)
 
 ## Quick start (developers)
