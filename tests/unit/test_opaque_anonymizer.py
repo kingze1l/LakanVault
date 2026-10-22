@@ -1,5 +1,5 @@
 """Opaque tokens — new module; ReversibleAnonymizer stays untouched."""
-from lakanvault.local_core.privacy.opaque_anonymizer import OpaqueAnonymizer
+from lakanvault.local_core.pii.opaque_anonymizer import OpaqueAnonymizer
 
 
 def test_clean_text_unchanged() -> None:

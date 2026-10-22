@@ -10,7 +10,7 @@ import logging
 import re
 from collections import defaultdict
 
-from lakanvault.local_core.privacy.detectors import find_pii_spans
+from lakanvault.local_core.pii.detectors import find_pii_spans
 
 logger = logging.getLogger(__name__)
 

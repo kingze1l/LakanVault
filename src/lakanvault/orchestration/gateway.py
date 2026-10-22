@@ -23,15 +23,15 @@ from lakanvault.local_core.audit.stage import AuditStage
 from lakanvault.local_core.dlp.transformer import transform_text
 from lakanvault.local_core.integrity.registry import ModelRegistry
 from lakanvault.local_core.integrity.stage import IntegrityStage
-from lakanvault.local_core.privacy.anonymizer import ReversibleAnonymizer
-from lakanvault.local_core.privacy.classifier import classify_content
-from lakanvault.local_core.privacy.opaque_anonymizer import OpaqueAnonymizer
+from lakanvault.local_core.pii.anonymizer import ReversibleAnonymizer
+from lakanvault.local_core.pii.classifier import classify_content
+from lakanvault.local_core.pii.opaque_anonymizer import OpaqueAnonymizer
 from lakanvault.local_core.security.prompt_guard import (
     BLOCKED_USER_MESSAGE,
     detect_prompt_injection,
     wrap_user_message,
 )
-from lakanvault.local_core.privacy.stage import PrivacyStage
+from lakanvault.local_core.pii.stage import PrivacyStage
 from lakanvault.local_core.threat_scanner.stage import ThreatScannerStage
 from lakanvault.orchestration.bus import EventBus
 from lakanvault.orchestration.pipeline import Pipeline

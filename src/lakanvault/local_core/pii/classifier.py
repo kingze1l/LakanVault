@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from lakanvault.local_core.privacy.detectors import PiiSpan, find_pii_spans
+from lakanvault.local_core.pii.detectors import PiiSpan, find_pii_spans
 from lakanvault.local_core.secrets.detector import detect_secrets
 from lakanvault.local_core.security.prompt_guard import detect_prompt_injection
 

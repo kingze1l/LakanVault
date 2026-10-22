@@ -24,9 +24,9 @@ from lakanvault.local_core.dlp.openai_payload import (
     restore_chat_response,
     sanitize_chat_request,
 )
-from lakanvault.local_core.privacy.classifier import classify_content
+from lakanvault.local_core.pii.classifier import classify_content
 from lakanvault.local_core.dlp.transformer import transform_text
-from lakanvault.local_core.privacy.opaque_anonymizer import OpaqueAnonymizer
+from lakanvault.local_core.pii.opaque_anonymizer import OpaqueAnonymizer
 
 logger = logging.getLogger(__name__)
 
