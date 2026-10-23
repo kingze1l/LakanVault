@@ -2,7 +2,7 @@
 from lakanvault.contracts.mcp import DataTier, PolicyAction
 from lakanvault.infrastructure.token_vault import InMemoryTokenVault
 from lakanvault.local_core.dlp.transformer import transform_text
-from lakanvault.local_core.pii.opaque_anonymizer import OpaqueAnonymizer
+from lakanvault.local_core.privacy.opaque_anonymizer import OpaqueAnonymizer
 
 
 def test_clean_text_allows() -> None:

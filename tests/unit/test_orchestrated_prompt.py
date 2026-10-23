@@ -1,6 +1,6 @@
 """Joan's handoff: one string from the IDE request, then regex + Presidio."""
 from lakanvault.local_core.dlp.openai_payload import orchestrated_prompt
-from lakanvault.local_core.pii.classifier import classify_content
+from lakanvault.local_core.privacy.classifier import classify_content
 
 
 def test_orchestrated_prompt_joins_ide_messages() -> None:

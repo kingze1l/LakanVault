@@ -1,7 +1,7 @@
 """Tests for content classification."""
 from __future__ import annotations
 
-from lakanvault.local_core.pii.classifier import classify_content
+from lakanvault.local_core.privacy.classifier import classify_content
 from lakanvault.orchestration.gateway import Gateway
 
 
