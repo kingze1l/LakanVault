@@ -25,8 +25,7 @@ class Tier(str, Enum):
     BENIGN = "BENIGN"
 
 
-TIER_RANK = {Tier.SECRET: 4, Tier.PII_HIGH: 3, Tier.PII_MODERATE: 2,
-             Tier.PII_LOW: 1, Tier.BENIGN: 0}
+TIER_RANK = {Tier.SECRET: 4, Tier.PII_HIGH: 3, Tier.PII_MODERATE: 2, Tier.PII_LOW: 1, Tier.BENIGN: 0}
 
 
 @dataclass(frozen=True)
@@ -42,7 +41,7 @@ class Finding:
     @property
     def needs_escalation(self) -> bool:
         """True when the fast layer is unsure -> hand to the local LLM."""
-        return self.confidence < CONFIDENT_AT
+        return self.source != 'llm' and self.confidence < CONFIDENT_AT
 
     @property
     def preview(self) -> str:
@@ -66,9 +65,7 @@ def resolve_overlaps(findings: list[Finding]) -> list[Finding]:
     """
     ranked = sorted(
         findings,
-        key=lambda f: (-TIER_RANK[f.tier], -f.confidence,
-                       f.entity_type == "generic-api-key",   # generic rule loses ties
-                       -(f.end - f.start), f.start),
+        key=lambda f: (-TIER_RANK[f.tier], -f.confidence, f.entity_type == "generic-api-key",  -(f.end - f.start), f.start),
     )
     kept: list[Finding] = []
     for f in ranked:
