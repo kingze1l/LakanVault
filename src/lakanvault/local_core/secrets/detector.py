@@ -183,3 +183,32 @@ def detect_secrets(text: str) -> list[Finding]:
     if not text:
         return []
     return resolve_overlaps(_default_detector().detect(text))
+
+if __name__ == "__main__":
+    import time
+    from .samples import samples
+  
+    for s in samples:
+        print(f"PROMPT: {s}")
+        found = detect_secrets(s)
+        if not found:
+            print("   (no findings)")
+        for f in found:
+            flag = "ESCALATE" if f.needs_escalation else "confident"
+            print(f"   {f.entity_type:<16} {f.tier.value:<13} {f.confidence:<5.2f} [{f.start}:{f.end}] {f.preview!r:<28} {flag:<9} <- {f.source}")
+        print()
+
+    # rgex latency averarge of 50 runs
+    prompt = samples[5] + " " + samples[1]
+    detect_secrets(prompt)
+
+    t0 = time.perf_counter()
+    runs = 50
+    for _ in range(50):
+        detect_secrets(prompt)
+
+    elapsed_ms = (time.perf_counter() - t0) / runs * 1000
+    print("Regex secret detection latency (average of 50 runs):")
+    print(f"   {'regex':<15} {elapsed_ms:6.2f} ms")
+
+# quick note : to run a simple debug, be in src repo and run python -m lakanvault.local_core.secrets.detector

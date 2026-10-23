@@ -1,6 +1,6 @@
 """Unit tests for reversible PII anonymization."""
 from lakanvault.local_core.privacy.anonymizer import ReversibleAnonymizer
-from lakanvault.local_core.pii.detectors import find_pii_spans, reset_analyzer_cache
+from lakanvault.local_core.pii.detector import find_pii_spans, reset_analyzer_cache
 
 
 def setup_function() -> None:

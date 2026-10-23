@@ -5,7 +5,7 @@ from lakanvault.contracts.mcp import DataTier, PolicyAction
 from lakanvault.contracts.proxy import TokenVaultPort, TransformResult
 from lakanvault.local_core.policy.engine import decide_action
 from lakanvault.local_core.privacy.classifier import classify_content
-from lakanvault.local_core.pii.detectors import find_pii_spans
+from lakanvault.local_core.pii.detector import find_pii_spans
 from lakanvault.local_core.privacy.opaque_anonymizer import OpaqueAnonymizer
 from lakanvault.local_core.secrets.detector import detect_secrets
 

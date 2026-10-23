@@ -198,3 +198,39 @@ def detect_pii(text: str, layers: tuple[str, ...] = ("presidio", "names")) -> li
     for layer in layers:
         findings.extend(get_engine(layer).detect(text))
     return resolve_overlaps(findings)
+
+if __name__ == '__main__':
+    import time
+    from .samples import samples
+
+    print ('loading pii models')
+    t0 = time.perf_counter()
+    load_pii_models()
+    load_ms = (time.perf_counter() - t0) * 1000
+
+    print(f'model load time : {load_ms:.2f} ms\n')
+
+    for s in samples:
+        print(f'PROMPT: {s}')
+
+        found = detect_pii(s)
+
+        if not found:
+            print('   (no findings)')
+
+        for f in found:
+            flag = 'ESCALATE' if f.needs_escalation else 'confident'
+            print(f"   {f.entity_type:<16} {f.tier.value:<13} {f.confidence:<5.2f} [{f.start}:{f.end}] {f.preview!r:<28} {flag:<9} <- {f.source}")
+        print()
+
+    # 3 measure warmed-up detection latency
+    prompt = samples[5] + " " + samples[1]
+    detect_pii(prompt)  # warm-up
+
+    runs = 50
+    t0 = time.perf_counter()
+
+    for _ in range(runs):
+        detect_pii(prompt)
+
+# quick note : to run a simple debug, be in src repo and run python -m lakanvault.local_core.pii.detector

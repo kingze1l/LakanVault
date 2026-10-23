@@ -8,7 +8,7 @@ import logging
 
 from lakanvault.contracts.events import PipelineEvent, StageResult, StageStatus
 from lakanvault.contracts.ports import PipelineStage
-from lakanvault.local_core.pii.detectors import find_pii_spans
+from lakanvault.local_core.pii.detector import find_pii_spans
 
 logger = logging.getLogger(__name__)
 

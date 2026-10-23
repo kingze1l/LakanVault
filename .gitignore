@@ -42,3 +42,6 @@ build/
 *.spec
 lakanvault-daemon.log
 **/lakanvault-daemon.log
+
+# sample, local core for regex and presidio testing
+samples.py

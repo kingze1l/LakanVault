@@ -44,6 +44,10 @@ class Finding:
         """True when the fast layer is unsure -> hand to the local LLM."""
         return self.confidence < CONFIDENT_AT
 
+    @property
+    def preview(self) -> str:
+        return self.text
+
 
 class DetectionEngine(ABC):
     """Common interface. The local LLM classifier can implement it too."""
@@ -71,3 +75,4 @@ def resolve_overlaps(findings: list[Finding]) -> list[Finding]:
         if all(f.end <= k.start or f.start >= k.end for k in kept):
             kept.append(f)
     return sorted(kept, key=lambda f: f.start)
+
