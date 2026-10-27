@@ -1,6 +1,7 @@
 '''
 combine regex, presidio, and system to escalate to local llm
-run : python -m lakanvault.local_core.scan
+run : 
+python -m lakanvault.local_core.scan
 '''
 
 from typing import Literal
@@ -8,30 +9,21 @@ from typing import Literal
 from .findings import Finding, Tier, resolve_overlaps
 from .pii.detector import detect_pii
 from .secrets.detector import detect_secrets
-
+from .anonymizer.anonymizer import Vault
+from .escalate import suspicion
 
 def _overlaps(a: Finding, b: Finding) -> bool:
     return a.start < b.end and b.start < a.end
 
 
 def merge(detector_findings: list[Finding], llm_findings: list[Finding]) -> list[Finding]:
-    """
-    Combine fast-layer findings with the local LLM's verdicts.
-
-      confident detector finding (>= CONFIDENT_AT)  -> always kept; the LLM never overrides it
-      unsure detector finding the LLM spoke about   -> replaced by the LLM's verdict
-                                                       (BENIGN verdict = the finding is dropped)
-      unsure detector finding the LLM did not cover -> kept as is (conservative: silence is not "safe")
-      LLM finding nothing else covers               -> added (the LLM found something the detectors missed)
-    BENIGN verdicts are never returned: they only exist to clear unsure findings.
-    """
-
     '''
     combine fast layer with llm verdict
         confident detector finding (>= CONFIDENT_AT) -> always keep, llm never override it
         unsure detector finding the LLM spoke about   -> replaced by the LLM's verdict (BENIGN verdict = the finding is dropped)
         unsure detector finding the LLM did not cover -> kept as is (conservative: silence is not "safe")
         LLM finding nothing else covers               -> added (the LLM found something the detectors missed)
+    benign verdict never returned
     '''
 
     confident = [f for f in detector_findings if not f.needs_escalation]
@@ -58,8 +50,10 @@ def scan(text: str, llm: LLMPolicy = "unsure") -> list[Finding]:
     # one overlap pass over both detectors: an email inside a connection string
     # resolves to the SECRET (higher tier) instead of being reported twice
     findings = resolve_overlaps(detect_secrets(text) + detect_pii(text))
-
-    if llm == "always" or (llm == "unsure" and any(f.needs_escalation for f in findings)):
+    suspicion_reason = suspicion(text, findings)
+    if llm == 'always' or (llm == 'unsure' and (any(f.needs_escalation for f in findings) or suspicion_reason)):
+        if suspicion_reason is not None:
+            print(f'escalated to local llm due to suspicion: {suspicion_reason}')
         from .local_llm.detector import ask_llm   # lazy: scan() works without the openai package
         llm_findings = ask_llm(text)
         # llm_findings is None when the call failed: keep the detectors' result as is.
@@ -67,11 +61,16 @@ def scan(text: str, llm: LLMPolicy = "unsure") -> list[Finding]:
             findings = merge(findings, llm_findings)
     return findings
 
+'''basically just combine the scan and anonymizer (change to surrogate or uuse format preserving sanitization)'''
+def scan_and_sanitize(text:str, vault: Vault, llm: LLMPolicy = 'unsure') -> tuple[str, list[Finding]]:
+    findings = scan(text, llm)
+    return vault.sanitize(text, findings), findings
 
 if __name__ == "__main__":
     import time
     from .samples import samples
 
+    vault = Vault(':memory:') # in memory, each test run clean
     total_start = time.perf_counter()
 
     for i, prompt in enumerate(samples, start=1):
@@ -80,6 +79,7 @@ if __name__ == "__main__":
         print(f"PROMPT: {prompt!r}")
 
         start = time.perf_counter()
+        findings = []
 
         try:
             findings = scan(prompt, llm="unsure")
@@ -87,12 +87,7 @@ if __name__ == "__main__":
             for f in findings:
                 status = "ESCALATE" if f.needs_escalation else "confident"
                 print(
-                    f"  {f.entity_type:<20} "
-                    f"{f.tier.value:<15} "
-                    f"{f.confidence:.2f} "
-                    f"[{f.start}:{f.end}] "
-                    f"{f.preview!r} "
-                    f"{status} <- {f.source}"
+                    f"  {f.entity_type:<20} {f.tier.value:<15} {f.confidence:.2f} [{f.start}:{f.end}] {f.preview!r} {status} <- {f.source}"
                 )
 
             if not findings:
@@ -102,6 +97,11 @@ if __name__ == "__main__":
             print(f"  ERROR: {type(exc).__name__}: {exc}")
 
         print(f"  Time: {(time.perf_counter() - start) * 1000:.2f} ms")
+        try:
+            sanitized = vault.sanitize(prompt, findings)
+            print(f'  SANITIZED: {sanitized!r}')
+        except Exception as exc:
+            print(f'  SANITIZE ERROR: {type(exc).__name__}: {exc}')
 
     print("=" * 100)
     print(f"Total time: {(time.perf_counter() - total_start) * 1000:.2f} ms")
