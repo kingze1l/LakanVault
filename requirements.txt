@@ -1,0 +1,8 @@
+# pii surrogate anonymizer
+Faker
+
+# evaluation benchmark
+pandas
+pyarrow
+fsspec
+huggingface_hub

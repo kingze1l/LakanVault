@@ -28,7 +28,8 @@ List every sensitive item. Do not decide what action to take; another component 
  
 Sensitive: credentials (api keys, passwords, tokens, private keys, connection strings with passwords)
 and personal data (names, emails, phone numbers, government ids, financial or medical data).
-Not sensitive: placeholders and examples (YOUR_API_KEY, xxxx, <token>), UUIDs, git hashes.
+Not sensitive: placeholders and examples (YOUR_API_KEY, xxxx, <token>), UUIDs, git hashes, and references to secrets in code (os.environ["DB_PASSWORD"], os.getenv("API_KEY"), process.env.TOKEN,
+${DB_PASSWORD}). A reference names where a secret lives; it is not the secret's value.
  
 For each item give:
 - type: a short snake_case label you choose, e.g. api_key, password, email

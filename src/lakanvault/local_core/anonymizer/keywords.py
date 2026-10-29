@@ -127,7 +127,7 @@ KEYWORDS = {
     "pscale_tkn_", "pscale_oauth_", "pscale_pw_",
     # Postman / Prefect / Pulumi
     "pmak-", "pnu_", "pul-",
-    # Private keys (PEM headers)
+    # Private keys (PEM headers and closing)
     "-----begin private key-----",
     "-----begin rsa private key-----",
     "-----begin ec private key-----",
@@ -135,6 +135,13 @@ KEYWORDS = {
     "-----begin openssh private key-----",
     "-----begin encrypted private key-----",
     "-----begin pgp private key block-----",
+    "-----end private key-----",
+    "-----end rsa private key-----",
+    "-----end ec private key-----",
+    "-----end dsa private key-----",
+    "-----end openssh private key-----",
+    "-----end encrypted private key-----",
+    "-----end pgp private key block-----",
     # PyPI
     "pypi-ageichlwas5vcmc",
     # Readme / RubyGems / Scalingo

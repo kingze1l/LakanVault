@@ -52,8 +52,10 @@ def scan(text: str, llm: LLMPolicy = "unsure") -> list[Finding]:
     findings = resolve_overlaps(detect_secrets(text) + detect_pii(text))
     suspicion_reason = suspicion(text, findings)
     if llm == 'always' or (llm == 'unsure' and (any(f.needs_escalation for f in findings) or suspicion_reason)):
-        if suspicion_reason is not None:
+        if suspicion_reason:
             print(f'escalated to local llm due to suspicion: {suspicion_reason}')
+        else:
+            print('escalated to local llm: a detector finding was unsure (or llm="always")')
         from .local_llm.detector import ask_llm   # lazy: scan() works without the openai package
         llm_findings = ask_llm(text)
         # llm_findings is None when the call failed: keep the detectors' result as is.
@@ -61,6 +63,13 @@ def scan(text: str, llm: LLMPolicy = "unsure") -> list[Finding]:
             findings = merge(findings, llm_findings)
     return findings
 
+# the only difference is the return, return the value.
+def scan_evaluation(text: str) -> list[tuple[str, int, int]]:
+    '''scan text and return (matched_text, start, end) for each finding'''
+    findings = scan(text, llm='unsure')  # deterministic, no LLM calls
+    return [(f.text, f.start, f.end) for f in findings]
+
+    
 '''basically just combine the scan and anonymizer (change to surrogate or uuse format preserving sanitization)'''
 def scan_and_sanitize(text:str, vault: Vault, llm: LLMPolicy = 'unsure') -> tuple[str, list[Finding]]:
     findings = scan(text, llm)

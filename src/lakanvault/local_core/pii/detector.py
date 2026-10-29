@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # config
 # =============================================================================
-SPACY_MODEL = "en_core_web_sm"   # "en_core_web_md" / "_lg" are more accurate but slower to load
+SPACY_MODEL = "en_core_web_lg"   # "en_core_web_md" / "_lg" are more accurate but slower to load
 
 # NIST SP 800-122 does not fix a level per data type (the level depends on
 # identifiability, field sensitivity, context of use, ...), so this is a default
