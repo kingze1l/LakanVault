@@ -63,10 +63,14 @@ def scan(text: str, llm: LLMPolicy = "unsure") -> list[Finding]:
             findings = merge(findings, llm_findings)
     return findings
 
+def scan_secret_evalutation(text: str) -> list[tuple[str, int, int]]:
+    return detect_secrets(text)
+
+
 # the only difference is the return, return the value.
 def scan_evaluation(text: str) -> list[tuple[str, int, int]]:
     '''scan text and return (matched_text, start, end) for each finding'''
-    findings = scan(text, llm='unsure')  # deterministic, no LLM calls
+    findings = scan(text, llm='unsure') 
     return [(f.text, f.start, f.end) for f in findings]
 
     
