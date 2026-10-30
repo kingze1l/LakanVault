@@ -8,6 +8,7 @@ import re
 from functools import lru_cache
 
 from ..findings import DISCARD_BELOW, DetectionEngine, Finding, Tier, resolve_overlaps
+from .pii_entity_tier import PII_ENTITY_TIER
 
 logger = logging.getLogger(__name__)
 
@@ -16,32 +17,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 SPACY_MODEL = "en_core_web_lg"   # "en_core_web_md" / "_lg" are more accurate but slower to load
 
-# NIST SP 800-122 does not fix a level per data type (the level depends on
-# identifiability, field sensitivity, context of use, ...), so this is a default
-# derived from two of its factors:
-#   HIGH     fields NIST calls generally more sensitive (SSN, financial account,
-#            medical) and government-issued IDs
-#   MODERATE directly identifying fields (name, email, phone)
-#   LOW      indirectly identifying / linkable data (location, IP, MAC)
-PII_ENTITY_TIER: dict[str, Tier] = {
-    "US_SSN": Tier.PII_HIGH,
-    "US_ITIN": Tier.PII_HIGH,
-    "US_PASSPORT": Tier.PII_HIGH,
-    "US_DRIVER_LICENSE": Tier.PII_HIGH,
-    "US_BANK_NUMBER": Tier.PII_HIGH,
-    "CREDIT_CARD": Tier.PII_HIGH,
-    "IBAN_CODE": Tier.PII_HIGH,
-    "MEDICAL_LICENSE": Tier.PII_HIGH,
-    "UK_NHS": Tier.PII_HIGH,
-    "PERSON": Tier.PII_MODERATE,
-    "EMAIL_ADDRESS": Tier.PII_MODERATE,
-    "PHONE_NUMBER": Tier.PII_MODERATE,
-    "LOCATION": Tier.PII_LOW,
-    "IP_ADDRESS": Tier.PII_LOW,
-    "MAC_ADDRESS": Tier.PII_LOW,   # not in every Presidio version: skipped with a warning if missing
-    # deliberately NOT enabled: DATE_TIME, URL, AGE, ORGANIZATION, CRYPTO.
-    # they fire constantly on ordinary code and are not PII by themselves.
-}
+
 
 # exact strings Presidio must never flag (e.g. your own city or company contact).
 PII_ALLOW_LIST: list[str] = []
