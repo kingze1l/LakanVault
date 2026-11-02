@@ -1,5 +1,9 @@
-# pii surrogate anonymizer
+# pii, surrogate anonymizer
+presidio-analyzer
 Faker
+
+# llm
+openai
 
 # evaluation benchmark
 pandas
