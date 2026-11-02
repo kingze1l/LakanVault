@@ -53,9 +53,9 @@ def scan(text: str, llm: LLMPolicy = "unsure") -> list[Finding]:
     suspicion_reason = suspicion(text, findings)
     if llm == 'always' or (llm == 'unsure' and (any(f.needs_escalation for f in findings) or suspicion_reason)):
         if suspicion_reason:
-            print(f'escalated to local llm due to suspicion: {suspicion_reason}')
+            print(f'escalated to local llm due to suspicion: {suspicion_reason}, \n sample: {text}')
         else:
-            print('escalated to local llm: a detector finding was unsure (or llm="always")')
+            print(f'escalated to local llm: a detector finding was unsure (or llm="always"), \n sample: {text}')
         from .local_llm.detector import ask_llm   # lazy: scan() works without the openai package
         llm_findings = ask_llm(text)
         # llm_findings is None when the call failed: keep the detectors' result as is.
@@ -66,6 +66,9 @@ def scan(text: str, llm: LLMPolicy = "unsure") -> list[Finding]:
 def scan_secret_evalutation(text: str) -> list[tuple[str, int, int]]:
     return detect_secrets(text)
 
+def scan_pii_evaluation(text: str) -> list[tuple[str, int, int]]:
+    findings = scan(text, llm='never') 
+    return [(f.text, f.start, f.end, f.entity_type) for f in findings]
 
 # the only difference is the return, return the value.
 def scan_evaluation(text: str) -> list[tuple[str, int, int]]:

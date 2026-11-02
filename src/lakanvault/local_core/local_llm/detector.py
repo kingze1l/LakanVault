@@ -32,7 +32,7 @@ Not sensitive: placeholders and examples (YOUR_API_KEY, xxxx, <token>), UUIDs, g
 ${DB_PASSWORD}). A reference names where a secret lives; it is not the secret's value.
  
 For each item give:
-- type: a short snake_case label you choose, e.g. api_key, password, email
+- type: a short uppercase label you choose, e.g. API_KEY, PASSWORD, EMAIL, PHONE_NUMBER
 - tier: how damaging a leak would be
     SECRET        credentials: api keys, tokens, passwords, private keys
     PII_HIGH      social security numbers, financial accounts, credit cards, medical data, government-issued ids
