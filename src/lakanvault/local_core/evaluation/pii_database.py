@@ -52,6 +52,8 @@ get_coverage -> retrurn (True, True)
 get_coverage help with double checking the data to see if the sensitive information is actually captured even though the value not match completely.
 
 database does not use prompt but is very similar
+
+TODO: make more of pii_benchmark
 run : 
 python -m lakanvault.local_core.evaluation.pii_database
 '''

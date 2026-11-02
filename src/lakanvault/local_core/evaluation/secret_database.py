@@ -22,7 +22,7 @@ python -m lakanvault.local_core.evaluation.secret_database
 '''
 
 import pandas as pd
-from ..scan import scan_evaluation
+from ..scan import scan_secret_evaluation
 import time
 
 def get_coverage(text, value, findings):
@@ -53,7 +53,7 @@ df = df[df['label_binary'] == 1].head(50).copy()
 
 start_time = time.perf_counter()
 
-df['findings'] = df['text'].apply(scan_evaluation)
+df['findings'] = df['text'].apply(scan_secret_evaluation)
 df[['covered', 'partial_coverage']] = df.apply(
     lambda row: pd.Series(
         get_coverage(row["text"], row["value"], row["findings"])
