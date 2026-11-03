@@ -54,6 +54,7 @@ get_coverage help with double checking the data to see if the sensitive informat
 database does not use prompt but is very similar
 
 TODO: make more of pii_benchmark
+as of right now this file is mainly for detecting if lakanvault work in this dataset and see if the database is valid
 run : 
 python -m lakanvault.local_core.evaluation.pii_database
 '''

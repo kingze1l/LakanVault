@@ -11,10 +11,13 @@ from .secret_fakes import create_fake_secret
 from .pii_fakes import PII_GENERATORS, create_fake_pii
 from .samples import SAMPLES_SECRET, SAMPLES_PII
 
+def _is_pii(entity_type, tier):
+    return entity_type in PII_GENERATORS or (tier is not None and tier != 'SECRET')
+
 def create_fake(real, entity_type, tier, key, attempt=0):
     rng = make_rng(real, key, attempt)
-    entity_type = entity_type.upper() if entity_type else None   # llm returns 'ip_address', generators expect 'IP_ADDRESS'
-    if entity_type in PII_GENERATORS or (tier is not None and tier != 'SECRET'):
+    entity_type = entity_type.upper() if entity_type else None
+    if _is_pii(entity_type, tier):
         return create_fake_pii(real, entity_type, rng)
     return create_fake_secret(real, rng)
 
@@ -23,17 +26,27 @@ class Vault:
         self.workspace = workspace
         self.key = load_key(key_path)
         self.db = sqlite3.connect(path)
-        self.db.execute('''CREATE TABLE IF NOT EXISTS mapping (workspace TEXT, fake TEXT, real TEXT, PRIMARY KEY (workspace, fake))''')
+        self.db.execute(
+        '''
+            CREATE TABLE IF NOT EXISTS mapping (
+            workspace TEXT, fake TEXT, real TEXT,
+            is_secret INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (workspace, fake))
+        ''')
 
     # retry if the fake equals the real value or already exists (only likely for very short secrets)
     def surrogate(self, real, entity_type=None, tier=None):
+        et = entity_type.upper() if entity_type else None
+        is_secret = int(not _is_pii(et, tier))
         for attempt in range(20):
             fake = create_fake(real, entity_type, tier, self.key, attempt)
-            row = self.db.execute('SELECT real FROM mapping WHERE workspace=? AND fake=?', (self.workspace, fake)).fetchone()
+            row = self.db.execute('SELECT real FROM mapping WHERE workspace=? AND fake=?',
+                                  (self.workspace, fake)).fetchone()
             if row and row[0] == real:
                 return fake
             if fake != real and not row:
-                self.db.execute('INSERT INTO mapping VALUES (?, ?, ?)', (self.workspace, fake, real))
+                self.db.execute('INSERT INTO mapping (workspace, fake, real, is_secret) VALUES (?, ?, ?, ?)',
+                                (self.workspace, fake, real, is_secret))
                 self.db.commit()
                 return fake
         raise ValueError('could not generate unique surrogate')
@@ -53,11 +66,18 @@ class Vault:
 
     # run after the external LLM returns its response
     def restore(self, text):
-        rows = self.db.execute('SELECT fake, real FROM mapping WHERE workspace=?', (self.workspace,)).fetchall()
+        rows = self.db.execute('SELECT fake, real, is_secret FROM mapping WHERE workspace=?',
+                               (self.workspace,)).fetchall()
         if not rows:
             return text
-        m = dict(rows)
-        pat = re.compile('|'.join(map(re.escape, sorted(m, key=len, reverse=True))))
+        m = {fake: real for fake, real, _ in rows}
+        secret = {fake for fake, _, s in rows if s}
+
+        def alt(fake):
+            p = re.escape(fake)
+            return p if fake in secret else rf'(?<!\w){p}(?!\w)'   # mirrors sanitize()
+
+        pat = re.compile('|'.join(alt(f) for f in sorted(m, key=len, reverse=True)))
         return pat.sub(lambda x: m[x.group()], text)
 
 if __name__ == '__main__':
