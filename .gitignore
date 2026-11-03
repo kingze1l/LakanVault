@@ -45,3 +45,6 @@ lakanvault-daemon.log
 
 # sample, local core for regex and presidio testing
 samples.py
+
+# unsloth
+unsloth_compiled_cache
