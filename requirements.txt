@@ -1,0 +1,12 @@
+# pii, surrogate anonymizer
+presidio-analyzer
+Faker
+
+# llm
+openai
+
+# evaluation benchmark
+pandas
+pyarrow
+fsspec
+huggingface_hub

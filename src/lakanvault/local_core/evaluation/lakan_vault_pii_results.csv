@@ -1,0 +1,260 @@
+text,value,entity_type,findings,matched,partial_coverage,entity_matched
+Can you draft a short thank-you note to Aisha Rahman for her help on the project?,Aisha Rahman,PERSON,"[('Aisha Rahman', 40, 52, 'PERSON')]",True,False,True
+Please summarize this feedback from Hiroshi Tanaka about the UI changes.,Hiroshi Tanaka,PERSON,"[('Hiroshi Tanaka', 36, 50, 'PERSON')]",True,False,True
+Translate the following sentence into Spanish for me: the contact is Priya Nair.,Priya Nair,PERSON,"[('Priya Nair', 69, 79, 'PERSON')]",True,False,True
+I need a polite reply to Mateo Silva declining the meeting invite.,Mateo Silva,PERSON,"[('Mateo Silva', 25, 36, 'PERSON')]",True,False,True
+Help me write a LinkedIn message introducing myself to Fatima Al-Hassan.,Fatima Al-Hassan,PERSON,"[('Fatima Al-Hassan', 55, 71, 'PERSON')]",True,False,True
+Debug this log entry that mentions user session for Kwame Osei.,Kwame Osei,PERSON,"[('Kwame Osei', 52, 62, 'PERSON')]",True,False,True
+Create a form field label suggestion for the full name of Yelena Petrova.,Yelena Petrova,PERSON,"[('Yelena Petrova', 58, 72, 'PERSON')]",True,False,True
+Summarize the support ticket opened by Carlos Mendoza yesterday.,Carlos Mendoza,PERSON,"[('Carlos Mendoza', 39, 53, 'PERSON')]",True,False,True
+Draft an email subject line for the report prepared by Mei Ling Chen.,Mei Ling Chen,PERSON,"[('Mei Ling Chen', 55, 68, 'PERSON')]",True,False,True
+Can you rephrase this note from Omar Farouk so it sounds more formal?,Omar Farouk,PERSON,"[('Omar Farouk', 32, 43, 'PERSON')]",True,False,True
+Generate sample data using the name Siti Nurhaliza for the demo account.,Siti Nurhaliza,PERSON,"[('Siti Nurhaliza', 36, 50, 'PERSON')]",True,False,True
+"Translate ""Please contact Ingrid Bergstrom if you have questions"" into French.",Ingrid Bergstrom,PERSON,"[('Ingrid Bergstrom', 26, 42, 'PERSON')]",True,False,True
+I got this error mentioning the owner as Rajesh Gupta – what does it mean?,Rajesh Gupta,PERSON,"[('Rajesh Gupta', 41, 53, 'PERSON')]",True,False,True
+Write a short bio blurb for speaker Amara Diallo for the conference page.,Amara Diallo,PERSON,"[('Amara Diallo', 36, 48, 'PERSON')]",True,False,True
+"Help me fill the ""reviewed by"" field with the name of Luca Bianchi.",Luca Bianchi,PERSON,"[('Luca Bianchi', 54, 66, 'PERSON')]",True,False,True
+The customer who reported the bug is Nia Williams – draft a response.,Nia Williams,PERSON,"[('Nia Williams', 37, 49, 'PERSON')]",True,False,True
+Please extract action items from the notes taken by Diego Alvarez.,Diego Alvarez,PERSON,"[('Diego Alvarez', 52, 65, 'PERSON')]",True,False,True
+Suggest a greeting for an email to Sofia Costa about the contract.,Sofia Costa,PERSON,"[('Sofia Costa', 35, 46, 'PERSON')]",True,False,True
+Can you check if this sentence mentioning Haruto Sato is grammatically correct?,Haruto Sato,PERSON,"[('Haruto Sato', 42, 53, 'PERSON')]",True,False,True
+I need a placeholder name for testing – use Zara Ahmed instead of the usual ones.,Zara Ahmed,PERSON,"[('Zara Ahmed', 44, 54, 'PERSON')]",True,False,True
+Please send the report to my colleague at jordan.lee@techforge.io when ready.,jordan.lee@techforge.io,EMAIL_ADDRESS,"[('jordan.lee@techforge.io', 42, 65, 'EMAIL_ADDRESS')]",True,False,True
+The bounce message said the address nina.volkov@brightpath.co was invalid.,nina.volkov@brightpath.co,EMAIL_ADDRESS,"[('nina.volkov@brightpath.co', 36, 61, 'EMAIL_ADDRESS')]",True,False,True
+Can you format this email signature for me using contact@riverstone.studio?,contact@riverstone.studio,EMAIL_ADDRESS,"[('contact@riverstone.studio', 49, 74, 'EMAIL_ADDRESS')]",True,False,True
+I need to CC the architect – the address is a.patel@cloudnest.dev.,a.patel@cloudnest.dev,EMAIL_ADDRESS,"[('CC', 10, 12, 'PERSON'), ('a.patel@cloudnest.dev', 44, 65, 'EMAIL_ADDRESS')]",True,False,True
+Draft a reply and address it to support@oakandpine.com.,support@oakandpine.com,EMAIL_ADDRESS,"[('support@oakandpine.com', 32, 54, 'EMAIL_ADDRESS')]",True,False,True
+The log shows failed delivery to m.chen@harborlight.org – any ideas?,m.chen@harborlight.org,EMAIL_ADDRESS,"[('m.chen@harborlight.org', 33, 55, 'EMAIL_ADDRESS')]",True,False,True
+Please update the config so alerts go to ops-team@vertexlabs.net.,ops-team@vertexlabs.net,EMAIL_ADDRESS,"[('ops-team@vertexlabs.net', 41, 64, 'EMAIL_ADDRESS')]",True,False,True
+Can you check the SPF record for the domain of hello@lumenware.app?,hello@lumenware.app,EMAIL_ADDRESS,"[('hello@lumenware.app', 47, 66, 'EMAIL_ADDRESS')]",True,False,True
+I want to invite the client using their address r.santos@bluehorizon.co.,r.santos@bluehorizon.co,EMAIL_ADDRESS,"[('r.santos@bluehorizon.co', 48, 71, 'EMAIL_ADDRESS')]",True,False,True
+The form submission came from k.olsson@nordicforge.se – summarize it.,k.olsson@nordicforge.se,EMAIL_ADDRESS,"[('k.olsson@nordicforge.se', 30, 53, 'EMAIL_ADDRESS')]",True,False,True
+Help me write a follow-up to the address listed as tina.reyes@pixelcraft.io.,tina.reyes@pixelcraft.io,EMAIL_ADDRESS,"[('tina.reyes@pixelcraft.io', 51, 75, 'EMAIL_ADDRESS')]",True,False,True
+Please validate whether this address parses correctly: d.kim@asterisk.systems.,d.kim@asterisk.systems,EMAIL_ADDRESS,"[('d.kim@asterisk.systems', 55, 77, 'EMAIL_ADDRESS')]",True,False,True
+The notification should be sent to billing@emeralddata.com only.,billing@emeralddata.com,EMAIL_ADDRESS,"[('billing@emeralddata.com', 35, 58, 'EMAIL_ADDRESS')]",True,False,True
+Can you extract the email from this text: contact me at e.nguyen@swiftcode.tech?,e.nguyen@swiftcode.tech,EMAIL_ADDRESS,"[('e.nguyen@swiftcode.tech', 56, 79, 'EMAIL_ADDRESS')]",True,False,True
+I need a sample recipient for the test – use p.morales@cascade.tools.,p.morales@cascade.tools,EMAIL_ADDRESS,"[('p.morales@cascade.tools', 45, 68, 'EMAIL_ADDRESS')]",True,False,True
+Draft an out-of-office reply that redirects people to help@summitpeak.org.,help@summitpeak.org,EMAIL_ADDRESS,"[('help@summitpeak.org', 54, 73, 'EMAIL_ADDRESS')]",True,False,True
+The webhook payload contained the address l.bauer@quantumlink.de.,l.bauer@quantumlink.de,EMAIL_ADDRESS,"[('l.bauer@quantumlink.de', 42, 64, 'EMAIL_ADDRESS')]",True,False,True
+Please confirm the format for the address s.ahmed@desertbloom.ae is fine.,s.ahmed@desertbloom.ae,EMAIL_ADDRESS,"[('s.ahmed@desertbloom.ae', 42, 64, 'EMAIL_ADDRESS')]",True,False,True
+Can you generate a polite decline email addressed to m.rossi@alpinecode.it?,m.rossi@alpinecode.it,EMAIL_ADDRESS,"[('m.rossi@alpinecode.it', 53, 74, 'EMAIL_ADDRESS')]",True,False,True
+The error log references the sender as j.wong@pacificnode.ca.,j.wong@pacificnode.ca,EMAIL_ADDRESS,"[('j.wong@pacificnode.ca', 39, 60, 'EMAIL_ADDRESS')]",True,False,True
+Please call me back on +1-415-872-3491 when you have an update.,+1-415-872-3491,PHONE_NUMBER,"[('+1-415-872-3491', 23, 38, 'PHONE_NUMBER')]",True,False,True
+The client left this number for urgent issues: +44 7700 900123.,+44 7700 900123,PHONE_NUMBER,[],False,False,False
+Can you format the phone number +33 6 12 34 56 78 for the contact card?,+33 6 12 34 56 78,PHONE_NUMBER,"[('+33 6 12 34 56 78', 32, 49, 'PHONE_NUMBER')]",True,False,True
+I need to update the support line to +49-151-23456789 in the footer.,+49-151-23456789,PHONE_NUMBER,"[('+49-151-23456789', 37, 53, 'PHONE_NUMBER')]",True,False,True
+The SMS came from +61 412 345 678 – is that a valid Australian mobile?,+61 412 345 678,PHONE_NUMBER,"[('+61 412 345 678', 18, 33, 'PHONE_NUMBER'), ('Australian', 52, 62, 'NRP')]",True,False,True
+Please add this contact number to the ticket: +81-90-1234-5678.,+81-90-1234-5678,PHONE_NUMBER,"[('+81-90-1234-5678', 46, 62, 'PHONE_NUMBER')]",True,False,True
+The form has a field for +55 11 98765-4321 – does the format look right?,+55 11 98765-4321,PHONE_NUMBER,"[('+55 11 98765-4321', 25, 42, 'PHONE_NUMBER')]",True,False,True
+Can you dial the number +34 612 345 678 and leave a short message for me?,+34 612 345 678,PHONE_NUMBER,"[('+34 612 345 678', 24, 39, 'PHONE_NUMBER')]",True,False,True
+Update the emergency contact to +1 (206) 555-0198 in the config file.,+1 (206) 555-0198,PHONE_NUMBER,"[('+1 (206) 555-0198', 32, 49, 'PHONE_NUMBER')]",True,False,True
+The log shows a callback request for +91 98765 43210 from the user.,+91 98765 43210,PHONE_NUMBER,"[('+91 98765 43210', 37, 52, 'PHONE_NUMBER')]",True,False,True
+Please verify this international number: +46 70 123 45 67.,+46 70 123 45 67,PHONE_NUMBER,"[('+46 70 123 45 67', 41, 57, 'PHONE_NUMBER')]",True,False,True
+I got a missed call from +39 347 123 4567 – any way to look it up?,+39 347 123 4567,PHONE_NUMBER,"[('+39 347 123 4567', 25, 41, 'PHONE_NUMBER')]",True,False,True
+The invoice footer should list +41 79 123 45 67 as the billing contact.,+41 79 123 45 67,PHONE_NUMBER,"[('+41 79 123 45 67', 31, 47, 'PHONE_NUMBER')]",True,False,True
+Can you normalize the number +353 87 123 4567 for the CRM entry?,+353 87 123 4567,PHONE_NUMBER,"[('+353 87 123 4567', 29, 45, 'PHONE_NUMBER')]",True,False,True
+The support ticket includes the phone +27 82 123 4567 for follow-up.,+27 82 123 4567,PHONE_NUMBER,"[('+27 82 123 4567', 38, 53, 'PHONE_NUMBER')]",True,False,True
+Please store this mobile: +52 55 1234 5678 in the user profile notes.,+52 55 1234 5678,PHONE_NUMBER,"[('+52 55 1234 5678', 26, 42, 'PHONE_NUMBER')]",True,False,True
+The voicemail was left by someone at +64 21 123 4567.,+64 21 123 4567,PHONE_NUMBER,"[('+64 21 123 4567', 37, 52, 'PHONE_NUMBER')]",True,False,True
+I need the number +65 9123 4567 added to the after-hours list.,+65 9123 4567,PHONE_NUMBER,"[('+65 9123 4567', 18, 31, 'PHONE_NUMBER')]",True,False,True
+Can you check if +47 412 34 567 is a valid Norwegian mobile format?,+47 412 34 567,PHONE_NUMBER,"[('+47 412 34 567', 17, 31, 'PHONE_NUMBER'), ('Norwegian', 43, 52, 'NRP')]",True,False,True
+The customer provided +31 6 12345678 as their preferred contact number.,+31 6 12345678,PHONE_NUMBER,"[('+31 6 12345678', 22, 36, 'PHONE_NUMBER')]",True,False,True
+Please charge the renewal to 3978228178518154 and confirm the last four digits.,3978228178518154,CREDIT_CARD,"[('3978228178518154', 29, 45, 'CREDIT_CARD')]",True,False,True
+The test payment failed with card 5494957151954644 – any idea why?,5494957151954644,CREDIT_CARD,"[('5494957151954644', 34, 50, 'CREDIT_CARD')]",True,False,True
+I need to update the billing method to 3479239640916607 in the portal.,3479239640916607,CREDIT_CARD,"[('3479239640916607', 39, 55, 'CREDIT_CARD')]",True,False,True
+Can you mask this card number for the log: 4418856679784572?,4418856679784572,CREDIT_CARD,"[('4418856679784572', 43, 59, 'CREDIT_CARD')]",True,False,True
+The customer said the card 5323215567493617 was declined at checkout.,5323215567493617,CREDIT_CARD,"[('5323215567493617', 27, 43, 'CREDIT_CARD')]",True,False,True
+Please validate the Luhn check for 3241956123192417 before saving.,3241956123192417,CREDIT_CARD,"[('3241956123192417', 35, 51, 'CREDIT_CARD')]",True,False,True
+Store the tokenized version of 3884575593363670 in the payment profile.,3884575593363670,CREDIT_CARD,"[('3884575593363670', 31, 47, 'CREDIT_CARD')]",True,False,True
+The refund should go back to 5774313660603150 – confirm once done.,5774313660603150,CREDIT_CARD,[],False,False,False
+I entered 5919338477790680 by mistake; can you void the authorization?,5919338477790680,CREDIT_CARD,[],False,False,False
+Help me format the card 6328997973786253 for the receipt template.,6328997973786253,CREDIT_CARD,"[('6328997973786253', 24, 40, 'CREDIT_CARD')]",True,False,True
+The webhook payload contained card ending with the full number 4873136802412534.,4873136802412534,CREDIT_CARD,"[('4873136802412534', 63, 79, 'CREDIT_CARD')]",True,False,True
+Please check if 3976789879807495 is a test card or a real one.,3976789879807495,CREDIT_CARD,"[('3976789879807495', 16, 32, 'CREDIT_CARD')]",True,False,True
+Update the default payment method to 6908003971892967 for this account.,6908003971892967,CREDIT_CARD,"[('6908003971892967', 37, 53, 'CREDIT_CARD')]",True,False,True
+The authorization code came back for 5441011062571834 – looks successful.,5441011062571834,CREDIT_CARD,"[('5441011062571834', 37, 53, 'CREDIT_CARD')]",True,False,True
+Can you generate a masked display for 3239589443321475?,3239589443321475,CREDIT_CARD,"[('3239589443321475', 38, 54, 'CREDIT_CARD')]",True,False,True
+I need the last transaction on 4609547136102131 for the dispute form.,4609547136102131,CREDIT_CARD,"[('4609547136102131', 31, 47, 'CREDIT_CARD')]",True,False,True
+The customer support chat mentioned card 3072314743860118 as the one used.,3072314743860118,CREDIT_CARD,"[('3072314743860118', 41, 57, 'CREDIT_CARD')]",True,False,True
+Please confirm the card 4947764340705507 is still active before charging.,4947764340705507,CREDIT_CARD,"[('4947764340705507', 24, 40, 'CREDIT_CARD')]",True,False,True
+The recurring billing is set to 6455574295715206 – change it if needed.,6455574295715206,CREDIT_CARD,"[('6455574295715206', 32, 48, 'CREDIT_CARD')]",True,False,True
+Store this backup card number: 6086154485815145 for the account.,6086154485815145,CREDIT_CARD,"[('6086154485815145', 31, 47, 'CREDIT_CARD')]",True,False,True
+Please use IBAN DE80280554403109829910 for the wire transfer this month.,DE80280554403109829910,IBAN_CODE,"[('DE80280554403109829910', 16, 38, 'IBAN_CODE')]",True,False,True
+The supplier invoice lists FR382004101001D123456789001 as the payment account.,FR382004101001D123456789001,IBAN_CODE,"[('FR382004101001D123456789001', 27, 54, 'IBAN_CODE')]",True,False,True
+Can you validate the check digits on GB49SOGINN146998852765?,GB49SOGINN146998852765,IBAN_CODE,[],False,False,False
+Update the vendor record with ES2271694413162895411691.,ES2271694413162895411691,IBAN_CODE,"[('ES2271694413162895411691', 30, 54, 'IBAN_CODE')]",True,False,True
+The refund should be sent to IT60X0542811101000000123456.,IT60X0542811101000000123456,IBAN_CODE,"[('IT60X0542811101000000123456', 29, 56, 'IBAN_CODE')]",True,False,True
+Please confirm the format of NL36INGB0000000051 before submitting.,NL36INGB0000000051,IBAN_CODE,"[('NL36INGB0000000051', 29, 47, 'IBAN_CODE')]",True,False,True
+I need to add BE78503276178714 to the approved payee list.,BE78503276178714,IBAN_CODE,"[('BE78503276178714', 14, 30, 'IBAN_CODE')]",True,False,True
+The contract appendix shows CH2179103786246753502 for payments.,CH2179103786246753502,IBAN_CODE,"[('CH2179103786246753502', 28, 49, 'IBAN_CODE')]",True,False,True
+Can you extract the IBAN from this note: transfer to AT845652072112066439?,AT845652072112066439,IBAN_CODE,"[('AT845652072112066439', 53, 73, 'IBAN_CODE')]",True,False,True
+Please verify PL97250085306135070176417511 is a valid Polish IBAN.,PL97250085306135070176417511,IBAN_CODE,"[('PL97250085306135070176417511', 14, 42, 'IBAN_CODE'), ('Polish', 54, 60, 'NRP')]",True,False,True
+The client provided IE86WVQRNO412886466930 for the deposit.,IE86WVQRNO412886466930,IBAN_CODE,[],False,False,False
+Update the payroll export to use PT55809358189104657574237.,PT55809358189104657574237,IBAN_CODE,"[('PT55809358189104657574237', 33, 58, 'IBAN_CODE')]",True,False,True
+The invoice footer contains SE0755171115119151305212 – is that correct?,SE0755171115119151305212,IBAN_CODE,"[('SE0755171115119151305212', 28, 52, 'IBAN_CODE')]",True,False,True
+Please check the mod-97 for NO3028599671172.,NO3028599671172,IBAN_CODE,"[('NO3028599671172', 28, 43, 'IBAN_CODE')]",True,False,True
+I need the IBAN DK6054299218709350 added to the international transfer form.,DK6054299218709350,IBAN_CODE,"[('DK6054299218709350', 16, 34, 'IBAN_CODE')]",True,False,True
+Can you confirm FI0882331685949501 belongs to a Finnish bank?,FI0882331685949501,IBAN_CODE,"[('FI0882331685949501', 16, 34, 'IBAN_CODE'), ('Finnish', 48, 55, 'NRP')]",True,False,True
+The payment instruction lists LU17137VFJDUINCPIPWS as the beneficiary account.,LU17137VFJDUINCPIPWS,IBAN_CODE,"[('LU17137VFJDUINCPIPWS', 30, 50, 'IBAN_CODE')]",True,False,True
+Please store GR2509718420298592645283704 in the vendor master data.,GR2509718420298592645283704,IBAN_CODE,"[('GR2509718420298592645283704', 13, 40, 'IBAN_CODE')]",True,False,True
+The wire details show CZ8198533475288445803236 for the Czech partner.,CZ8198533475288445803236,IBAN_CODE,"[('CZ8198533475288445803236', 22, 46, 'IBAN_CODE'), ('Czech', 55, 60, 'NRP')]",True,False,True
+Update the settlement account to HU37113096643705627790816678.,HU37113096643705627790816678,IBAN_CODE,"[('HU37113096643705627790816678', 33, 61, 'IBAN_CODE')]",True,False,True
+Please look up the tax record associated with 749-53-2027.,749-53-2027,US_SSN,"[('749-53-2027', 46, 57, 'US_SSN')]",True,False,True
+The form requires the SSN 807-59-7318 for the background check.,807-59-7318,US_SSN,"[('807-59-7318', 26, 37, 'US_SSN')]",True,False,True
+Can you mask the number 422-10-6783 in the exported report?,422-10-6783,US_SSN,"[('422-10-6783', 24, 35, 'US_SSN')]",True,False,True
+I need to verify the format of 725-56-0435 before submitting.,725-56-0435,US_SSN,"[('725-56-0435', 31, 42, 'US_SSN')]",True,False,True
+The HR system rejected 812-34-5173 – any idea why?,812-34-5173,US_SSN,"[('812-34-5173', 23, 34, 'US_SSN')]",True,False,True
+Please add 133-56-2912 to the employee onboarding checklist.,133-56-2912,US_SSN,"[('133-56-2912', 11, 22, 'US_SSN')]",True,False,True
+The payroll file contains 468-58-7938 for this contractor.,468-58-7938,US_SSN,"[('468-58-7938', 26, 37, 'US_SSN')]",True,False,True
+Can you confirm 772-30-9857 is not a reserved range?,772-30-9857,US_SSN,"[('772-30-9857', 16, 27, 'US_SSN')]",True,False,True
+Update the W-9 record with 206-24-1722.,206-24-1722,US_SSN,"[('206-24-1722', 27, 38, 'US_SSN')]",True,False,True
+The support ticket includes the SSN 532-59-9871 for identity verification.,532-59-9871,US_SSN,"[('532-59-9871', 36, 47, 'US_SSN')]",True,False,True
+Please check the area number on 030-06-0548.,030-06-0548,US_SSN,"[('030-06-0548', 32, 43, 'US_SSN')]",True,False,True
+I entered 281-77-7185 by mistake in the demo account.,281-77-7185,US_SSN,"[('281-77-7185', 10, 21, 'US_SSN')]",True,False,True
+The audit log shows a lookup for 506-84-5909.,506-84-5909,US_SSN,"[('506-84-5909', 33, 44, 'US_SSN')]",True,False,True
+Can you format 391-68-0705 with the standard dashes?,391-68-0705,US_SSN,"[('391-68-0705', 15, 26, 'US_SSN')]",True,False,True
+The applicant provided 180-94-4468 on the application form.,180-94-4468,US_SSN,"[('180-94-4468', 23, 34, 'US_SSN')]",True,False,True
+Please validate that 803-14-9715 follows the SSN rules.,803-14-9715,US_SSN,"[('803-14-9715', 21, 32, 'US_SSN')]",True,False,True
+Store the encrypted value of 342-54-4201 in the secure vault.,342-54-4201,US_SSN,"[('342-54-4201', 29, 40, 'US_SSN')]",True,False,True
+The tax document lists 348-60-7021 as the taxpayer ID.,348-60-7021,US_SSN,"[('348-60-7021', 23, 34, 'US_SSN')]",True,False,True
+I need to correct the entry for 260-28-0369 in the database.,260-28-0369,US_SSN,"[('260-28-0369', 32, 43, 'US_SSN')]",True,False,True
+The background check report references 523-60-8135.,523-60-8135,US_SSN,"[('523-60-8135', 39, 50, 'US_SSN')]",True,False,True
+Please verify the NHS number 1819182355 for the patient record.,1819182355,UK_NHS,"[('1819182355', 29, 39, 'UK_NHS')]",True,False,True
+The referral form shows 2747903532 as the NHS number.,2747903532,UK_NHS,"[('2747903532', 24, 34, 'UK_NHS')]",True,False,True
+Can you check the mod-11 digit on 7205258987?,7205258987,UK_NHS,"[('7205258987', 34, 44, 'UK_NHS')]",True,False,True
+I need to update the record with NHS number 7764479977.,7764479977,UK_NHS,"[('7764479977', 44, 54, 'UK_NHS')]",True,False,True
+The lab request lists 9618550672 for the patient.,9618550672,UK_NHS,"[('9618550672', 22, 32, 'UK_NHS')]",True,False,True
+Please confirm 6789564063 is a valid 10-digit NHS number.,6789564063,UK_NHS,"[('6789564063', 15, 25, 'UK_NHS')]",True,False,True
+The appointment system rejected 6032699609 – any reason?,6032699609,UK_NHS,"[('6032699609', 32, 42, 'UK_NHS')]",True,False,True
+Can you extract the NHS number from this note: patient 2193707421?,2193707421,UK_NHS,"[('2193707421', 55, 65, 'UK_NHS')]",True,False,True
+Update the discharge summary to include 1993925678.,1993925678,UK_NHS,"[('1993925678', 40, 50, 'UK_NHS')]",True,False,True
+The pharmacy script has 8416795932 printed on it.,8416795932,UK_NHS,"[('8416795932', 24, 34, 'UK_NHS')]",True,False,True
+Please validate the check digit for 9617773473.,9617773473,UK_NHS,"[('9617773473', 36, 46, 'UK_NHS')]",True,False,True
+I entered 4244193049 in the wrong field – can you move it?,4244193049,UK_NHS,"[('4244193049', 10, 20, 'UK_NHS')]",True,False,True
+The GP letter references NHS number 5912807274.,5912807274,UK_NHS,"[('5912807274', 36, 46, 'UK_NHS')]",True,False,True
+Can you format 1777122333 for the electronic health record?,1777122333,UK_NHS,"[('1777122333', 15, 25, 'UK_NHS')]",True,False,True
+The insurance claim includes 4548649115 as the identifier.,4548649115,UK_NHS,"[('4548649115', 29, 39, 'UK_NHS')]",True,False,True
+Please store 5154966007 in the patient demographics section.,5154966007,UK_NHS,"[('5154966007', 13, 23, 'UK_NHS')]",True,False,True
+The test result came back for 8155164195.,8155164195,UK_NHS,"[('8155164195', 30, 40, 'UK_NHS')]",True,False,True
+I need to look up the record linked to 8168305647.,8168305647,UK_NHS,"[('8168305647', 39, 49, 'UK_NHS')]",True,False,True
+The outpatient form shows 7275897881.,7275897881,UK_NHS,"[('7275897881', 26, 36, 'UK_NHS')]",True,False,True
+Can you confirm 7343662260 passes the NHS check digit rules?,7343662260,UK_NHS,"[('7343662260', 16, 26, 'UK_NHS')]",True,False,True
+The server at 36.111.99.135 is returning 503 errors – any ideas?,36.111.99.135,IP_ADDRESS,"[('36.111.99.135', 14, 27, 'IP_ADDRESS')]",True,False,True
+Please block the IP 42.120.105.216 in the firewall rules.,42.120.105.216,IP_ADDRESS,"[('42.120.105.216', 20, 34, 'IP_ADDRESS')]",True,False,True
+The access log shows repeated requests from 165.175.155.161.,165.175.155.161,IP_ADDRESS,"[('165.175.155.161', 44, 59, 'IP_ADDRESS')]",True,False,True
+Can you check the geolocation of 52.113.113.147?,52.113.113.147,IP_ADDRESS,"[('52.113.113.147', 33, 47, 'IP_ADDRESS')]",True,False,True
+I need to whitelist 198.128.41.126 for the API gateway.,198.128.41.126,IP_ADDRESS,"[('198.128.41.126', 20, 34, 'IP_ADDRESS')]",True,False,True
+The traceroute stops at 33.228.51.54 – what does that mean?,33.228.51.54,IP_ADDRESS,"[('33.228.51.54', 24, 36, 'IP_ADDRESS')]",True,False,True
+Please add 82.173.163.135 to the rate-limit exemption list.,82.173.163.135,IP_ADDRESS,"[('82.173.163.135', 11, 25, 'IP_ADDRESS')]",True,False,True
+The monitoring alert mentioned 68.223.95.207 as the source.,68.223.95.207,IP_ADDRESS,"[('68.223.95.207', 31, 44, 'PHONE_NUMBER')]",True,False,False
+Can you resolve the reverse DNS for 53.75.38.195?,53.75.38.195,IP_ADDRESS,"[('53.75.38.195', 36, 48, 'IP_ADDRESS')]",True,False,True
+The VPN connection is coming from 1.191.158.47.,1.191.158.47,IP_ADDRESS,"[('1.191.158.47', 34, 46, 'IP_ADDRESS')]",True,False,True
+Please investigate the traffic spike from 47.129.135.20.,47.129.135.20,IP_ADDRESS,"[('47.129.135.20', 42, 55, 'PHONE_NUMBER')]",True,False,False
+The config file has a hard-coded IP 176.83.191.89 that should be removed.,176.83.191.89,IP_ADDRESS,"[('176.83.191.89', 36, 49, 'PHONE_NUMBER')]",True,False,False
+I need to ping 184.12.187.190 and report the latency.,184.12.187.190,IP_ADDRESS,"[('184.12.187.190', 15, 29, 'IP_ADDRESS')]",True,False,True
+The load balancer is routing traffic to 108.220.7.127.,108.220.7.127,IP_ADDRESS,"[('108.220.7.127', 40, 53, 'IP_ADDRESS')]",True,False,True
+Can you check if 220.104.12.201 is still responding?,220.104.12.201,IP_ADDRESS,"[('220.104.12.201', 17, 31, 'IP_ADDRESS')]",True,False,True
+The security scan flagged 144.241.67.60 as suspicious.,144.241.67.60,IP_ADDRESS,"[('144.241.67.60', 26, 39, 'PHONE_NUMBER')]",True,False,False
+Please update the DNS A record to point to 15.74.166.148.,15.74.166.148,IP_ADDRESS,"[('15.74.166.148', 43, 56, 'PHONE_NUMBER')]",True,False,False
+The error originates from the host at 160.44.194.33.,160.44.194.33,IP_ADDRESS,"[('160.44.194.33', 38, 51, 'PHONE_NUMBER')]",True,False,False
+I need the netmask for the subnet containing 70.40.140.53.,70.40.140.53,IP_ADDRESS,"[('70.40.140.53', 45, 57, 'IP_ADDRESS')]",True,False,True
+The backup job failed when trying to reach 146.31.185.252.,146.31.185.252,IP_ADDRESS,"[('146.31.185.252', 43, 57, 'IP_ADDRESS')]",True,False,True
+Can you check whether this card number passes the checksum? 4729183642057315,4729183642057315,CREDIT_CARD,"[('4729183642057315', 60, 76, 'CREDIT_CARD')]",True,False,True
+Please help me format this payment card number for a test form: 5418273906148257,5418273906148257,CREDIT_CARD,"[('5418273906148257', 64, 80, 'CREDIT_CARD')]",True,False,True
+Does this look like a valid card number? 3764918205731642,3764918205731642,CREDIT_CARD,"[('3764918205731642', 41, 57, 'CREDIT_CARD')]",True,False,True
+I'm testing my payment validation function with 4927601839452171. Can you review it?,4927601839452171,CREDIT_CARD,"[('4927601839452171', 48, 64, 'CREDIT_CARD')]",True,False,True
+Can you explain why my card validation rejects 5238194702615836?,5238194702615836,CREDIT_CARD,"[('5238194702615836', 47, 63, 'CREDIT_CARD')]",True,False,True
+Please use this synthetic card value to test my parser: 6011847293056188,6011847293056188,CREDIT_CARD,"[('6011847293056188', 56, 72, 'CREDIT_CARD')]",True,False,True
+Check the formatting of this card number for me: 4538271904627510,4538271904627510,CREDIT_CARD,"[('4538271904627510', 49, 65, 'CREDIT_CARD')]",True,False,True
+"payment_validation:
+  provider: local_test
+  card_number: 5581946207384157
+  operation: checksum
+  result: pending",5581946207384157,CREDIT_CARD,"[('5581946207384157', 60, 76, 'CREDIT_CARD')]",True,False,True
+"DEBUG payment_gateway:
+  validating_card=true
+  candidate=4916382057194638
+  validation_stage=luhn
+  status=retry",4916382057194638,CREDIT_CARD,"[('4916382057194638', 60, 76, 'CREDIT_CARD')]",True,False,True
+"{
+  ""service"": ""payment-sandbox"",
+  ""card_number"": ""5172948306157299"",
+  ""validation"": ""pending""
+}",5172948306157299,CREDIT_CARD,"[('5172948306157299', 54, 70, 'CREDIT_CARD')]",True,False,True
+"[INFO] Starting payment validation
+[DEBUG] Input received: 6011673928405164
+[INFO] Running checksum verification
+[INFO] Awaiting validation result",6011673928405164,CREDIT_CARD,"[('6011673928405164', 60, 76, 'CREDIT_CARD')]",True,False,True
+"def validate_payment():
+    card = ""4382917056348290""
+    result = check_card_checksum(card)
+    return result
+
+# Investigate why validation returns false",4382917056348290,CREDIT_CARD,"[('4382917056348290', 37, 53, 'CREDIT_CARD')]",True,False,True
+"Traceback (most recent call last):
+  File ""payment_handler.py"", line 42, in validate
+    card_number = ""5527619042836171""
+    validate_checksum(card_number)
+ValueError: Unexpected validation result",5527619042836171,CREDIT_CARD,"[('5527619042836171', 106, 122, 'CREDIT_CARD')]",True,False,True
+"payment:
+  environment: staging
+  card_reference: 4718206391542873
+  validation_mode: strict
+  retry_on_failure: true
+
+The application keeps rejecting the input. Can you help investigate?",4718206391542873,CREDIT_CARD,"[('4718206391542873', 52, 68, 'CREDIT_CARD')]",True,False,True
+"Hi, I need help troubleshooting a payment form in my local development environment.
+
+The form accepts the input initially, but the validation stage returns an error. I checked the frontend implementation and the input appears to be passed correctly.
+
+The synthetic card number used during the test is 5361902847516381.
+
+Could you review the likely causes and suggest how I should debug the validation flow?",5361902847516381,CREDIT_CARD,"[('5361902847516381', 305, 321, 'CREDIT_CARD')]",True,False,True
+"Hello, I'm documenting an issue with our payment validation component.
+
+The application loads correctly and the payment form renders without errors. However, submitting the test data causes the validation process to stop before reaching the confirmation stage.
+
+The value entered during the reproduction was 4928173650294818.
+
+Please help me write a concise technical summary of this issue and suggest what logs would be useful for debugging.",4928173650294818,CREDIT_CARD,"[('4928173650294818', 312, 328, 'CREDIT_CARD')]",True,False,True
+"I've been working on a small payment-processing prototype and noticed some inconsistent behaviour.
+
+The input component accepts the test data, but the backend validation routine sometimes returns an unexpected result. I have already checked the request serialization and confirmed that the field is being transmitted as a string.
+
+The test value currently being used is 6011092837465120.
+
+Can you help me identify possible issues with checksum validation, input normalization, and data handling?",6011092837465120,CREDIT_CARD,"[('6011092837465120', 374, 390, 'CREDIT_CARD')]",True,False,True
+"Please help me turn these notes into a support ticket.
+
+Issue: Payment form validation failure.
+
+Description:
+The local payment interface accepts the submitted value, but the backend rejects it during the verification stage. The issue appears to happen after the request reaches the validation service.
+
+Test input recorded during reproduction: 4550198273641850.
+
+Expected behaviour:
+The validation service should correctly evaluate the synthetic test input and return a clear result.
+
+Please make the ticket professional and include suggested debugging steps.",4550198273641850,CREDIT_CARD,"[('4550198273641850', 352, 368, 'CREDIT_CARD')]",True,False,True
+"Could you summarize this development discussion into a short technical report?
+
+We reviewed the payment form implementation and found that the frontend and backend use different validation paths. The frontend performs basic input checks, while the backend runs an additional checksum verification step.
+
+During the latest reproduction, the following synthetic card value was used: 5293847106251936.
+
+The team agreed that the next investigation should focus on normalization, validation consistency, and error handling.
+
+Please organize these notes into findings, possible causes, and recommended next steps.",5293847106251936,CREDIT_CARD,"[('5293847106251936', 385, 401, 'CREDIT_CARD')]",True,False,True
+"Hi, I need help reviewing a bug report before sending it to the development team.
+
+The payment module works normally when loading the form, but submitting test data triggers an unexpected validation response. The issue is reproducible in the local environment.
+
+The synthetic card value used for reproduction is 4862039174528064.
+
+Additional observations:
+- The request reaches the backend successfully.
+- The validation function executes without raising an exception.
+- The returned status does not match the expected result.
+
+Please rewrite this as a clear support escalation with a useful troubleshooting checklist.",4862039174528064,CREDIT_CARD,"[('4862039174528064', 316, 332, 'CREDIT_CARD')]",True,False,True
