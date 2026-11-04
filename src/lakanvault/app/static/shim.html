@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>LakanVault paste check</title>
+  <style>
+    body { font-family: Segoe UI, sans-serif; margin: 2rem auto; max-width: 40rem; color: #1a1a1a; }
+    textarea { width: 100%; height: 8rem; font-family: Consolas, monospace; }
+    button { margin-right: 0.5rem; margin-top: 0.5rem; }
+    #out { white-space: pre-wrap; background: #f4f4f4; padding: 1rem; }
+    .block { color: #8b0000; }
+    .allow { color: #0b6b2a; }
+  </style>
+</head>
+<body>
+  <h1>Paste check</h1>
+  <p>Paste text here and press Check. This page does not watch the VS Code editor, Copilot, or Cursor chat. It only checks what you put in this box.</p>
+  <textarea id="text" placeholder="Paste a fake key or an email here"></textarea>
+  <div>
+    <button id="sample" type="button">Fill fake API key</button>
+    <button id="go" type="button">Check</button>
+  </div>
+  <p id="verdict"></p>
+  <pre id="out"></pre>
+  <script>
+    const FAKE_KEY = "sk-abcdefghijklmnopqrstuvwxyz1234567890";
+    const text = document.getElementById("text");
+    const verdict = document.getElementById("verdict");
+    const out = document.getElementById("out");
+
+    document.getElementById("sample").onclick = () => {
+      text.value = "My key is " + FAKE_KEY;
+    };
+
+    document.getElementById("go").onclick = async () => {
+      verdict.textContent = "Checking…";
+      verdict.className = "";
+      out.textContent = "";
+      const response = await fetch("/internal/v1/classify-chat-payload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: text.value }]
+        })
+      });
+      const body = await response.json();
+      const action = body.action || "error";
+      verdict.textContent = response.ok ? action.toUpperCase() : "Request failed (" + response.status + ")";
+      verdict.className = action === "block" ? "block" : action === "allow" ? "allow" : "";
+      out.textContent = JSON.stringify(body, null, 2);
+    };
+  </script>
+</body>
+</html>

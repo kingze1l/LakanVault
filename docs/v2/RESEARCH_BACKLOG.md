@@ -1,7 +1,7 @@
 # LakanVault — Research & Additive Controls Backlog
 
 **Status:** Living document (CS301 Investigative Studio / capstone)  
-**Last updated:** August 2026  
+**Last updated:** October 2026  
 
 ## Ground rules
 
@@ -27,25 +27,28 @@
 | P9 | RQ1 corpus + baselines | Joan | Precision / recall / F1 vs regex-only and Presidio-only |
 | P10 | RQ2 latency (gated vs fixed pipeline) | Samiullah | p50 / p95 per layer |
 
-### Already present in codebase (Phase 1 / early Phase 2)
+### Already present in codebase (Oct 2026)
 
 - CS205 pipeline: integrity → threat → privacy → audit
 - `contracts/mcp.py` — Classify / Audit DTOs, tiers, actions
 - `local_core/privacy/classifier.py` — Pass-1 cascade (injection → API key regex → PII → allow)
-- `gateway.classify_text()` — MCP-ready classify entry (no MCP server process yet)
-- `ReversibleAnonymizer` — NAME/EMAIL/PHONE placeholders (chat path; not yet opaque + 3-class)
-- HTML UI + FastAPI + demo packaging
-- Path A product direction: MCP + clipboard + tray; no silent MITM as default
+- **P1** MCP stdio server (`lakanvault_classify`, `lakanvault_audit_recent`) — official SDK, subprocess-tested
+- **P5** Policy matrix (`local_core/policy/engine.py`) + fail-closed transformer
+- **P6** Opaque `[LV_…]` tokens + in-memory SQLite vault + request-scoped / SSE restore
+- Explicit localhost OpenAI proxy (`/v1/chat/completions`) with block / tokenize / restore
+- MCP sanitizing shim (NDJSON) for third-party tool results
+- Windows tray + PyInstaller build + frozen smoke script
+- Older `ReversibleAnonymizer` (NAME_001 placeholders) still used by the `/api/chat` demo path
 
 ### Not built yet (still required by proposal)
 
-- MCP stdio server package (`lakanvault_classify`, audit tool)
-- Full entropy Pass-1, JWT/SSH/PEM, config-driven policy matrix
-- Confidence-gated local LLM escalation wired to policy
-- Opaque tokens + SQLite mapping + unrestored metrics
-- 3-class anonymizer; custom dictionary UX
-- RQ1/RQ2 evaluation corpus and reports
-- Tray + packaging (proposal marks one-click tray as v2 distribution; still valuable additive demo)
+- Full entropy Pass-1 gate, JWT/SSH/PEM patterns (`shannon_entropy` exists, not wired)
+- **P4** Confidence-gated local LLM escalation wired to policy
+- **P7** 3-class anonymizer (Joan) — format-preserving / surrogate values
+- **P8** Custom dictionary UX
+- **P9/P10** RQ1/RQ2 evaluation corpus and reports (`eval/metrics.py` helpers exist)
+- Unrestored-token metrics
+- Clipboard hook, IDE extension, Anthropic codec (Claude Code proxy)
 
 ---
 
@@ -102,7 +105,7 @@ MITM + MV3 as a **default** product path fails hard on: cert pinning, WebSockets
 | C3 | Pre-send chat / agent prompt hook | Spike only if host exposes API | May be impossible | Week 1–2 spike |
 | C4 | Status bar tier indicator | UX | Low | Medium |
 
-See also: [IDE_EXTENSION_NOTES.md](./IDE_EXTENSION_NOTES.md).
+No extension exists yet. If built, it is a **client** of the local gateway (TypeScript → `http://127.0.0.1:8080`), not a replacement for MCP or the proxy, and it will not see the final cloud-bound prompt unless a host API exposes it (C3).
 
 ### D. Browser (vision — after MVP core)
 
@@ -212,5 +215,5 @@ See also: [IDE_EXTENSION_NOTES.md](./IDE_EXTENSION_NOTES.md).
 ## 10. Related docs
 
 - [PHASE2_PLAN.md](./PHASE2_PLAN.md) — Sprint backlog and execution plan
-- [IDE_EXTENSION_NOTES.md](./IDE_EXTENSION_NOTES.md) — Extension + Marketplace process  
+- [CLIENT_COMPAT.md](./CLIENT_COMPAT.md) — Per-client coverage matrix
 - `.cursor/rules/lakanvault-v2-scope.mdc` — Always-on product boundaries  

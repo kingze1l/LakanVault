@@ -15,7 +15,7 @@ This is a working slice, not full coverage of every Cursor or Claude request.
 
 - Cursor Chat, Agent, and Tab do not automatically send every prompt through LakanVault.
 - Claude Code is not connected.
-- There is no dashboard UI. Use the API and the MCP tools.
+- There is no dashboard UI. Use the API, the MCP tools, or the paste-check page at `http://127.0.0.1:8080/static/shim.html`.
 
 ## Check that it works
 
@@ -62,6 +62,6 @@ try {
 .\scripts\setup_mcp_sandbox.ps1
 ```
 
-Open `C:\Users\1Admin\source\repos\LakanVault-mcp-sandbox` in a second Cursor window. Under MCP, look for `lakanvault_classify` and `lakanvault_audit_recent`. Ask that window to classify the same fake key. Expect `action: block`.
+Open the new `..\LakanVault-mcp-sandbox` folder (next to this repo) in a second Cursor window. Under MCP, look for `lakanvault_classify` and `lakanvault_audit_recent`. Ask that window to classify the same fake key. Expect `action: block`.
 
 Stop the API with Ctrl+C in the first window.

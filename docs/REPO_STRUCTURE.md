@@ -1,110 +1,125 @@
 # Repository structure
 
-How the LakanVault repo is organized. **Active branch:** `CS301`.
+Per-file layout of the code on `main` (Oct 2026). For the product story and IDE setup read the root [`README.md`](../README.md).
 
 ## Root layout
 
 ```
 LakanVault/
 ├── config/              # YAML settings (default + local overrides)
-├── docs/                # All documentation — start at docs/README.md
-├── scripts/             # Runnable scripts — see scripts/README.md
+├── docs/                # Documentation — start at docs/README.md
+├── scripts/             # Dev, quality, sandbox, packaging scripts
 ├── src/lakanvault/      # Python package (all product code)
 ├── tests/               # pytest suite
-├── pyproject.toml       # Package definition + dependencies
-└── README.md            # Project overview
+├── pyproject.toml       # Package definition + console scripts
+├── WHAT_CHANGED.md      # Short "what works now" note
+└── README.md            # Project overview, per-IDE blocking guide
 ```
 
-**Not in git:** `data/` (runtime), `runtime/` (optional llama sidecar), `dist/`, `.venv/`, `docs/internal/`
+**Not in git:** `data/` (runtime), `runtime/` (optional llama sidecar), `dist/`, `.venv/`, `docs/internal/`, `.cursor/` (except rules), `site/`.
 
 ---
 
 ## `src/lakanvault/` — package layers
 
-Imports flow **down** the stack. `scripts/verify_boundaries.py` enforces this.
+Imports flow **down** the stack. `scripts/verify_boundaries.py` enforces this (ADR-001): `app/` and `mcp/` never import `local_core/` or `infrastructure/`.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  app/          HTTP shell — FastAPI routes only (UI TBD)   │
-│  mcp/          MCP tools + stdio sanitizing shim          │
-│  launcher/     Daemon bootstrap (uvicorn, optional browser)│
+│  app/        FastAPI routes + static paste page             │
+│  mcp/        MCP stdio server (tools) + sanitizing shim     │
+│  launcher/   Daemon bootstrap, frozen paths, config seeding │
+│  tray/       Windows tray icon                              │
 └──────────────────────────┬──────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────┐
-│  orchestration/   gateway.py, proxy_gateway.py, pipeline      │
-└──────────────────────────┬────────────────────────────────────┘
+│  orchestration/   gateway.py, proxy_gateway.py, pipeline    │
+└──────────────────────────┬──────────────────────────────────┘
                            │
         ┌──────────────────┼──────────────────┐
         ▼                  ▼                  │
 ┌───────────────┐  ┌───────────────┐         │
 │  local_core/  │  │infrastructure/│         │
 │  DLP, PII,    │  │ token vault,  │         │
-│  integrity,   │  │ upstream httpx│         │
-│  audit        │  │               │         │
+│  secrets,     │  │ upstream httpx│         │
+│  policy, audit│  │ SSE restore   │         │
 └───────────────┘  └───────────────┘         │
         ▲                  ▲
         └──────── contracts/  (DTOs, ports — no logic)
-                  shared/     (config, paths, url policy)
+                  shared/     (config, paths, url policy, loopback)
                   eval/       (RQ metrics helpers)
 ```
 
-### `app/` — HTTP API (dashboard UI TBD)
+### `app/` — HTTP shell
 
 | File | Role |
 |------|------|
-| `server.py` | FastAPI app, lifespan (vault + proxy), `/api/*` routes |
-| `proxy_routes.py` | `/v1/chat/completions`, `/v1/models`, `/internal/v1/sanitize` |
-| `static/` | Reserved assets (logo/favicon) for future UI |
+| `server.py` | FastAPI app, lifespan (vault + proxy gateway, config seeding), `/api/*` routes, mounts `/static` |
+| `proxy_routes.py` | `/v1/chat/completions`, `/v1/models`, loopback-only `/internal/v1/classify-chat-payload` and `/internal/v1/sanitize` |
+| `static/shim.html` | Paste-check page; posts to the metadata-only classifier |
 | `picker.py` | Windows file/folder dialogs |
-
-### `orchestration/` — wiring only
-
-| File | Role |
-|------|------|
-| `gateway.py` | Scan, chat, classify, settings |
-| `proxy_gateway.py` | Option 3: sanitize → upstream → restore |
-| `pipeline.py` | integrity → threat → privacy → audit |
-| `bus.py` | Cloud egress (redacted metadata only) |
-
-### `local_core/` — security logic
-
-| Path | Role |
-|------|------|
-| `dlp/` | Unified transformer, OpenAI payload walk, image inspector |
-| `privacy/` | PII detection, classifier, anonymizers |
-| `secrets/` | API key / high-entropy secret detection |
-| `policy/` | Tier → action matrix |
-| `security/` | Prompt injection guard |
-| `integrity/` | Model hash registry + stage |
-| `threat_scanner/` | Host/env checks |
-| `audit/` | JSON audit records |
-| `adapters/` | Local LLM HTTP clients (localhost only) |
-| `runtime/` | Optional bundled llama.cpp sidecar |
-
-### `infrastructure/` — IO and external systems
-
-| Path | Role |
-|------|------|
-| `token_vault.py` | In-memory SQLite token map (`:memory:`) |
-| `upstream/openai.py` | Allowlisted OpenAI httpx client |
-| `upstream/sse.py` | SSE parse + sliding-tail token restore |
-| `config_loader.py` | Typed config loader (contracts) |
 
 ### `mcp/` — Model Context Protocol
 
 | File | Role |
 |------|------|
-| `server.py` | `lakanvault_classify`, `lakanvault_audit_recent` tools |
-| `stdio_proxy.py` | Console shim — wraps child MCP, sanitizes via daemon HTTP |
+| `stdio_server.py` | Native MCP server (official SDK, stdio). Tools `lakanvault_classify(text)`, `lakanvault_audit_recent(limit)`. Entry `lakanvault-mcp-server` / `python -m lakanvault.mcp.stdio_server` |
+| `__main__.py` | `python -m lakanvault.mcp` → `stdio_server.main` |
+| `stdio_proxy.py` | Shim `lakanvault-mcp`: wraps a child MCP server, NDJSON framing, sanitizes `tools/call` results via daemon `/internal/v1/sanitize` |
+| `server.py` | Tool handlers shared by the stdio server (call gateway only) |
 
-### `contracts/` — shared types
+### `launcher/` and `tray/`
 
 | File | Role |
 |------|------|
+| `launcher/bootstrap.py` | Data dirs, `seed_bundled_config()` for PyInstaller `_MEIPASS`, uvicorn start, runtime sidecar |
+| `launcher/__main__.py` | `python -m lakanvault.launcher [--tray] [--no-runtime] [--daemon-only]` |
+| `tray/app.py`, `state.py`, `icons.py` | `pystray` icon, state machine, generated icons |
+
+### `orchestration/` — wiring only
+
+| File | Role |
+|------|------|
+| `gateway.py` | Scan, chat, classify, settings, audit (single entry for UI/MCP) |
+| `proxy_gateway.py` | Proxy lifecycle: sanitize → upstream → restore; `classify_chat_payload()` metadata-only |
+| `pipeline.py` | integrity → threat → privacy → audit, fail-closed |
+| `bus.py` | Only cloud egress point; redacted metadata; off by default |
+
+### `local_core/` — security logic (no HTTP, no IO adapters)
+
+| Path | Role |
+|------|------|
+| `privacy/detectors.py` | PII spans (regex, optional spaCy / Presidio-style engines) |
+| `privacy/classifier.py` | injection → API key → PII → allow cascade; returns tier + action, no raw text |
+| `privacy/opaque_anonymizer.py` | Mints `[LV_…]` tokens via vault port; restore |
+| `privacy/anonymizer.py` | Older `NAME_001` placeholder anonymizer (chat demo path) |
+| `secrets/detector.py` | API key regexes + Shannon entropy helper |
+| `policy/engine.py` | Tier → action matrix |
+| `security/prompt_guard.py` | Prompt-injection patterns |
+| `dlp/openai_payload.py` | Walk OpenAI chat payloads; extract/replace text; restore responses |
+| `dlp/transformer.py` | Unified transform: classify → block / tokenize / pass |
+| `dlp/image_inspector.py` | Image block/OCR scaffold (strict mode blocks) |
+| `integrity/`, `threat_scanner/`, `audit/` | CS205 pipeline stages |
+| `adapters/local_llm_client.py` | Localhost-only LLM client |
+| `runtime/llama_runtime.py` | Optional bundled llama.cpp sidecar |
+
+### `infrastructure/` — IO and external systems
+
+| Path | Role |
+|------|------|
+| `token_vault.py` | In-memory SQLite token map (`:memory:`), TTL, size caps |
+| `upstream/openai.py` | Allowlisted OpenAI-compatible httpx client |
+| `upstream/sse.py` | SSE parse + sliding-tail token restore |
+| `config_loader.py` | Typed config loader |
+
+### `contracts/` — shared types, zero logic
+
+| File | Role |
+|------|------|
+| `mcp.py` | `DataTier`, `PolicyAction`, classify/audit DTOs |
+| `proxy.py` | Proxy/vault/sanitize DTOs, `ChatPayloadClassifyResponse`, `TokenVaultPort`, `OPAQUE_TOKEN_REGEX` |
 | `dtos.py` | Scan/chat request/response shapes |
-| `mcp.py` | Classify/audit DTOs, `DataTier`, `PolicyAction` |
-| `proxy.py` | Proxy/vault/sanitize DTOs (Option 3) |
-| `events.py`, `ports.py`, `policies.py` | Pipeline contracts |
+| `events.py`, `ports.py`, `policies.py` | Pipeline contracts, `redact_for_cloud()` |
 
 ### `shared/` — cross-cutting utilities
 
@@ -113,6 +128,8 @@ Imports flow **down** the stack. `scripts/verify_boundaries.py` enforces this.
 | `config.py` | Load `default.yaml` + `local.yaml` |
 | `paths.py` | Dev vs PyInstaller frozen paths |
 | `url_policy.py` | Localhost-only + upstream allowlist |
+| `loopback.py` | `assert_loopback_client()` for internal endpoints |
+| `constants.py`, `system_prompt.py` | Shared constants / chat system prompt |
 
 ---
 
@@ -120,11 +137,24 @@ Imports flow **down** the stack. `scripts/verify_boundaries.py` enforces this.
 
 ```
 tests/
-├── contracts/     # DTO safety, boundaries, config
-└── unit/          # Per-module behavior (DLP, proxy, vault, MCP, SSE, …)
+├── contracts/     # DTO safety (no PII to cloud), boundaries, config, policies
+└── unit/          # Per-module behavior: detectors, transformer, vault, proxy, SSE,
+                   # MCP server (in-memory + subprocess), shim, launcher, tray, shim page
 ```
 
-Run: `python -m pytest tests/ -q`
+Run: `python scripts/verify_boundaries.py` then `python -m pytest tests/ -q`.
+
+---
+
+## `scripts/`
+
+| Script | Purpose |
+|--------|---------|
+| `verify_boundaries.py` | ADR-001 import gate |
+| `smoke_test.py` | Live endpoint + proxy block checks against a running daemon |
+| `setup_mcp_sandbox.ps1` | Worktree `..\LakanVault-mcp-sandbox` (branch `personal/mcp-sandbox`) + venv + project `.cursor/mcp.json` |
+| `build_tray_exe.ps1` | PyInstaller onedir: `LakanVault.exe` + `lakanvault-mcp.exe` |
+| `smoke_frozen_exe.ps1` | Start frozen exe `--daemon-only`, check it answers, check MCP artifact exists |
 
 ---
 
@@ -132,24 +162,19 @@ Run: `python -m pytest tests/ -q`
 
 | File | Purpose |
 |------|---------|
-| `default.yaml` | Baseline — cloud off, pipeline order, **proxy** block |
-| `local.yaml` | Machine overrides (gitignored if personal) |
-| `cloud.example.yaml` | Hybrid template |
+| `default.yaml` | Baseline: cloud off, pipeline order, `privacy.engine`, `local_ai`, `local_runtime`, `proxy` (strict, allowlist, vault TTL) |
+| `local.yaml` | Machine overrides |
+| `cloud.example.yaml` | Disabled cloud-metadata template |
 
 ---
 
-## `scripts/`
-
-See [`scripts/README.md`](../scripts/README.md).
-
----
-
-## HTTP surface (daemon `:8080`)
+## HTTP surface (daemon `127.0.0.1:8080`)
 
 | Path | Layer |
-|------|--------|
-| `/` | API status JSON (UI pending) |
-| `/static/*` | Reserved static assets |
-| `/api/*` | Gateway API (scan, chat, integrity, audit) |
-| `/v1/chat/completions`, `/v1/models` | Option 3 OpenAI proxy |
-| `/internal/v1/sanitize` | MCP shim → daemon DLP |
+|------|-------|
+| `GET /` | Status JSON (`api-only`) |
+| `GET /static/shim.html` | Paste-check page |
+| `/api/*` | Gateway API (scan, chat, settings, integrity, audit) |
+| `POST /v1/chat/completions`, `GET /v1/models` | Option 3 OpenAI proxy |
+| `POST /internal/v1/classify-chat-payload` | Loopback only; metadata response |
+| `POST /internal/v1/sanitize` | Loopback only; MCP shim → daemon DLP |

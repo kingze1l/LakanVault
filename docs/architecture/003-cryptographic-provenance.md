@@ -1,5 +1,7 @@
 # 003 — Crypto / provenance (my rules)
 
+**Status (Oct 2026):** model SHA-256 baseline + registry is implemented (`local_core/integrity/`). Signed cloud enrichment and cloud telemetry intake are **not built**; cloud is off by default, so the rules below for cloud input are policy, not shipped code.
+
 Phase 1a — anything from outside gets verified locally before I trust it.
 
 ## What I verify offline
