@@ -63,7 +63,7 @@ def scan(text: str, llm: LLMPolicy = "unsure") -> list[Finding]:
             findings = merge(findings, llm_findings)
     return findings
 
-def scan_secret_evalutation(text: str) -> list[tuple[str, int, int]]:
+def scan_secret_evaluation(text: str) -> list[tuple[str, int, int]]:
     '''scan text and return (matched_text, start, end) for each finding'''
     findings = scan(text, llm='unsure') 
     return [(f.text, f.start, f.end) for f in findings]
@@ -73,12 +73,27 @@ def scan_pii_evaluation(text: str) -> list[tuple[str, int, int]]:
     return [(f.text, f.start, f.end, f.entity_type) for f in findings]
 
 
-    
-'''basically just combine the scan and anonymizer (change to surrogate or uuse format preserving sanitization)'''
-def scan_and_sanitize(text:str, vault: Vault, llm: LLMPolicy = 'unsure') -> tuple[str, list[Finding]]:
-    findings = scan(text, llm)
-    return vault.sanitize(text, findings), findings
+'''
+THIS ARE THE IMPORTANT PART, A CLEAN INPUT AND OUTPUT FOR SAMMY SYSTEM TO CONNECT
+'''
+from dataclasses import dataclass
 
+@dataclass(frozen=True)
+class ProtectedPrompt:
+    sanitized: str             # safe to send to the external LLM
+    findings: list[Finding]    # contains real values: keep local, never log or send
+
+def process_input(text: str, vault: Vault, llm: LLMPolicy = 'unsure') -> ProtectedPrompt:
+    '''scan + sanitize. Send .sanitized to the external LLM.'''
+    findings = scan(text, llm)
+    return ProtectedPrompt(vault.sanitize(text, findings), findings)
+
+def process_output(text: str, vault: Vault) -> str:
+    '''run on the external LLM's reply before showing it to the user'''
+    return vault.restore(text)
+
+
+# simple debug down here for smoke test
 if __name__ == "__main__":
     import time
     from .samples import samples
@@ -112,7 +127,7 @@ if __name__ == "__main__":
         print(f"  Time: {(time.perf_counter() - start) * 1000:.2f} ms")
         try:
             sanitized = vault.sanitize(prompt, findings)
-            print(f'  SANITIZED: {sanitized!r}')
+            print(f'  DRAFT TO SEND TO EXTERNAL LLM: {sanitized!r}')
         except Exception as exc:
             print(f'  SANITIZE ERROR: {type(exc).__name__}: {exc}')
 
