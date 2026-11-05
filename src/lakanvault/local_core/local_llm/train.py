@@ -3,9 +3,13 @@ qwen tomorrow
 train the LakanVault detector model (Gemma 4 E4B + LoRA -> GGUF for LM Studio).
 
 data.jsonl, one example per line:
-  {"text": "my db password is ADHas73dW",
-   "answer": {"findings": [{"type": "generic-password", "tier": "SECRET", "span": "ADHas73dW", "confidence": "high"}]}}
-  {"text": "hello world", "answer": {"findings": []}}
+    {"text": "my db password is ADHas73dW",
+    "answer": {"findings": [{"span": "ADHas73dW", "type": "generic-password", "tier": "SECRET", "confidence": "high"}]}}
+
+    {"text": "api_key = os.environ[\"OPENAI_KEY\"]",
+    "answer": {"findings": [{"span": "os.environ[\"OPENAI_KEY\"]", "type": "generic-api-key", "tier": "BENIGN", "confidence": "high"}]}}
+
+    {"text": "hello world", "answer": {"findings": []}}
 
 run : 
 python -m lakanvault.local_core.local_llm.train
