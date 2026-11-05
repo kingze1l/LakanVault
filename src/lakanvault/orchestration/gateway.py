@@ -15,7 +15,12 @@ from lakanvault.contracts.mcp import (
     ClassifyRequest,
     ClassifyResponse,
     DataTier,
+    FindingSummary,
     PolicyAction,
+    ProtectRequest,
+    ProtectResponse,
+    RestoreRequest,
+    RestoreResponse,
 )
 from lakanvault.infrastructure.token_vault import InMemoryTokenVault
 from lakanvault.local_core.adapters.local_llm_client import LocalLLMClient
@@ -56,6 +61,8 @@ class Gateway:
         self._anonymizer = ReversibleAnonymizer()
         self._token_vault = InMemoryTokenVault()
         self._local_llm = self._build_local_llm()
+        # Joan scan sessions: session_id -> Vault (:memory:, workspace=session_id)
+        self._protect_vaults: dict[str, object] = {}
         local = self._cfg.get("local", {})
         models_dir = self._resolve_path(local.get("models_dir", "./data/models"), self._config_dir)
         self._registry = ModelRegistry(models_dir=models_dir)
@@ -206,6 +213,62 @@ class Gateway:
             entity_types=result.entity_types,
             injection_blocked=result.injection_blocked,
             injection_category=result.injection_category,
+        )
+
+    def _vault_for_session(self, session_id: str):
+        from lakanvault.local_core.anonymizer.anonymizer import Vault
+
+        vault = self._protect_vaults.get(session_id)
+        if vault is None:
+            key_path = self._config_dir.parent / "data" / "vault.key"
+            key_path.parent.mkdir(parents=True, exist_ok=True)
+            vault = Vault(":memory:", workspace=session_id, key_path=str(key_path))
+            self._protect_vaults[session_id] = vault
+        return vault
+
+    def protect_prompt(
+        self,
+        text: str,
+        session_id: str = "",
+        llm: str = "unsure",
+    ) -> ProtectResponse:
+        """Joan scan + Vault sanitize. Findings metadata only — never finding.text."""
+        from lakanvault.local_core.scan import process_input
+
+        req = ProtectRequest(text=text, session_id=session_id or "", llm=llm)
+        sid = req.session_id or uuid.uuid4().hex[:12]
+        vault = self._vault_for_session(sid)
+        protected = process_input(req.text, vault, llm=req.llm)  # type: ignore[arg-type]
+        summaries = [
+            FindingSummary(
+                entity_type=f.entity_type,
+                tier=f.tier.value if hasattr(f.tier, "value") else str(f.tier),
+                confidence=float(f.confidence),
+                start=int(f.start),
+                end=int(f.end),
+                source=str(f.source),
+                needs_escalation=bool(f.needs_escalation),
+            )
+            for f in protected.findings
+        ]
+        return ProtectResponse(
+            session_id=sid,
+            sanitized=protected.sanitized,
+            findings=summaries,
+            finding_count=len(summaries),
+        )
+
+    def restore_prompt(self, text: str, session_id: str) -> RestoreResponse:
+        """Restore surrogates from Joan Vault for a prior protect session."""
+        from lakanvault.local_core.scan import process_output
+
+        req = RestoreRequest(text=text, session_id=session_id)
+        vault = self._protect_vaults.get(req.session_id)
+        if vault is None:
+            raise KeyError(f"unknown protect session: {req.session_id}")
+        return RestoreResponse(
+            session_id=req.session_id,
+            text=process_output(req.text, vault),
         )
 
     def local_llm_status(self, base_url: str | None = None) -> dict:

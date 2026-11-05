@@ -82,6 +82,59 @@ class AuditQueryResponse(BaseModel):
     model_config = {"extra": "forbid"}
 
 
+class FindingSummary(BaseModel):
+    """Safe finding metadata for IDE display. Never includes matched text."""
+
+    entity_type: str
+    tier: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    start: int = Field(ge=0)
+    end: int = Field(ge=0)
+    source: str = ""
+    needs_escalation: bool = False
+
+    model_config = {"extra": "forbid"}
+
+
+class ProtectRequest(BaseModel):
+    """Input for MCP protect — scan + sanitize before an external LLM."""
+
+    text: str = Field(min_length=1, max_length=100_000)
+    session_id: str = Field(default="", max_length=64)
+    llm: str = Field(default="unsure", pattern="^(unsure|always|never)$")
+
+    model_config = {"extra": "forbid"}
+
+
+class ProtectResponse(BaseModel):
+    """Sanitized prompt + finding metadata. No raw secret/PII values."""
+
+    session_id: str
+    sanitized: str
+    findings: list[FindingSummary] = Field(default_factory=list)
+    finding_count: int = 0
+
+    model_config = {"extra": "forbid"}
+
+
+class RestoreRequest(BaseModel):
+    """Input for MCP restore — external LLM reply → original values."""
+
+    text: str = Field(min_length=0, max_length=500_000)
+    session_id: str = Field(min_length=1, max_length=64)
+
+    model_config = {"extra": "forbid"}
+
+
+class RestoreResponse(BaseModel):
+    """Restored reply for the user."""
+
+    session_id: str
+    text: str
+
+    model_config = {"extra": "forbid"}
+
+
 # Fields that must never appear in MCP responses (enforced in tests).
 FORBIDDEN_MCP_RESPONSE_FIELDS = frozenset({
     "prompt_text",
@@ -91,4 +144,6 @@ FORBIDDEN_MCP_RESPONSE_FIELDS = frozenset({
     "sanitized_prompt",
     "api_key",
     "secret",
+    "real",
+    "preview",
 })

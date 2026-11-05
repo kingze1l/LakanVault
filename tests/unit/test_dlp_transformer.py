@@ -17,7 +17,7 @@ def test_clean_text_allows() -> None:
 def test_api_key_blocks_and_returns_no_body() -> None:
     vault = InMemoryTokenVault()
     result = transform_text(
-        "My key is sk-abcdefghijklmnopqrstuvwxyz1234567890",
+        "My key is sk-9f8e7d6c5b4a3210fedcba0987654321zz",
         vault,
         request_id="r1",
     )

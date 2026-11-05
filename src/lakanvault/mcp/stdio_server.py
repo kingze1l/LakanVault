@@ -1,4 +1,4 @@
-"""Native MCP stdio server — classify and audit tools for Cursor.
+"""Native MCP stdio server — classify, protect/restore, and audit tools for Cursor.
 
 Uses the official MCP Python SDK (newline-delimited JSON-RPC on stdin/stdout).
 Does not import local_core or infrastructure; handlers go through Gateway.
@@ -11,7 +11,7 @@ from pathlib import Path
 
 from mcp.server import MCPServer
 
-from lakanvault.mcp.server import audit_recent, classify
+from lakanvault.mcp.server import audit_recent, classify, protect, restore, shared_gateway
 
 
 def resolve_config_dir(explicit: str | Path | None = None) -> Path:
@@ -28,11 +28,15 @@ def resolve_config_dir(explicit: str | Path | None = None) -> Path:
 
 def build_server(config_dir: str | Path | None = None) -> MCPServer:
     cfg = resolve_config_dir(config_dir)
+    # Warm shared Gateway so protect/restore sessions stick for this process.
+    shared_gateway(cfg)
     server = MCPServer(
         "lakanvault",
         instructions=(
             "Local DLP tools for LakanVault. "
-            "These tools classify or audit text; they do not see the final cloud prompt."
+            "Call lakanvault_protect before sending user text to a cloud model; "
+            "call lakanvault_restore on the model reply with the same session_id. "
+            "These tools do not see the final cloud prompt unless the agent calls them."
         ),
         version="0.1.0",
     )
@@ -43,6 +47,35 @@ def build_server(config_dir: str | Path | None = None) -> MCPServer:
     )
     def lakanvault_classify(text: str, source: str = "mcp") -> dict:
         return classify(text, config_dir=cfg).model_dump(mode="json")
+
+    @server.tool(
+        name="lakanvault_protect",
+        description=(
+            "Scan and sanitize text before sending to an external LLM. "
+            "Returns sanitized prompt, session_id, and finding metadata "
+            "(entity_type/tier/offsets only — never the raw matched values). "
+            "Pass the same session_id to lakanvault_restore after the model replies."
+        ),
+    )
+    def lakanvault_protect(
+        text: str,
+        session_id: str = "",
+        llm: str = "unsure",
+    ) -> dict:
+        return protect(text, session_id=session_id, llm=llm, config_dir=cfg).model_dump(mode="json")
+
+    @server.tool(
+        name="lakanvault_restore",
+        description=(
+            "Restore original secret/PII values in an external LLM reply "
+            "using session_id from a prior lakanvault_protect call."
+        ),
+    )
+    def lakanvault_restore(text: str, session_id: str) -> dict:
+        try:
+            return restore(text, session_id=session_id, config_dir=cfg).model_dump(mode="json")
+        except KeyError as exc:
+            return {"error": str(exc), "session_id": session_id, "text": text}
 
     @server.tool(
         name="lakanvault_audit_recent",

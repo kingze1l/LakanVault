@@ -4,6 +4,7 @@ run :
 python -m lakanvault.local_core.scan
 '''
 
+import logging
 from typing import Literal
 
 from .findings import Finding, Tier, resolve_overlaps
@@ -11,6 +12,8 @@ from .pii.detector import detect_pii
 from .secrets.detector import detect_secrets
 from .anonymizer.anonymizer import Vault
 from .escalate import suspicion
+
+logger = logging.getLogger(__name__)
 
 def _overlaps(a: Finding, b: Finding) -> bool:
     return a.start < b.end and b.start < a.end
@@ -53,9 +56,9 @@ def scan(text: str, llm: LLMPolicy = "unsure") -> list[Finding]:
     suspicion_reason = suspicion(text, findings)
     if llm == 'always' or (llm == 'unsure' and (any(f.needs_escalation for f in findings) or suspicion_reason)):
         if suspicion_reason:
-            print(f'escalated to local llm due to suspicion: {suspicion_reason}')
+            logger.info("escalated to local llm due to suspicion: %s", suspicion_reason)
         else:
-            print(f'escalated to local llm: a detector finding was unsure (or llm="always")')
+            logger.info("escalated to local llm: a detector finding was unsure (or llm=%r)", llm)
         from .local_llm.detector import ask_llm   # lazy: scan() works without the openai package
         llm_findings = ask_llm(text)
         # llm_findings is None when the call failed: keep the detectors' result as is.

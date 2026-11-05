@@ -7,10 +7,19 @@
 
 | Process | Entry | Role |
 |---------|-------|------|
-| Native tools | `lakanvault-mcp-server` / `python -m lakanvault.mcp.stdio_server` | Exposes `lakanvault_classify` and `lakanvault_audit_recent` |
+| Native tools | `lakanvault-mcp-server` / `python -m lakanvault.mcp.stdio_server` | Exposes `lakanvault_classify`, `lakanvault_protect`, `lakanvault_restore`, `lakanvault_audit_recent` |
 | Sanitize shim | `lakanvault-mcp` | Wraps a **child** MCP server; sanitizes `tools/call` **results** only |
 
 Neither path intercepts Chat / Agent / Tab traffic that bypasses MCP tools.
+
+### Protect → external LLM → restore (Joan scan path)
+
+1. Call **`lakanvault_protect`** on the user text (optional `session_id`, `llm`: `unsure` / `always` / `never`).
+2. Send only the returned **`sanitized`** string to the cloud / external model.
+3. Show **`findings`** to the user as flags (entity type / tier / offsets — raw values are never returned).
+4. Call **`lakanvault_restore`** on the model reply with the **same `session_id`**.
+
+The agent must choose these tools. Cursor Chat that never calls them is still a residual path.
 
 ## Prerequisites
 

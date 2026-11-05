@@ -2,14 +2,16 @@
 from pathlib import Path
 
 from lakanvault.contracts.mcp import DataTier, PolicyAction
-from lakanvault.mcp.server import audit_recent, classify, list_tools
+from lakanvault.mcp.server import audit_recent, classify, list_tools, protect, restore
 
 
-def test_lists_classify_and_audit_tools() -> None:
+def test_lists_classify_protect_restore_and_audit_tools() -> None:
     tools = list_tools()
     assert "lakanvault_classify" in tools
+    assert "lakanvault_protect" in tools
+    assert "lakanvault_restore" in tools
     assert "lakanvault_audit_recent" in tools
-    assert len(tools) == 2
+    assert len(tools) == 4
 
 
 def test_classify_clean_text_allows(tmp_path: Path) -> None:
@@ -42,3 +44,25 @@ def test_audit_recent_returns_metadata_only(tmp_path: Path) -> None:
     assert "prompt_text" not in dumped
     assert "secret" not in str(dumped)
     assert resp.entries[0].run_id == "abc"
+
+
+def test_protect_restore_helpers_round_trip(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "lakanvault.local_core.scan.detect_pii",
+        lambda text, layers=("names",): [],
+    )
+    src_cfg = Path(__file__).resolve().parents[2] / "config" / "default.yaml"
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    config_dir.joinpath("default.yaml").write_text(src_cfg.read_text(encoding="utf-8"), encoding="utf-8")
+    secret = "SuperSecret99"
+    prompt = f"connect with postgres://admin:{secret}@db.example.com/app"
+    protected = protect(
+        prompt,
+        session_id="helper1",
+        llm="never",
+        config_dir=config_dir,
+    )
+    assert secret not in protected.sanitized
+    restored = restore(protected.sanitized, session_id="helper1", config_dir=config_dir)
+    assert secret in restored.text

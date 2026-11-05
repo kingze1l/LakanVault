@@ -11,7 +11,7 @@ from mcp.client.stdio import stdio_client
 
 from lakanvault.contracts.mcp import FORBIDDEN_MCP_RESPONSE_FIELDS
 
-API_KEY = "sk-abcdefghijklmnopqrstuvwxyz1234567890"
+API_KEY = "sk-9f8e7d6c5b4a3210fedcba0987654321zz"
 REPO = Path(__file__).resolve().parents[2]
 CONFIG = REPO / "config"
 
@@ -37,7 +37,12 @@ def test_subprocess_lists_and_classifies() -> None:
                 await session.initialize()
                 listed = await session.list_tools()
                 names = {t.name for t in listed.tools}
-                assert names == {"lakanvault_classify", "lakanvault_audit_recent"}
+                assert names == {
+                    "lakanvault_classify",
+                    "lakanvault_audit_recent",
+                    "lakanvault_protect",
+                    "lakanvault_restore",
+                }
 
                 clean = await session.call_tool("lakanvault_classify", {"text": "hello world"})
                 clean_text = next(b.text for b in clean.content if hasattr(b, "text"))

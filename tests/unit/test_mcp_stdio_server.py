@@ -11,7 +11,8 @@ from mcp.shared.memory import create_client_server_memory_streams
 from lakanvault.contracts.mcp import FORBIDDEN_MCP_RESPONSE_FIELDS
 from lakanvault.mcp.stdio_server import build_server, resolve_config_dir
 
-API_KEY = "sk-abcdefghijklmnopqrstuvwxyz1234567890"
+# Joan's gitleaks-style OpenAI rule needs a real-shaped key; URI creds always match.
+SECRET_PROMPT = "connect with postgres://admin:SuperSecret99@db.example.com/app"
 
 
 def _repo_config() -> Path:
@@ -40,13 +41,18 @@ async def _with_session(server, coro):
                 pass
 
 
-def test_list_tools_exposes_classify_and_audit() -> None:
+def test_list_tools_exposes_classify_protect_restore_and_audit() -> None:
     server = build_server(_repo_config())
 
     async def body(session):
         listed = await session.list_tools()
         names = {t.name for t in listed.tools}
-        assert names == {"lakanvault_classify", "lakanvault_audit_recent"}
+        assert names == {
+            "lakanvault_classify",
+            "lakanvault_audit_recent",
+            "lakanvault_protect",
+            "lakanvault_restore",
+        }
 
     asyncio.run(_with_session(server, body))
 
@@ -57,7 +63,7 @@ def test_classify_tool_blocks_secret_without_echo() -> None:
     async def body(session):
         result = await session.call_tool(
             "lakanvault_classify",
-            {"text": f"my key is {API_KEY}"},
+            {"text": SECRET_PROMPT},
         )
         assert result.is_error is not True
         text_parts = [
@@ -66,7 +72,7 @@ def test_classify_tool_blocks_secret_without_echo() -> None:
             if getattr(block, "type", None) == "text" and hasattr(block, "text")
         ]
         joined = "\n".join(text_parts)
-        assert "sk-" not in joined
+        assert "SuperSecret99" not in joined
         payload = json.loads(joined)
         assert payload["action"] == "block"
         assert FORBIDDEN_MCP_RESPONSE_FIELDS.isdisjoint(payload)
@@ -92,3 +98,37 @@ def test_classify_clean_text_allows() -> None:
 
 def test_resolve_config_dir_prefers_explicit(tmp_path: Path) -> None:
     assert resolve_config_dir(tmp_path) == tmp_path
+
+
+def test_protect_then_restore_via_mcp(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "lakanvault.local_core.scan.detect_pii",
+        lambda text, layers=("names",): [],
+    )
+    server = build_server(_repo_config())
+    secret = "SuperSecret99"
+    prompt = f"connect with postgres://admin:{secret}@db.example.com/app"
+
+    async def body(session):
+        protected = await session.call_tool(
+            "lakanvault_protect",
+            {"text": prompt, "session_id": "mcp1", "llm": "never"},
+        )
+        assert protected.is_error is not True
+        text = next(b.text for b in protected.content if hasattr(b, "text"))
+        payload = json.loads(text)
+        assert payload["session_id"] == "mcp1"
+        assert secret not in payload["sanitized"]
+        assert secret not in text
+        assert FORBIDDEN_MCP_RESPONSE_FIELDS.isdisjoint(payload)
+
+        restored = await session.call_tool(
+            "lakanvault_restore",
+            {"text": payload["sanitized"], "session_id": "mcp1"},
+        )
+        assert restored.is_error is not True
+        rtext = next(b.text for b in restored.content if hasattr(b, "text"))
+        rpayload = json.loads(rtext)
+        assert secret in rpayload["text"]
+
+    asyncio.run(_with_session(server, body))

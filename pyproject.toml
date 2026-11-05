@@ -17,6 +17,9 @@ dependencies = [
     "mcp>=2.3.0,<3",  # official MCP Python SDK (NDJSON stdio)
     "pystray>=0.19.0",
     "pillow>=10.0.0",
+    "Faker>=24.0.0",  # Joan Vault surrogate PII
+    "regex>=2024.0.0",  # gitleaks-style secret rules
+    "tldextract>=5.0.0",  # Presidio email recognizer (offline suffix list)
 ]
 
 [project.scripts]

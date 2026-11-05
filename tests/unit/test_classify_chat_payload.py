@@ -12,7 +12,7 @@ from lakanvault.infrastructure.token_vault import InMemoryTokenVault
 from lakanvault.orchestration.proxy_gateway import ProxyGateway
 
 EMAIL = "jane.doe@example.com"
-API_KEY = "sk-abcdefghijklmnopqrstuvwxyz1234567890"
+API_KEY = "sk-9f8e7d6c5b4a3210fedcba0987654321zz"
 
 
 class _ClientApp:

@@ -59,7 +59,7 @@ def test_oversized_blocked(monkeypatch) -> None:
 
 
 def test_ocr_secret_blocks_whole_request() -> None:
-    inspector = ImageInspector(FakeOcr("My key is sk-abcdefghijklmnopqrstuvwxyz1234567890"))
+    inspector = ImageInspector(FakeOcr("My key is sk-9f8e7d6c5b4a3210fedcba0987654321zz"))
 
     def tx(text: str) -> TransformResult:
         if "sk-" in text:
