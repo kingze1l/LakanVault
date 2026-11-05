@@ -9,7 +9,6 @@ import re, sqlite3
 from .helper import KEY_PATH, load_key, make_rng
 from .secret_fakes import create_fake_secret
 from .pii_fakes import PII_GENERATORS, create_fake_pii
-from .samples import SAMPLES_SECRET, SAMPLES_PII
 
 def _is_pii(entity_type, tier):
     return entity_type in PII_GENERATORS or (tier is not None and tier != 'SECRET')
@@ -81,6 +80,8 @@ class Vault:
         return pat.sub(lambda x: m[x.group()], text)
 
 if __name__ == '__main__':
+    from .samples import SAMPLES_SECRET  # optional local smoke samples
+
     vault = Vault(":memory:")
     for secret in SAMPLES_SECRET:
         fake = vault.surrogate(secret)

@@ -13,7 +13,8 @@ def test_classify_clean_text_allows() -> None:
 
 
 def test_classify_api_key_blocks() -> None:
-    result = classify_content("My key is sk-abcdefghijklmnopqrstuvwxyz1234567890")
+    # Key must not contain gitleaks allowlist stopword "abcdefghijklmnopqrstuvwxyz".
+    result = classify_content("My key is sk-9f8e7d6c5b4a3210fedcba0987654321zz")
     assert result.tier == "confidential"
     assert result.action == "block"
     assert "API_KEY" in result.entity_types

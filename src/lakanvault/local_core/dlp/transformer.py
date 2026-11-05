@@ -16,7 +16,8 @@ DEFAULT_TTL = 3600.0
 def _merge_spans(text: str) -> list[tuple[int, int, str]]:
     raw: list[tuple[int, int, str]] = []
     for hit in detect_secrets(text):
-        raw.append((hit.start, hit.end, hit.kind))
+        kind = getattr(hit, "kind", None) or getattr(hit, "entity_type", "API_KEY")
+        raw.append((hit.start, hit.end, str(kind)))
     spans, _engine = find_pii_spans(text)
     for span in spans:
         if span.entity_type in _PII_TYPES:

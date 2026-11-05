@@ -68,7 +68,16 @@ SECRET_RULES: list[SecretRule] = [
         keywords=("://",),
         secret_group=1,
         score=0.9,
-    )
+    ),
+    # Broad OpenAI-style key: gitleaks.toml openai-api-key is very specific (T3BlbkFJ…).
+    SecretRule(
+        id="openai-sk-generic",
+        description="OpenAI-style sk- API key (generic prefix).",
+        regex=r"""\b(sk-[a-zA-Z0-9]{20,})\b""",
+        keywords=("sk-",),
+        secret_group=1,
+        score=0.9,
+    ),
 ]
 
 

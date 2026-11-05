@@ -24,7 +24,7 @@ def test_orchestrated_prompt_reads_multipart_text() -> None:
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Check this key sk-abcdefghijklmnopqrstuvwxyz1234567890"},
+                    {"type": "text", "text": "Check this key sk-9f8e7d6c5b4a3210fedcba0987654321zz"},
                 ],
             }
         ]
@@ -48,7 +48,7 @@ def test_regex_and_presidio_run_on_orchestrated_string() -> None:
 def test_regex_blocks_secret_in_orchestrated_string() -> None:
     payload = {
         "messages": [
-            {"role": "user", "content": "My key is sk-abcdefghijklmnopqrstuvwxyz1234567890"},
+            {"role": "user", "content": "My key is sk-9f8e7d6c5b4a3210fedcba0987654321zz"},
         ]
     }
     result = classify_content(orchestrated_prompt(payload))

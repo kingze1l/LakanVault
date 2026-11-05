@@ -11,8 +11,13 @@ from lakanvault.contracts.mcp import (
     ClassifyRequest,
     ClassifyResponse,
     DataTier,
+    FindingSummary,
     FORBIDDEN_MCP_RESPONSE_FIELDS,
     PolicyAction,
+    ProtectRequest,
+    ProtectResponse,
+    RestoreRequest,
+    RestoreResponse,
 )
 
 
@@ -78,3 +83,50 @@ def test_audit_query_response_no_forbidden_fields() -> None:
 def test_data_tier_and_policy_action_values() -> None:
     assert DataTier.SECRET == "secret"
     assert PolicyAction.BLOCK == "block"
+
+
+def test_finding_summary_forbids_matched_text() -> None:
+    with pytest.raises(ValidationError):
+        FindingSummary(
+            entity_type="EMAIL_ADDRESS",
+            tier="PII_MODERATE",
+            confidence=0.9,
+            start=0,
+            end=5,
+            text="leak@example.com",  # type: ignore[call-arg]
+        )
+
+
+def test_protect_response_safe_shape() -> None:
+    finding = FindingSummary(
+        entity_type="EMAIL_ADDRESS",
+        tier="PII_MODERATE",
+        confidence=0.9,
+        start=5,
+        end=20,
+        source="presidio",
+        needs_escalation=False,
+    )
+    resp = ProtectResponse(
+        session_id="abc",
+        sanitized="mail [fake] thanks",
+        findings=[finding],
+        finding_count=1,
+    )
+    dumped = resp.model_dump()
+    assert FORBIDDEN_MCP_RESPONSE_FIELDS.isdisjoint(dumped.keys())
+    assert "text" not in finding.model_dump()
+    assert finding.entity_type == "EMAIL_ADDRESS"
+
+
+def test_protect_request_llm_policy() -> None:
+    with pytest.raises(ValidationError):
+        ProtectRequest(text="hello", llm="maybe")
+    assert ProtectRequest(text="hello", llm="never").llm == "never"
+
+
+def test_restore_request_requires_session() -> None:
+    with pytest.raises(ValidationError):
+        RestoreRequest(text="hi", session_id="")
+    out = RestoreResponse(session_id="s1", text="restored")
+    assert out.text == "restored"

@@ -5,6 +5,7 @@ sibling of secrets/detector.py. Public entry point: detect_pii(text) -> list[Fin
 
 import logging
 import re
+from dataclasses import dataclass
 from functools import lru_cache
 
 from ..findings import DISCARD_BELOW, DetectionEngine, Finding, Tier, resolve_overlaps
@@ -156,6 +157,11 @@ def get_engine(layer: str) -> DetectionEngine:
     return _LAYER_CLASSES[layer]()
 
 
+def reset_analyzer_cache() -> None:
+    """Clear cached detector engines (tests / engine swaps)."""
+    get_engine.cache_clear()
+
+
 def load_pii_models() -> None:
     """Call at startup so the first prompt doesn't pay for loading spaCy."""
     get_engine("presidio").load()
@@ -174,6 +180,40 @@ def detect_pii(text: str, layers: tuple[str, ...] = ("presidio", "names")) -> li
     for layer in layers:
         findings.extend(get_engine(layer).detect(text))
     return resolve_overlaps(findings)
+
+
+@dataclass(frozen=True)
+class PiiSpan:
+    """Legacy span shape used by privacy.classifier / dlp.transformer."""
+
+    entity_type: str
+    start: int
+    end: int
+    text: str = ""
+
+
+def find_pii_spans(
+    text: str,
+    layers: tuple[str, ...] = ("presidio", "names"),
+    engine: str | None = None,
+) -> tuple[list[PiiSpan], str]:
+    """Compatibility wrapper: Joan Finding list → (PiiSpan list, engine label).
+
+    ``engine`` is accepted for older callers and ignored (Joan selects layers).
+    """
+    _ = engine
+    findings = detect_pii(text, layers=layers)
+    spans = [
+        PiiSpan(
+            entity_type=f.entity_type,
+            start=f.start,
+            end=f.end,
+            text=f.text,
+        )
+        for f in findings
+    ]
+    label = findings[0].source if findings else "none"
+    return spans, label
 
 if __name__ == '__main__':
     import time

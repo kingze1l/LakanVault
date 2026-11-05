@@ -53,7 +53,7 @@ Layered design — see [`docs/REPO_STRUCTURE.md`](docs/REPO_STRUCTURE.md).
 | Orchestration | `orchestration/` | `gateway.py`, `proxy_gateway.py`, pipeline |
 | Core | `local_core/` | DLP, PII, secrets, integrity, audit |
 | Infrastructure | `infrastructure/` | In-memory token vault, OpenAI upstream, SSE |
-| MCP | `mcp/` | Classify/audit tools + stdio sanitizing shim |
+| MCP | `mcp/` | Classify / protect / restore / audit tools + stdio sanitizing shim |
 | Shared | `shared/` | Config, paths, URL policy |
 
 Cloud is **off by default**. Nothing leaves the machine unless `config/local.yaml` sets `cloud.enabled: true`.
@@ -62,7 +62,7 @@ Cloud is **off by default**. Nothing leaves the machine unless `config/local.yam
 
 ## Local AI (optional chat)
 
-Sanitized chat via `/api/chat` needs a local LLM service (LM Studio, Ollama, or bundled runtime). The DLP gateway, proxy, and MCP classify path work without a model.
+Sanitized chat via `/api/chat` needs a local LLM service (LM Studio, Ollama, or bundled runtime). The DLP gateway, proxy, and MCP classify/protect path work without a cloud model. For Cursor: call `lakanvault_protect` before the external LLM, then `lakanvault_restore` on the reply (see [`docs/cs301/CURSOR_SETUP.md`](docs/cs301/CURSOR_SETUP.md)).
 
 | Provider | Default URL |
 |----------|-------------|

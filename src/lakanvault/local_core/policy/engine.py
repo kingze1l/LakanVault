@@ -1,7 +1,24 @@
 from enum import Enum
 
 from ..findings import Finding, Tier
- 
+
+# Legacy CS301 4-tier matrix (string tiers from privacy.classifier / opaque transformer).
+TIER_ACTIONS: dict[str, str] = {
+    "public": "allow",
+    "internal": "redact",
+    "confidential": "block",
+    "secret": "block",
+}
+
+
+def decide_action(tier: str) -> str:
+    """Map a data tier to allow / warn / redact / block / log."""
+    try:
+        return TIER_ACTIONS[tier]
+    except KeyError as exc:
+        raise ValueError(f"unknown tier: {tier}") from exc
+
+
 class Action(str, Enum):
     ALLOW = 'allow'
     WARN = 'warn'
