@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": ".cursor/hooks/run_prompt.cmd",
+        "failClosed": true
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": ".cursor/hooks/run_read.cmd",
+        "failClosed": true
+      }
+    ]
+  }
+}

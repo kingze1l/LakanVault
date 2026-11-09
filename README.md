@@ -14,7 +14,8 @@ pip install -e ".[dev]"
 python -m uvicorn lakanvault.app.server:app --reload --host 127.0.0.1 --port 8080
 ```
 
-API daemon: **http://127.0.0.1:8080** (dashboard UI is being rebuilt — use `/api/*` and `/v1/*` for now).
+API daemon: **http://127.0.0.1:8080**  
+Prompt Review UI: **http://127.0.0.1:8080/review** (loopback Joan scan → mask/block → optional local send).
 
 Tray mode (Windows):
 
@@ -23,6 +24,15 @@ python -m lakanvault.launcher --tray --no-runtime
 ```
 
 Left-click / **Open Dashboard** opens the API URL; **Quit** exits.
+
+### Cursor project hooks (this workspace)
+
+With the daemon running, project hooks in [`.cursor/hooks.json`](.cursor/hooks.json) call Joan via `/api/review`:
+
+- `beforeSubmitPrompt` — **deny** when `final_action` is `block` (secrets). MASK cannot rewrite the Cursor prompt; use `/review` or MCP `lakanvault_protect` for surrogates.
+- `beforeReadFile` — deny `.env`, `vault.key`, `*.pem`, and similar.
+
+Honest claim: these hooks cover **this Cursor workspace**, not Copilot, browser ChatGPT, or every Tab path. Restart Cursor after pulling so hooks reload.
 
 ## Scripts
 

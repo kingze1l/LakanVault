@@ -112,11 +112,15 @@ def test_protect_response_safe_shape() -> None:
         sanitized="mail [fake] thanks",
         findings=[finding],
         finding_count=1,
+        final_action="mask",
+        allow_send=True,
     )
     dumped = resp.model_dump()
     assert FORBIDDEN_MCP_RESPONSE_FIELDS.isdisjoint(dumped.keys())
     assert "text" not in finding.model_dump()
     assert finding.entity_type == "EMAIL_ADDRESS"
+    assert resp.final_action == "mask"
+    assert resp.allow_send is True
 
 
 def test_protect_request_llm_policy() -> None:

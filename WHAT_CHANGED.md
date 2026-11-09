@@ -4,20 +4,24 @@ LakanVault now runs as a local Windows gateway. It can block a secret in an Open
 
 **Slice 1 (one sanitizer on main doors):** `/v1/chat/completions`, `/internal/v1/sanitize`, and `/api/chat` now use Joan’s `process_input` / Vault (Presidio PII + format-preserving fakes). Secrets still **block** (HTTP 403 / no upstream). Emails and other MASK findings go out as surrogates and are restored on the way back. MCP `lakanvault_protect` uses the same `decide()` rule (SECRET → empty sanitized; PII → mask + restore).
 
+**Slice 2 (hooks + Prompt Review):** `GET /review` UI plus loopback `POST /api/review` / `/api/review/send`. Cursor project hooks (`beforeSubmitPrompt` / `beforeReadFile`) call the daemon — secrets are denied in this workspace; sensitive files are blocked from reads.
+
 This is a working slice, not full coverage of every Cursor or Claude request.
 
 ## You can use this now
 
 - Start the API on `http://127.0.0.1:8080`.
+- Open Prompt Review at `http://127.0.0.1:8080/review`.
 - A fake API key sent to `/v1/chat/completions` is blocked before it leaves the machine.
-- Cursor can call `lakanvault_classify` and `lakanvault_audit_recent` through a local MCP server.
+- Cursor can call `lakanvault_classify`, `lakanvault_protect` / `restore`, and `lakanvault_audit_recent` through a local MCP server.
+- Project Cursor hooks deny blocked prompts when the daemon is up (this workspace only).
 - A tray app and a frozen `.exe` build exist for Windows.
 
 ## Not done yet
 
-- Cursor Chat, Agent, and Tab do not automatically send every prompt through LakanVault.
+- Cursor Tab / Copilot / browser ChatGPT are not covered by these hooks.
 - Claude Code is not connected.
-- There is no dashboard UI. Use the API and the MCP tools.
+- Cursor hooks cannot rewrite a MASK’d prompt in place — use `/review` or MCP protect for surrogates.
 
 ## Check that it works
 

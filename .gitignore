@@ -1,7 +1,10 @@
 # ── AI / planning artifacts ──
-.cursor/
+.cursor/*
 !.cursor/rules/
 !.cursor/rules/**
+!.cursor/hooks.json
+!.cursor/hooks/
+!.cursor/hooks/**
 .cursorrules
 ai_planning/
 *.plan.md

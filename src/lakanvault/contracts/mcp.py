@@ -92,6 +92,7 @@ class FindingSummary(BaseModel):
     end: int = Field(ge=0)
     source: str = ""
     needs_escalation: bool = False
+    action: str = ""  # Joan allow/warn/mask/block for this finding
 
     model_config = {"extra": "forbid"}
 
@@ -113,6 +114,35 @@ class ProtectResponse(BaseModel):
     sanitized: str
     findings: list[FindingSummary] = Field(default_factory=list)
     finding_count: int = 0
+    final_action: str = "allow"  # Joan whole-prompt verdict
+    allow_send: bool = True
+
+    model_config = {"extra": "forbid"}
+
+
+class ReviewSendRequest(BaseModel):
+    """Send an already-reviewed (sanitized) prompt via the local LLM."""
+
+    session_id: str = Field(min_length=1, max_length=64)
+    sanitized: str = Field(min_length=0, max_length=100_000)
+    model: str | None = None
+    base_url: str | None = None
+
+    model_config = {"extra": "forbid"}
+
+
+class ReviewSendResponse(BaseModel):
+    """Local LLM reply with FR8 restore. No mapping values."""
+
+    session_id: str
+    raw_response: str = ""
+    restored_response: str = ""
+    model_used: str = ""
+    provider_url: str = ""
+    latency_ms: float = 0.0
+    error: str | None = None
+    blocked: bool = False
+    block_reason: str = ""
 
     model_config = {"extra": "forbid"}
 
