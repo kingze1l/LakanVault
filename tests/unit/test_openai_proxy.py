@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from pathlib import Path
 from time import monotonic
 
 import httpx
@@ -200,13 +201,22 @@ def test_models_passthrough() -> None:
     asyncio.run(run())
 
 
-def test_cross_request_token_not_restored() -> None:
+def test_cross_request_surrogate_not_restored() -> None:
+    """A fake belonging to another Joan vault must not be restored on this request."""
     async def run():
+        from lakanvault.local_core.anonymizer.anonymizer import Vault
+
         vault = InMemoryTokenVault()
-        other = vault.mint("LEAK", request_id="r-other", ttl_seconds=60)
+        Path("data").mkdir(exist_ok=True)
+        other = Vault(":memory:", workspace="r-other", key_path=str(Path("data") / "vault.key"))
+        fake = other.surrogate(
+            "LEAK_VALUE",
+            entity_type="EMAIL_ADDRESS",
+            tier="PII_MODERATE",
+        )
 
         def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(200, json={"choices": [{"message": {"content": other}}]})
+            return httpx.Response(200, json={"choices": [{"message": {"content": fake}}]})
 
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as upstream_client:
             upstream = OpenAIUpstream(upstream_client, "https://api.openai.com", ALLOWLIST)
@@ -216,8 +226,8 @@ def test_cross_request_token_not_restored() -> None:
                 {},
                 request_id="r-this",
             )
-        assert outcome.body["choices"][0]["message"]["content"] == other
-        assert "LEAK" not in json.dumps(outcome.body)
+        assert outcome.body["choices"][0]["message"]["content"] == fake
+        assert "LEAK_VALUE" not in json.dumps(outcome.body)
         vault.close()
 
     asyncio.run(run())

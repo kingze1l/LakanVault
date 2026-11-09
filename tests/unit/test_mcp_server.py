@@ -47,22 +47,39 @@ def test_audit_recent_returns_metadata_only(tmp_path: Path) -> None:
 
 
 def test_protect_restore_helpers_round_trip(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(
-        "lakanvault.local_core.scan.detect_pii",
-        lambda text, layers=("names",): [],
-    )
+    from lakanvault.local_core.findings import Finding, Tier
+
+    email = "jane.doe@example.com"
+
+    def fake_pii(text: str, layers=("names",)):
+        start = text.find(email)
+        if start < 0:
+            return []
+        return [
+            Finding(
+                "EMAIL_ADDRESS",
+                email,
+                start,
+                start + len(email),
+                0.95,
+                Tier.PII_MODERATE,
+                "presidio",
+            )
+        ]
+
+    monkeypatch.setattr("lakanvault.local_core.scan.detect_pii", fake_pii)
     src_cfg = Path(__file__).resolve().parents[2] / "config" / "default.yaml"
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     config_dir.joinpath("default.yaml").write_text(src_cfg.read_text(encoding="utf-8"), encoding="utf-8")
-    secret = "SuperSecret99"
-    prompt = f"connect with postgres://admin:{secret}@db.example.com/app"
+    prompt = f"please email {email} about the meeting"
     protected = protect(
         prompt,
         session_id="helper1",
         llm="never",
         config_dir=config_dir,
     )
-    assert secret not in protected.sanitized
+    assert email not in protected.sanitized
+    assert protected.sanitized
     restored = restore(protected.sanitized, session_id="helper1", config_dir=config_dir)
-    assert secret in restored.text
+    assert email in restored.text

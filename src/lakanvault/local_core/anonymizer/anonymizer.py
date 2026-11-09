@@ -24,7 +24,8 @@ class Vault:
     def __init__(self, path='vault.db', workspace='default', key_path=KEY_PATH):
         self.workspace = workspace
         self.key = load_key(key_path)
-        self.db = sqlite3.connect(path)
+        # Proxy sanitize runs in a worker thread; restore can run on the asyncio loop.
+        self.db = sqlite3.connect(path, check_same_thread=False)
         self.db.execute(
         '''
             CREATE TABLE IF NOT EXISTS mapping (
@@ -62,6 +63,14 @@ class Vault:
         for (s, e), f in sorted(spans.items(), reverse=True):
             text = text[:s] + self.surrogate(f.text, f.entity_type, f.tier) + text[e:]
         return text
+
+    def mapping(self) -> dict[str, str]:
+        """fake → real for this workspace (SSE / allow-list restore)."""
+        rows = self.db.execute(
+            'SELECT fake, real FROM mapping WHERE workspace=?',
+            (self.workspace,),
+        ).fetchall()
+        return {fake: real for fake, real in rows}
 
     # run after the external LLM returns its response
     def restore(self, text):

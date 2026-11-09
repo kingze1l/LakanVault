@@ -94,9 +94,62 @@ class SlidingTokenRestorer:
         return _TOKEN_RE.sub(repl, text)
 
 
+class SlidingMappingRestorer:
+    """Restore Joan Vault surrogates across SSE chunk boundaries.
+
+    Replace any complete fake in the buffer first, then hold only a proper
+    prefix of some remaining fake so split surrogates are not emitted early.
+    """
+
+    def __init__(self, mapping: dict[str, str]) -> None:
+        self._mapping = dict(mapping)
+        self._buf = ""
+        if self._mapping:
+            escaped = [re.escape(k) for k in sorted(self._mapping, key=len, reverse=True)]
+            self._pat: re.Pattern[str] | None = re.compile("|".join(escaped))
+            self._fakes = tuple(self._mapping.keys())
+        else:
+            self._pat = None
+            self._fakes = ()
+
+    def feed(self, chunk: str) -> str:
+        if not chunk:
+            return ""
+        if not self._mapping or self._pat is None:
+            return chunk
+        self._buf += chunk
+        self._buf = self._restore_complete(self._buf)
+        hold = self._incomplete_fake_suffix(self._buf)
+        if hold:
+            emit, self._buf = self._buf[:-hold], self._buf[-hold:]
+        else:
+            emit, self._buf = self._buf, ""
+        return emit
+
+    def flush(self) -> str:
+        out = self._restore_complete(self._buf)
+        self._buf = ""
+        return out
+
+    def _incomplete_fake_suffix(self, text: str) -> int:
+        """Longest proper prefix of any fake that is a suffix of text."""
+        hold = 0
+        for fake in self._fakes:
+            upper = min(len(fake), len(text))
+            for i in range(1, upper):
+                if text.endswith(fake[:i]):
+                    hold = max(hold, i)
+        return hold
+
+    def _restore_complete(self, text: str) -> str:
+        if not text or self._pat is None:
+            return text
+        return self._pat.sub(lambda m: self._mapping.get(m.group(0), m.group(0)), text)
+
+
 def restore_sse_data_json(
     data: str,
-    restorer: SlidingTokenRestorer,
+    restorer: SlidingTokenRestorer | SlidingMappingRestorer,
     *,
     flush: bool = False,
 ) -> str:

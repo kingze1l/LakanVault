@@ -22,15 +22,14 @@ from lakanvault.contracts.mcp import (
     RestoreRequest,
     RestoreResponse,
 )
-from lakanvault.infrastructure.token_vault import InMemoryTokenVault
 from lakanvault.local_core.adapters.local_llm_client import LocalLLMClient
 from lakanvault.local_core.audit.stage import AuditStage
-from lakanvault.local_core.dlp.transformer import transform_text
 from lakanvault.local_core.integrity.registry import ModelRegistry
 from lakanvault.local_core.integrity.stage import IntegrityStage
+from lakanvault.local_core.policy.engine import Action
 from lakanvault.local_core.privacy.anonymizer import ReversibleAnonymizer
 from lakanvault.local_core.privacy.classifier import classify_content
-from lakanvault.local_core.privacy.opaque_anonymizer import OpaqueAnonymizer
+from lakanvault.local_core.scan import process_input, process_output
 from lakanvault.local_core.security.prompt_guard import (
     BLOCKED_USER_MESSAGE,
     detect_prompt_injection,
@@ -59,7 +58,6 @@ class Gateway:
         self._pipeline = self._build_pipeline()
         self._bus = self._build_bus()
         self._anonymizer = ReversibleAnonymizer()
-        self._token_vault = InMemoryTokenVault()
         self._local_llm = self._build_local_llm()
         # Joan scan sessions: session_id -> Vault (:memory:, workspace=session_id)
         self._protect_vaults: dict[str, object] = {}
@@ -289,21 +287,30 @@ class Gateway:
     def _prepare_chat(self, prompt: str) -> dict:
         t0 = monotonic()
         req_id = uuid.uuid4().hex[:12]
-        dlp = transform_text(prompt, self._token_vault, request_id=req_id)
-        if dlp.blocked:
+        vault = self._vault_for_session(f"chat-{req_id}")
+        try:
+            protected = process_input(prompt, vault, llm="never")
+        except Exception as exc:
+            sanitize_ms = round((monotonic() - t0) * 1000, 1)
+            return {
+                "block_reason": f"detector failure: {type(exc).__name__}",
+                "sanitized": "",
+                "mapping": {},
+                "vault": None,
+                "detection_engine": "joan",
+                "sanitize_ms": sanitize_ms,
+                "system_hint": build_chat_system_prompt(None),
+                "llm_prompt": wrap_user_message(""),
+                "request_id": req_id,
+            }
+        if protected.final_action == Action.BLOCK:
             mapping: dict[str, str] = {}
             sanitized = ""
-            block_reason = dlp.reason
-            detection_engine = "dlp"
+            block_reason = "API key or credential pattern detected"
         else:
             block_reason = detect_prompt_injection(prompt)
-            sanitized = dlp.text
-            mapping = {
-                token: value
-                for token in dlp.tokens_minted
-                if (value := self._token_vault.get(token))
-            }
-            detection_engine = "dlp"
+            sanitized = protected.sanitized
+            mapping = vault.mapping()
         sanitize_ms = round((monotonic() - t0) * 1000, 1)
         system_hint = build_chat_system_prompt(
             ReversibleAnonymizer.placeholder_system_hint(mapping)
@@ -314,12 +321,19 @@ class Gateway:
             "block_reason": block_reason,
             "sanitized": sanitized,
             "mapping": mapping,
-            "detection_engine": detection_engine,
+            "vault": vault,
+            "detection_engine": "joan",
             "sanitize_ms": sanitize_ms,
             "system_hint": system_hint,
             "llm_prompt": wrap_user_message(sanitized),
             "request_id": req_id,
         }
+
+    def _restore_chat_text(self, text: str, prep: dict) -> str:
+        vault = prep.get("vault")
+        if vault is None:
+            return text
+        return process_output(text, vault)
 
     def _blocked_chat_result(self, prep: dict, model: str | None, base_url: str | None) -> dict:
         reason = prep["block_reason"] or "prompt injection"
@@ -374,7 +388,7 @@ class Gateway:
                 "block_reason": "",
             }
 
-        restored = OpaqueAnonymizer.restore(result.content, prep["mapping"])
+        restored = self._restore_chat_text(result.content, prep)
 
         return {
             "sanitized_prompt": prep["sanitized"],
@@ -445,7 +459,7 @@ class Gateway:
                 if chunk.delta:
                     parts.append(chunk.delta)
                     raw_so_far = "".join(parts)
-                    restored_so_far = OpaqueAnonymizer.restore(raw_so_far, prep["mapping"])
+                    restored_so_far = self._restore_chat_text(raw_so_far, prep)
                     yield {
                         "type": "token",
                         "delta": chunk.delta,
@@ -453,7 +467,7 @@ class Gateway:
                     }
                 if chunk.done:
                     raw = chunk.full_content or "".join(parts)
-                    restored = OpaqueAnonymizer.restore(raw, prep["mapping"])
+                    restored = self._restore_chat_text(raw, prep)
                     llm_ms = round((monotonic() - llm_start) * 1000, 1)
                     yield {
                         "type": "done",
@@ -467,7 +481,7 @@ class Gateway:
                     return
 
             raw = "".join(parts)
-            restored = OpaqueAnonymizer.restore(raw, prep["mapping"])
+            restored = self._restore_chat_text(raw, prep)
             llm_ms = round((monotonic() - llm_start) * 1000, 1)
             yield {
                 "type": "done",

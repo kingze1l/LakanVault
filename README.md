@@ -35,11 +35,11 @@ Left-click / **Open Dashboard** opens the API URL; **Quit** exits.
 
 See [`scripts/README.md`](scripts/README.md) for the full index.
 
-Optional stronger PII detection (spaCy NER):
+Optional stronger PII detection (Joan Presidio + spaCy NER). The detector expects `en_core_web_lg`:
 
 ```powershell
 pip install -e ".[ner]"
-python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_lg
 ```
 
 ## Architecture

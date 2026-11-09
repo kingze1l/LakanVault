@@ -81,15 +81,27 @@ THIS ARE THE IMPORTANT PART, A CLEAN INPUT AND OUTPUT FOR SAMMY SYSTEM TO CONNEC
 '''
 from dataclasses import dataclass
 
+from .policy.engine import Action, decide
+
+
 @dataclass(frozen=True)
 class ProtectedPrompt:
-    sanitized: str             # safe to send to the external LLM
+    sanitized: str             # safe to send to the external LLM (empty on BLOCK)
     findings: list[Finding]    # contains real values: keep local, never log or send
+    final_action: Action       # whole-prompt verdict from policy.decide()
+
 
 def process_input(text: str, vault: Vault, llm: LLMPolicy = 'unsure') -> ProtectedPrompt:
-    '''scan + sanitize. Send .sanitized to the external LLM.'''
+    '''scan + decide + sanitize. Send .sanitized only when final_action is not BLOCK.'''
     findings = scan(text, llm)
-    return ProtectedPrompt(vault.sanitize(text, findings), findings)
+    final, per = decide(findings)
+    if final == Action.BLOCK:
+        return ProtectedPrompt("", findings, final)
+    if final == Action.MASK:
+        mask_findings = [f for f, action in per if action == Action.MASK]
+        return ProtectedPrompt(vault.sanitize(text, mask_findings), findings, final)
+    return ProtectedPrompt(text, findings, final)
+
 
 def process_output(text: str, vault: Vault) -> str:
     '''run on the external LLM's reply before showing it to the user'''

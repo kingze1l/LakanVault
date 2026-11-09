@@ -2,6 +2,8 @@
 
 LakanVault now runs as a local Windows gateway. It can block a secret in an OpenAI-style chat request, and Cursor can call two local tools: classify text, and list recent audit metadata.
 
+**Slice 1 (one sanitizer on main doors):** `/v1/chat/completions`, `/internal/v1/sanitize`, and `/api/chat` now use Joan’s `process_input` / Vault (Presidio PII + format-preserving fakes). Secrets still **block** (HTTP 403 / no upstream). Emails and other MASK findings go out as surrogates and are restored on the way back. MCP `lakanvault_protect` uses the same `decide()` rule (SECRET → empty sanitized; PII → mask + restore).
+
 This is a working slice, not full coverage of every Cursor or Claude request.
 
 ## You can use this now

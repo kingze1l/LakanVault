@@ -6,6 +6,7 @@ import logging
 import uuid
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from lakanvault.contracts.mcp import DataTier, PolicyAction
@@ -16,19 +17,35 @@ from lakanvault.contracts.proxy import (
     TransformResult,
 )
 from lakanvault.infrastructure.upstream.openai import OpenAIUpstream
-from lakanvault.infrastructure.upstream.sse import SlidingTokenRestorer, parse_sse_chunk, restore_sse_data_json, serialize_sse
+from lakanvault.infrastructure.upstream.sse import SlidingMappingRestorer, parse_sse_chunk, restore_sse_data_json, serialize_sse
+from lakanvault.local_core.anonymizer.anonymizer import Vault
 from lakanvault.local_core.dlp.openai_payload import (
     UninspectedPayloadError,
-    collect_existing_tokens,
     orchestrated_prompt,
     restore_chat_response,
     sanitize_chat_request,
 )
+from lakanvault.local_core.policy.engine import Action
 from lakanvault.local_core.privacy.classifier import classify_content
-from lakanvault.local_core.dlp.transformer import transform_text
-from lakanvault.local_core.privacy.opaque_anonymizer import OpaqueAnonymizer
+from lakanvault.local_core.scan import process_input
+from lakanvault.local_core.findings import Tier
 
 logger = logging.getLogger(__name__)
+
+_JOAN_TIER_TO_DATA: dict[Tier, DataTier] = {
+    Tier.SECRET: DataTier.SECRET,
+    Tier.PII_HIGH: DataTier.CONFIDENTIAL,
+    Tier.PII_MODERATE: DataTier.INTERNAL,
+    Tier.PII_LOW: DataTier.INTERNAL,
+    Tier.BENIGN: DataTier.PUBLIC,
+}
+
+_JOAN_ACTION_TO_POLICY: dict[Action, PolicyAction] = {
+    Action.ALLOW: PolicyAction.ALLOW,
+    Action.WARN: PolicyAction.WARN,
+    Action.MASK: PolicyAction.REDACT,
+    Action.BLOCK: PolicyAction.BLOCK,
+}
 
 
 @dataclass
@@ -52,17 +69,32 @@ class ProxyGateway:
         ttl_seconds: float = 3600.0,
         allow_images: bool = False,
         image_inspector=None,
+        vault_key_path: str | Path | None = None,
     ) -> None:
         self._vault = vault
         self._upstream = upstream
         self._strict = strict
         self._ttl = ttl_seconds
         self._allow_images = allow_images
+        self._vault_key_path = Path(vault_key_path) if vault_key_path else Path("data") / "vault.key"
+        self._joan_vaults: dict[str, Vault] = {}
         if allow_images and image_inspector is None:
             from lakanvault.local_core.dlp.image_inspector import ImageInspector
 
             image_inspector = ImageInspector()
         self._image_inspector = image_inspector
+
+    def _joan_vault(self, request_id: str) -> Vault:
+        vault = self._joan_vaults.get(request_id)
+        if vault is None:
+            self._vault_key_path.parent.mkdir(parents=True, exist_ok=True)
+            vault = Vault(":memory:", workspace=request_id, key_path=str(self._vault_key_path))
+            self._joan_vaults[request_id] = vault
+        return vault
+
+    def _drop_request(self, request_id: str) -> None:
+        self._joan_vaults.pop(request_id, None)
+        self._vault.delete_request(request_id)
 
     def classify_chat_payload(self, payload: dict[str, Any]) -> ChatPayloadClassifyResponse:
         """Classify outbound chat text. The response never includes that text."""
@@ -93,9 +125,57 @@ class ProxyGateway:
         return await loop.run_in_executor(None, self.classify_chat_payload, payload)
 
     def sanitize_text(self, text: str, request_id: str) -> TransformResult:
-        return transform_text(
-            text, self._vault, request_id=request_id, ttl_seconds=self._ttl, fail_closed=True
-        )
+        """Joan scan + decide + Vault surrogates (Presidio PII / format-preserving secrets)."""
+        if not text:
+            return TransformResult(text=text)
+        try:
+            vault = self._joan_vault(request_id)
+            protected = process_input(text, vault, llm="never")
+            entity_types = sorted({f.entity_type for f in protected.findings})
+            order = {
+                DataTier.PUBLIC: 0,
+                DataTier.INTERNAL: 1,
+                DataTier.CONFIDENTIAL: 2,
+                DataTier.SECRET: 3,
+            }
+            top_tier = max(
+                (_JOAN_TIER_TO_DATA.get(f.tier, DataTier.PUBLIC) for f in protected.findings),
+                key=lambda t: order[t],
+                default=DataTier.PUBLIC,
+            )
+            action = _JOAN_ACTION_TO_POLICY.get(protected.final_action, PolicyAction.ALLOW)
+            if protected.final_action == Action.BLOCK:
+                # Keep reason free of secret substrings (e.g. entity types containing "sk-").
+                reason = "API key or credential pattern detected"
+                return TransformResult(
+                    text="",
+                    tier=top_tier,
+                    action=PolicyAction.BLOCK,
+                    reason=reason,
+                    pii_span_count=len(protected.findings),
+                    entity_types=entity_types,
+                    blocked=True,
+                )
+            fakes = list(vault.mapping().keys())
+            return TransformResult(
+                text=protected.sanitized,
+                tier=top_tier,
+                action=action,
+                reason="joan_process_input",
+                pii_span_count=len(protected.findings),
+                entity_types=entity_types,
+                tokens_minted=fakes,
+                blocked=False,
+            )
+        except Exception as exc:
+            logger.exception("joan sanitize failed")
+            return TransformResult(
+                text="",
+                tier=DataTier.SECRET,
+                action=PolicyAction.BLOCK,
+                reason=f"detector failure: {type(exc).__name__}",
+                blocked=True,
+            )
 
     def _prepare(self, payload: dict[str, Any], request_id: str) -> ProxyOutcome:
         def _tx(text: str) -> TransformResult:
@@ -158,11 +238,8 @@ class ProxyGateway:
                 audit, {}, None, request_id,
             )
 
-        allow = collect_existing_tokens(sanitized, OpaqueAnonymizer.find_tokens)
-        for finding in findings:
-            for token in finding.tokens_minted:
-                allow.add(token)
-        mapping = allow.mapping_view(self._vault.get)
+        joan = self._joan_vaults.get(request_id)
+        mapping = joan.mapping() if joan is not None else {}
         top = findings[0] if findings else TransformResult()
         audit = ProxyAuditRecord(
             request_id=request_id,
@@ -223,14 +300,22 @@ class ProxyGateway:
                 outcome.status_code = 502
                 return outcome
             await resp.aclose()
-            restored = restore_chat_response(
-                data, lambda text: OpaqueAnonymizer.restore(text, outcome.allow_mapping)
-            )
+            mapping = outcome.allow_mapping
+
+            def _restore(text: str) -> str:
+                if not mapping:
+                    return text
+                out = text
+                for fake in sorted(mapping, key=len, reverse=True):
+                    out = out.replace(fake, mapping[fake])
+                return out
+
+            restored = restore_chat_response(data, _restore)
             outcome.body = restored
             outcome.status_code = 200
             return outcome
         finally:
-            self._vault.delete_request(rid)
+            self._drop_request(rid)
 
     async def iter_sse(
         self,
@@ -261,7 +346,7 @@ class ProxyGateway:
             if resp.status_code >= 400:
                 yield b'data: {"error":{"message":"upstream request failed"}}\n\n'
                 return
-            restorer = SlidingTokenRestorer(outcome.allow_mapping)
+            restorer = SlidingMappingRestorer(outcome.allow_mapping)
             pending = ""
             async for raw in resp.aiter_text():
                 pending += raw.replace("\r\n", "\n")
@@ -300,4 +385,4 @@ class ProxyGateway:
         finally:
             if resp is not None:
                 await resp.aclose()
-            self._vault.delete_request(rid)
+            self._drop_request(rid)

@@ -101,13 +101,29 @@ def test_resolve_config_dir_prefers_explicit(tmp_path: Path) -> None:
 
 
 def test_protect_then_restore_via_mcp(monkeypatch) -> None:
-    monkeypatch.setattr(
-        "lakanvault.local_core.scan.detect_pii",
-        lambda text, layers=("names",): [],
-    )
+    from lakanvault.local_core.findings import Finding, Tier
+
+    email = "jane.doe@example.com"
+
+    def fake_pii(text: str, layers=("names",)):
+        start = text.find(email)
+        if start < 0:
+            return []
+        return [
+            Finding(
+                "EMAIL_ADDRESS",
+                email,
+                start,
+                start + len(email),
+                0.95,
+                Tier.PII_MODERATE,
+                "presidio",
+            )
+        ]
+
+    monkeypatch.setattr("lakanvault.local_core.scan.detect_pii", fake_pii)
     server = build_server(_repo_config())
-    secret = "SuperSecret99"
-    prompt = f"connect with postgres://admin:{secret}@db.example.com/app"
+    prompt = f"please email {email} about the meeting"
 
     async def body(session):
         protected = await session.call_tool(
@@ -118,8 +134,9 @@ def test_protect_then_restore_via_mcp(monkeypatch) -> None:
         text = next(b.text for b in protected.content if hasattr(b, "text"))
         payload = json.loads(text)
         assert payload["session_id"] == "mcp1"
-        assert secret not in payload["sanitized"]
-        assert secret not in text
+        assert email not in payload["sanitized"]
+        assert payload["sanitized"]
+        assert email not in text
         assert FORBIDDEN_MCP_RESPONSE_FIELDS.isdisjoint(payload)
 
         restored = await session.call_tool(
@@ -129,6 +146,6 @@ def test_protect_then_restore_via_mcp(monkeypatch) -> None:
         assert restored.is_error is not True
         rtext = next(b.text for b in restored.content if hasattr(b, "text"))
         rpayload = json.loads(rtext)
-        assert secret in rpayload["text"]
+        assert email in rpayload["text"]
 
     asyncio.run(_with_session(server, body))
