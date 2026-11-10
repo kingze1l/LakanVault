@@ -130,6 +130,8 @@ class ProxyGateway:
             return TransformResult(text=text)
         try:
             vault = self._joan_vault(request_id)
+            from lakanvault.orchestration.protect_events import record_protect_event
+
             protected = process_input(text, vault, llm="never")
             entity_types = sorted({f.entity_type for f in protected.findings})
             order = {
@@ -144,6 +146,17 @@ class ProxyGateway:
                 default=DataTier.PUBLIC,
             )
             action = _JOAN_ACTION_TO_POLICY.get(protected.final_action, PolicyAction.ALLOW)
+            action_s = (
+                protected.final_action.value
+                if hasattr(protected.final_action, "value")
+                else str(protected.final_action)
+            )
+            if action_s in ("warn", "mask", "block"):
+                record_protect_event(
+                    action_s,
+                    source="proxy",
+                    entity_types=entity_types,
+                )
             if protected.final_action == Action.BLOCK:
                 # Keep reason free of secret substrings (e.g. entity types containing "sk-").
                 reason = "API key or credential pattern detected"
@@ -169,6 +182,9 @@ class ProxyGateway:
             )
         except Exception as exc:
             logger.exception("joan sanitize failed")
+            from lakanvault.orchestration.protect_events import record_protect_event
+
+            record_protect_event("block", source="proxy", entity_types=[])
             return TransformResult(
                 text="",
                 tier=DataTier.SECRET,

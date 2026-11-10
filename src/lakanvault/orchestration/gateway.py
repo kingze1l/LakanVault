@@ -231,10 +231,13 @@ class Gateway:
         text: str,
         session_id: str = "",
         llm: str = "unsure",
+        *,
+        source: str = "review",
     ) -> ProtectResponse:
         """Joan scan + Vault sanitize. Findings metadata only — never finding.text."""
         from lakanvault.local_core.policy.engine import Action, action_for
         from lakanvault.local_core.scan import process_input
+        from lakanvault.orchestration.protect_events import record_protect_event
 
         req = ProtectRequest(text=text, session_id=session_id or "", llm=llm)
         sid = req.session_id or uuid.uuid4().hex[:12]
@@ -254,12 +257,19 @@ class Gateway:
             )
             for f in protected.findings
         ]
+        action_s = final.value if hasattr(final, "value") else str(final)
+        if action_s in ("warn", "mask", "block"):
+            record_protect_event(
+                action_s,
+                source=source,
+                entity_types=[s.entity_type for s in summaries],
+            )
         return ProtectResponse(
             session_id=sid,
             sanitized=protected.sanitized,
             findings=summaries,
             finding_count=len(summaries),
-            final_action=final.value if hasattr(final, "value") else str(final),
+            final_action=action_s,
             allow_send=final != Action.BLOCK,
         )
 
@@ -347,10 +357,13 @@ class Gateway:
         t0 = monotonic()
         req_id = uuid.uuid4().hex[:12]
         vault = self._vault_for_session(f"chat-{req_id}")
+        from lakanvault.orchestration.protect_events import record_protect_event
+
         try:
             protected = process_input(prompt, vault, llm="never")
         except Exception as exc:
             sanitize_ms = round((monotonic() - t0) * 1000, 1)
+            record_protect_event("block", source="chat", entity_types=[])
             return {
                 "block_reason": f"detector failure: {type(exc).__name__}",
                 "sanitized": "",
@@ -370,6 +383,17 @@ class Gateway:
             block_reason = detect_prompt_injection(prompt)
             sanitized = protected.sanitized
             mapping = vault.mapping()
+        action_s = (
+            protected.final_action.value
+            if hasattr(protected.final_action, "value")
+            else str(protected.final_action)
+        )
+        if action_s in ("warn", "mask", "block"):
+            record_protect_event(
+                action_s,
+                source="chat",
+                entity_types=[f.entity_type for f in protected.findings],
+            )
         sanitize_ms = round((monotonic() - t0) * 1000, 1)
         system_hint = build_chat_system_prompt(
             ReversibleAnonymizer.placeholder_system_hint(mapping)

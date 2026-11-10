@@ -6,11 +6,14 @@ LakanVault now runs as a local Windows gateway. It can block a secret in an Open
 
 **Slice 2 (hooks + Prompt Review):** `GET /review` UI plus loopback `POST /api/review` / `/api/review/send`. Cursor project hooks (`beforeSubmitPrompt` / `beforeReadFile`) call the daemon. Cursor cannot rewrite prompts; with gate **on**/`tag`, BLOCK and MASK stop the send (MASK returns sanitized text to paste). **FR8 handoff trust:** exact paste of that sanitized text is allowed once (TTL) so PERSON fakes are not remasked in a loop. Toggle: `.cursor/hooks/mode.txt` → `on` \| `off` \| `tag`.
 
+**Tray UI (pywebview flyout):** In-memory protect event ring (metadata only) + `GET /api/protect/recent` / `/stats` / `POST /api/protect/pause`. Dark compact `GET /status` panel. **Left-click** tray → Teams-style frameless Status flyout (tray-corner; click again to hide); **block** auto-opens the flyout; **right-click** → Prompt Review / Quit. On Windows, pywebview runs on the main thread (required); pystray runs beside it. Optional `pip install -e ".[tray]"`. Poll + Windows toast via `icon.notify` on warn/mask/block. Not in this slice: dictionary UI, custom toast chrome, override confirm.
+
 This is a working slice, not full coverage of every Cursor or Claude request.
 
 ## You can use this now
 
 - Start the API on `http://127.0.0.1:8080`.
+- Open Status at `http://127.0.0.1:8080/status` (or left-click the tray flyout).
 - Open Prompt Review at `http://127.0.0.1:8080/review`.
 - A fake API key sent to `/v1/chat/completions` is blocked before it leaves the machine.
 - Cursor can call `lakanvault_classify`, `lakanvault_protect` / `restore`, and `lakanvault_audit_recent` through a local MCP server.

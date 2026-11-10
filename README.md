@@ -20,10 +20,13 @@ Prompt Review UI: **http://127.0.0.1:8080/review** (loopback Joan scan → mask/
 Tray mode (Windows):
 
 ```powershell
+pip install -e ".[tray]"   # optional: pywebview Status flyout
 python -m lakanvault.launcher --tray --no-runtime
 ```
 
-Left-click / **Open Dashboard** opens the API URL; **Quit** exits.
+**Left-click** the tray icon toggles a Teams-style frameless Status flyout (`/status`, tray-corner). **Right-click** → **Open Prompt Review** / **Quit**. A **block** also auto-opens the flyout (and toasts). Left-click again to hide. (On Windows, pywebview owns the main thread; the tray icon runs beside it.) Tray polls `/api/protect/recent` and uses `icon.notify` for warn / mask / block (skipped while Pause is on).
+
+Frozen `.exe`: Edge WebView2 / Chromium runtime may be required for the native flyout; if webview fails, Status/Review fall back to the default browser.
 
 ### Cursor project hooks (this workspace)
 
@@ -104,6 +107,8 @@ Configure via `/api/settings` or `config/local.yaml` (`local_ai.base_url`).
 ```
 
 Output: `dist/LakanVault/LakanVault.exe` and `dist/lakanvault-mcp/lakanvault-mcp.exe`.
+
+Native Status/Review panels need a WebView2/Chromium runtime on the machine; without it the tray opens the system browser instead.
 
 ## Tests
 
