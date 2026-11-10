@@ -27,13 +27,29 @@ Left-click / **Open Dashboard** opens the API URL; **Quit** exits.
 
 ### Cursor project hooks (this workspace)
 
-With the daemon running, project hooks in [`.cursor/hooks.json`](.cursor/hooks.json) call Joan via `/api/review`:
+**Where they apply:** only while this repo (`LakanVault`) is the open Cursor workspace. Other folders / other chats elsewhere are unaffected. Cloud agents do not run these hooks.
 
-- `beforeSubmitPrompt` — **deny** when `final_action` is `block` (secrets). MASK cannot rewrite the Cursor prompt; use `/review` or MCP `lakanvault_protect` for surrogates.
-- `beforeReadFile` — deny `.env`, `vault.key`, `*.pem`, and similar.
+**On / off (so this chat is not blocked while you build):**
 
-Honest claim: these hooks cover **this Cursor workspace**, not Copilot, browser ChatGPT, or every Tab path. Restart Cursor after pulling so hooks reload.
+1. Open [`.cursor/hooks/mode.txt`](.cursor/hooks/mode.txt)
+2. First word must be exactly `off` or `on`
+3. Save — next send uses the new mode (no restart needed for the script; restart Cursor only if hooks failed to load)
 
+| `mode.txt` | Behavior |
+|------------|----------|
+| `off` | Pass-through — normal Cursor chat |
+| `tag` (current) | Gate **only** if the prompt contains `[[lv]]` — this chat stays normal; test chat prefixes with `[[lv]]` |
+| `on` | Gate every prompt: secrets **blocked**; PII **blocked** + sanitized text to paste/resend |
+Optional override: env `LAKANVAULT_HOOKS=on` or `off`.
+
+With the daemon on `:8080` and mode `on` (or `tag` + `[[lv]]`), [`.cursor/hooks.json`](.cursor/hooks.json) calls `/api/review`:
+
+- `beforeSubmitPrompt` — Cursor **cannot rewrite** the prompt; we stop unsafe sends (`continue: false`).
+- **MASK (FR1/FR8):** deny + show sanitized text; that exact paste is **trusted once** (TTL ~10 min) so fake names are not remasked forever.
+- **BLOCK:** deny with no handoff (secrets never leave).
+- `beforeReadFile` — deny `.env`, `vault.key`, `*.pem` when mode is `on`.
+
+Honest claim: gate + one-shot paste handoff, not silent in-place rewrite. Not Copilot, not browser ChatGPT, not Tab. FR9 UI: `/review`.
 ## Scripts
 
 | Script | Purpose |

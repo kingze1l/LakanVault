@@ -4,7 +4,7 @@ LakanVault now runs as a local Windows gateway. It can block a secret in an Open
 
 **Slice 1 (one sanitizer on main doors):** `/v1/chat/completions`, `/internal/v1/sanitize`, and `/api/chat` now use Joan’s `process_input` / Vault (Presidio PII + format-preserving fakes). Secrets still **block** (HTTP 403 / no upstream). Emails and other MASK findings go out as surrogates and are restored on the way back. MCP `lakanvault_protect` uses the same `decide()` rule (SECRET → empty sanitized; PII → mask + restore).
 
-**Slice 2 (hooks + Prompt Review):** `GET /review` UI plus loopback `POST /api/review` / `/api/review/send`. Cursor project hooks (`beforeSubmitPrompt` / `beforeReadFile`) call the daemon — secrets are denied in this workspace; sensitive files are blocked from reads.
+**Slice 2 (hooks + Prompt Review):** `GET /review` UI plus loopback `POST /api/review` / `/api/review/send`. Cursor project hooks (`beforeSubmitPrompt` / `beforeReadFile`) call the daemon. Cursor cannot rewrite prompts; with gate **on**/`tag`, BLOCK and MASK stop the send (MASK returns sanitized text to paste). **FR8 handoff trust:** exact paste of that sanitized text is allowed once (TTL) so PERSON fakes are not remasked in a loop. Toggle: `.cursor/hooks/mode.txt` → `on` \| `off` \| `tag`.
 
 This is a working slice, not full coverage of every Cursor or Claude request.
 

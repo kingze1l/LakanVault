@@ -292,7 +292,7 @@ Add `code-review-and-quality` before merge. Add security rule when touching DLP/
 | 1.4 Tray daemon          | ✅ Done | `tray/` state + pystray; `--tray` / frozen default |
 | 1.5 PyInstaller          | 🔄 Partial | Script + path tests + windowed hardening; **frozen API smoke deferred** (hang) |
 | CS301 Option 3 proxy     | ✅ Done | On `main`; Joan process_input / Vault |
-| Prompt Review + hooks    | ✅ Done | /review, /api/review, Cursor beforeSubmitPrompt / beforeReadFile |
+| Prompt Review + hooks    | ✅ Done | FR1/FR8/FR9: /review, hooks gate, MASK handoff trusted once |
 | Sprint 2 DLP core        | 🔄 Partial | Joan path on proxy/MCP/hooks; clipboard optional |
 
 ### Already shipped (do not rebuild)
