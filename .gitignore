@@ -48,3 +48,15 @@ samples.py
 
 # unsloth
 unsloth_compiled_cache
+
+# every part of llm
+checkpoints
+lakan-model
+lakan-model_gguf
+lakan-model-lora
+
+# evaluations
+lakan_vault_combined_results.csv
+pii_benchmark.csv
+pii_benchmark_negative.csv
+training_data.jsonl

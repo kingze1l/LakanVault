@@ -15,13 +15,14 @@ run :
 python -m lakanvault.local_core.local_llm.train
 '''
 import json
+from pathlib import Path
 
-DATA = "data.jsonl"
+DATA = Path(__file__).parent / 'training_data.jsonl'
 OUT = "lakan-model"
 BASE = "unsloth/gemma-4-E4B-it"
 EPOCHS = 3
-BATCH = 2          # lower to 1 if you run out of GPU memory
-LOAD_4BIT = False  # True = QLoRA, if VRAM is tight
+BATCH = 1          # lower to 1 if you run out of GPU memory
+LOAD_4BIT = True  # True = QLoRA, if VRAM is tight
 
 # Must be IDENTICAL to SYSTEM_PROMPT in detector.py
 SYSTEM_PROMPT = """
@@ -46,12 +47,13 @@ def main():
     from datasets import Dataset
 
     model, tokenizer = FastModel.from_pretrained(
-        BASE, max_seq_length=4096, load_in_4bit=LOAD_4BIT, full_finetuning=False
+        BASE, max_seq_length=2048, load_in_4bit=LOAD_4BIT, full_finetuning=False, offload_layers='auto',
     )
     model = FastModel.get_peft_model(
         model, r=32, lora_alpha=32, lora_dropout=0, bias="none", random_state=3407,
         finetune_vision_layers=False, finetune_language_layers=True,
         finetune_attention_modules=True, finetune_mlp_modules=True,
+        use_gradient_checkpointing = 'unsloth',
     )
     tokenizer = get_chat_template(tokenizer, chat_template="gemma-4")
 
@@ -78,11 +80,11 @@ def main():
             per_device_train_batch_size=BATCH,
             gradient_accumulation_steps=max(1, 16 // BATCH),  # effective batch ~16
             learning_rate=2e-4,
-            warmup_steps=10,
+            warmup_steps=5,
             lr_scheduler_type="linear",
             optim="adamw_8bit",
             logging_steps=10,
-            save_strategy="no",
+            save_strategy="epoch",
             seed=3407,
             report_to="none",
         ),
@@ -93,6 +95,21 @@ def main():
         instruction_part="<|turn>user\n",
         response_part="<|turn>model\n",
     )
+
+    # Verify that only assistant responses contribute to training loss
+    sample = trainer.train_dataset[0]
+
+    print("\nfull training input")
+    print(tokenizer.decode(sample["input_ids"]))
+
+    print("\ntraining target should be json only-")
+    target_ids = [
+        token_id
+        for token_id, label in zip(sample["input_ids"], sample["labels"])
+        if label != -100
+    ]
+    print(tokenizer.decode(target_ids))
+
     trainer.train()
 
     model.save_pretrained(OUT + "-lora")  # keep the adapter in case GGUF export fails
