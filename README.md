@@ -14,16 +14,45 @@ pip install -e ".[dev]"
 python -m uvicorn lakanvault.app.server:app --reload --host 127.0.0.1 --port 8080
 ```
 
-API daemon: **http://127.0.0.1:8080** (dashboard UI is being rebuilt — use `/api/*` and `/v1/*` for now).
+API daemon: **http://127.0.0.1:8080**  
+Prompt Review UI: **http://127.0.0.1:8080/review** (loopback Joan scan → mask/block → optional local send).
 
 Tray mode (Windows):
 
 ```powershell
+pip install -e ".[tray]"   # optional: pywebview Status flyout
 python -m lakanvault.launcher --tray --no-runtime
 ```
 
-Left-click / **Open Dashboard** opens the API URL; **Quit** exits.
+**Left-click** the tray icon toggles a Teams-style frameless Status flyout (`/status`, tray-corner). **Right-click** → **Open Prompt Review** / **Quit**. A **block** also auto-opens the flyout (and toasts). Left-click again to hide. (On Windows, pywebview owns the main thread; the tray icon runs beside it.) Tray polls `/api/protect/recent` and uses `icon.notify` for warn / mask / block (skipped while Pause is on).
 
+Frozen `.exe`: Edge WebView2 / Chromium runtime may be required for the native flyout; if webview fails, Status/Review fall back to the default browser.
+
+### Cursor project hooks (this workspace)
+
+**Where they apply:** only while this repo (`LakanVault`) is the open Cursor workspace. Other folders / other chats elsewhere are unaffected. Cloud agents do not run these hooks.
+
+**On / off (so this chat is not blocked while you build):**
+
+1. Open [`.cursor/hooks/mode.txt`](.cursor/hooks/mode.txt)
+2. First word must be exactly `off` or `on`
+3. Save — next send uses the new mode (no restart needed for the script; restart Cursor only if hooks failed to load)
+
+| `mode.txt` | Behavior |
+|------------|----------|
+| `off` | Pass-through — normal Cursor chat |
+| `tag` (current) | Gate **only** if the prompt contains `[[lv]]` — this chat stays normal; test chat prefixes with `[[lv]]` |
+| `on` | Gate every prompt: secrets **blocked**; PII **blocked** + sanitized text to paste/resend |
+Optional override: env `LAKANVAULT_HOOKS=on` or `off`.
+
+With the daemon on `:8080` and mode `on` (or `tag` + `[[lv]]`), [`.cursor/hooks.json`](.cursor/hooks.json) calls `/api/review`:
+
+- `beforeSubmitPrompt` — Cursor **cannot rewrite** the prompt; we stop unsafe sends (`continue: false`).
+- **MASK (FR1/FR8):** deny + show sanitized text; that exact paste is **trusted once** (TTL ~10 min) so fake names are not remasked forever.
+- **BLOCK:** deny with no handoff (secrets never leave).
+- `beforeReadFile` — deny `.env`, `vault.key`, `*.pem` when mode is `on`.
+
+Honest claim: gate + one-shot paste handoff, not silent in-place rewrite. Not Copilot, not browser ChatGPT, not Tab. FR9 UI: `/review`.
 ## Scripts
 
 | Script | Purpose |
@@ -78,6 +107,8 @@ Configure via `/api/settings` or `config/local.yaml` (`local_ai.base_url`).
 ```
 
 Output: `dist/LakanVault/LakanVault.exe` and `dist/lakanvault-mcp/lakanvault-mcp.exe`.
+
+Native Status/Review panels need a WebView2/Chromium runtime on the machine; without it the tray opens the system browser instead.
 
 ## Tests
 

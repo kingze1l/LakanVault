@@ -10,9 +10,10 @@
 | Native tools | `lakanvault-mcp-server` / `python -m lakanvault.mcp.stdio_server` | Exposes `lakanvault_classify`, `lakanvault_protect`, `lakanvault_restore`, `lakanvault_audit_recent` |
 | Sanitize shim | `lakanvault-mcp` | Wraps a **child** MCP server; sanitizes `tools/call` **results** only |
 
-Neither path intercepts Chat / Agent / Tab traffic that bypasses MCP tools.
+Neither MCP path rewrites Cursor Chat by itself. **Project hooks** (below) gate Chat sends in this workspace when enabled.
 
 ### Protect → external LLM → restore (Joan scan path)
+
 
 1. Call **`lakanvault_protect`** on the user text (optional `session_id`, `llm`: `unsure` / `always` / `never`).
 2. Send only the returned **`sanitized`** string to the cloud / external model.
@@ -59,10 +60,25 @@ cd ..\LakanVault-mcp-sandbox
 1. Prefer the sandbox above, **or** copy [`examples/cursor-mcp.json`](./examples/cursor-mcp.json) to **project** `.cursor/mcp.json` only (never user-global until you are sure).
 2. Adjust the Python path if your venv lives elsewhere.
 3. Restart Cursor or reload MCP servers (**Customize → MCPs**) in that window only.
-4. Confirm **Available Tools** lists `lakanvault_classify` and `lakanvault_audit_recent`.
-5. Prompt Cursor to call `lakanvault_classify` on a fake key such as `sk-abcdefghijklmnopqrstuvwxyz1234567890` and expect `action: block` without the key echoed.
+4. Confirm **Available Tools** lists `lakanvault_classify`, `lakanvault_protect`, `lakanvault_restore`, and `lakanvault_audit_recent`.
+5. Prompt Cursor to call `lakanvault_classify` on a real-shaped fake key such as `sk-9f8e7d6c5b4a3928170615243a4b5c6d7e8f90ab` (avoid the alphabet string — gitleaks allowlists it) and expect `action: block` without the key echoed.
 
 Logs: **Ctrl+Shift+U → MCP Logs**. Stdout from the server must stay protocol-only; diagnostics go to stderr.
+
+## Project enforcement hooks (FR1 / FR8 / FR9)
+
+Checked into [`.cursor/hooks.json`](../../.cursor/hooks.json). Daemon must be on `http://127.0.0.1:8080` (`POST /api/review`).
+
+| `mode.txt` | Behavior |
+|------------|----------|
+| `off` | No gate |
+| `tag` | Gate only if prompt contains `[[lv]]` |
+| `on` | Gate every prompt in this workspace |
+
+- **BLOCK** (secrets): deny send; no paste handoff.
+- **MASK** (PII): deny + show Joan sanitized text; **exact paste trusted once** (TTL) so fake names are not remasked forever.
+- Cursor cannot rewrite the chat box in place (`updated_input` ignored).
+- Prompt Review UI: `http://127.0.0.1:8080/review`.
 
 ## Sanitize a third-party MCP (shim)
 

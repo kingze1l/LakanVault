@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LakanVault Status</title>
+  <style>
+    :root {
+      --bg: #0c1015;
+      --panel: #151c24;
+      --panel-2: #1a222c;
+      --text: #e7ecf1;
+      --muted: #8b98a8;
+      --accent: #3d9a78;
+      --warn: #c9a227;
+      --block: #c45c5c;
+      --mask: #5b8def;
+      --border: rgba(255,255,255,.07);
+      --sans: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      user-select: none;
+    }
+    main {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 0.85rem 0.9rem 0.9rem;
+      gap: 0.65rem;
+      background:
+        radial-gradient(420px 180px at 100% 0%, rgba(61,154,120,.12), transparent 60%),
+        var(--bg);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      min-width: 0;
+    }
+    .brand strong {
+      font-size: 0.95rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+    .brand span { color: var(--muted); font-size: 0.72rem; }
+    .pill {
+      flex-shrink: 0;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.28rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(61, 154, 120, 0.16);
+      color: var(--accent);
+      border: 1px solid rgba(61, 154, 120, 0.28);
+    }
+    .pill.paused {
+      background: rgba(201, 162, 39, 0.14);
+      color: var(--warn);
+      border-color: rgba(201, 162, 39, 0.3);
+    }
+    .line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.82rem;
+    }
+    .line .hint { color: var(--muted); font-size: 0.72rem; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.4rem;
+    }
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.55rem 0.35rem 0.5rem;
+      text-align: center;
+    }
+    .metric .n { font-size: 1.25rem; font-weight: 700; line-height: 1; }
+    .metric .l {
+      font-size: 0.6rem;
+      color: var(--muted);
+      letter-spacing: 0.07em;
+      margin-top: 0.28rem;
+      font-weight: 600;
+    }
+    .metric.block .n { color: var(--block); }
+    .metric.warn .n { color: var(--warn); }
+    .metric.mask .n { color: var(--mask); }
+    .section-label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      font-weight: 650;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .activity-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: auto;
+      flex: 1;
+    }
+    li {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.45rem;
+      align-items: center;
+      padding: 0.45rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.76rem;
+    }
+    li:last-child { border-bottom: none; }
+    .act {
+      font-size: 0.62rem;
+      font-weight: 750;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      min-width: 3.1rem;
+    }
+    .act.block { color: var(--block); }
+    .act.warn { color: var(--warn); }
+    .act.mask { color: var(--mask); }
+    .meta { color: var(--muted); font-size: 0.68rem; text-align: right; line-height: 1.25; }
+    .types { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .empty { color: var(--muted); padding: 0.7rem; font-size: 0.78rem; }
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.4rem;
+    }
+    button, a.btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.55rem 0.5rem;
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    a.btn.primary {
+      background: rgba(61, 154, 120, 0.18);
+      border-color: rgba(61, 154, 120, 0.4);
+      color: #b7e6d2;
+    }
+    button:hover, a.btn:hover { filter: brightness(1.08); }
+    button:active, a.btn:active { filter: brightness(0.96); }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">
+        <strong>LakanVault</strong>
+        <span>Local protect status</span>
+      </div>
+      <span id="protection-pill" class="pill">On</span>
+    </header>
+
+    <div class="line">
+      <span id="protection-label">Protection active</span>
+      <span class="hint" id="protection-hint">metadata only</span>
+    </div>
+
+    <div class="metrics">
+      <div class="metric block"><div class="n" id="n-block">0</div><div class="l">BLOCKED</div></div>
+      <div class="metric warn"><div class="n" id="n-warn">0</div><div class="l">WARNED</div></div>
+      <div class="metric mask"><div class="n" id="n-mask">0</div><div class="l">MASKED</div></div>
+    </div>
+
+    <div class="activity-wrap">
+      <p class="section-label">Recent activity</p>
+      <ul id="activity"><li class="empty">No protect events yet.</li></ul>
+    </div>
+
+    <div class="actions">
+      <a class="btn primary" href="/review" target="_blank" rel="noopener">Prompt Review</a>
+      <button type="button" id="btn-pause">Pause</button>
+    </div>
+  </main>
+  <script>
+    const el = (id) => document.getElementById(id);
+    let paused = false;
+
+    function fmtTime(ts) {
+      try {
+        return new Date(ts * 1000).toLocaleTimeString([], {
+          hour: "2-digit", minute: "2-digit", second: "2-digit"
+        });
+      } catch {
+        return "";
+      }
+    }
+
+    function render(stats) {
+      paused = !!stats.paused;
+      el("n-block").textContent = String(stats.blocked ?? 0);
+      el("n-warn").textContent = String(stats.warned ?? 0);
+      el("n-mask").textContent = String(stats.masked ?? 0);
+      el("protection-label").textContent = paused ? "Protection paused" : "Protection active";
+      el("protection-hint").textContent = paused ? "toasts skipped" : "metadata only";
+      const pill = el("protection-pill");
+      pill.textContent = paused ? "Paused" : "On";
+      pill.className = "pill" + (paused ? " paused" : "");
+      el("btn-pause").textContent = paused ? "Resume" : "Pause";
+
+      const activity = stats.activity || [];
+      const list = el("activity");
+      if (!activity.length) {
+        list.innerHTML = '<li class="empty">No protect events yet.</li>';
+        return;
+      }
+      list.innerHTML = activity.map((e) => {
+        const types = (e.entity_types || []).slice(0, 4).join(", ") || "—";
+        return `<li>
+          <span class="act ${e.action}">${e.action}</span>
+          <span class="types" title="${types}">${types}</span>
+          <span class="meta">${e.source}<br/>${fmtTime(e.ts)}</span>
+        </li>`;
+      }).join("");
+    }
+
+    async function refresh() {
+      try {
+        const resp = await fetch("/api/protect/stats");
+        if (!resp.ok) return;
+        render(await resp.json());
+      } catch (_) {}
+    }
+
+    el("btn-pause").addEventListener("click", async () => {
+      try {
+        const resp = await fetch("/api/protect/pause", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paused: !paused }),
+        });
+        if (resp.ok) {
+          const stats = await (await fetch("/api/protect/stats")).json();
+          render(stats);
+        }
+      } catch (_) {}
+    });
+
+    refresh();
+    setInterval(refresh, 2000);
+  </script>
+</body>
+</html>

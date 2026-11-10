@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LakanVault Prompt Review</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a222c;
+      --text: #e7ecf1;
+      --muted: #9aa7b5;
+      --accent: #3d9a78;
+      --warn: #c9a227;
+      --block: #c45c5c;
+      --border: #2a3542;
+      --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+      --sans: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: radial-gradient(1200px 600px at 10% -10%, #1b2a33, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+    }
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem;
+    }
+    .sub { color: var(--muted); margin: 0 0 1.5rem; font-size: 0.95rem; }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.4rem; }
+    textarea, input, select {
+      width: 100%;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 0.9rem;
+      font: inherit;
+    }
+    textarea { min-height: 140px; font-family: var(--mono); font-size: 0.9rem; resize: vertical; }
+    .row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 0.75rem 0 1rem; }
+    .row > * { flex: 1 1 180px; }
+    .actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 1rem 0; }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 0.65rem 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #04140f;
+    }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    button.secondary { background: #2a3542; color: var(--text); }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+    }
+    .panel h2 { margin: 0 0 0.6rem; font-size: 0.95rem; color: var(--muted); font-weight: 600; }
+    .hl { font-family: var(--mono); font-size: 0.85rem; white-space: pre-wrap; word-break: break-word; line-height: 1.45; }
+    mark {
+      background: rgba(201, 162, 39, 0.35);
+      color: inherit;
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+    mark.block { background: rgba(196, 92, 92, 0.4); }
+    mark.mask { background: rgba(61, 154, 120, 0.35); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 0.45rem 0.35rem; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; }
+    .verdict {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .verdict.allow, .verdict.warn { background: rgba(61, 154, 120, 0.2); color: #7ddec0; }
+    .verdict.mask { background: rgba(201, 162, 39, 0.2); color: #e6c96a; }
+    .verdict.block { background: rgba(196, 92, 92, 0.25); color: #f0a0a0; }
+    .status { margin: 0.75rem 0; color: var(--muted); font-size: 0.9rem; min-height: 1.2em; }
+    .err { color: #f0a0a0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>LakanVault Prompt Review</h1>
+    <p class="sub">Scan with Joan’s detector before anything leaves the machine. Secrets block; PII is masked.</p>
+
+    <label for="prompt">Prompt</label>
+    <textarea id="prompt" placeholder="Paste a prompt that might contain secrets or PII…"></textarea>
+
+    <div class="row">
+      <div>
+        <label for="model">Model (optional)</label>
+        <input id="model" placeholder="local model name" />
+      </div>
+      <div>
+        <label for="baseUrl">Local LLM base URL</label>
+        <input id="baseUrl" value="http://127.0.0.1:1234" />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="btnReview">Review</button>
+      <button type="button" id="btnSend" class="secondary" disabled>Send</button>
+    </div>
+    <p class="status" id="status"></p>
+
+    <div id="result" hidden>
+      <p>Verdict: <span class="verdict" id="verdict">—</span> · session <code id="sessionId"></code></p>
+      <div class="grid">
+        <div class="panel">
+          <h2>Original (highlighted)</h2>
+          <div class="hl" id="originalHl"></div>
+        </div>
+        <div class="panel">
+          <h2>Sanitized (outbound)</h2>
+          <div class="hl" id="sanitized"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:1rem">
+        <h2>Findings</h2>
+        <table>
+          <thead>
+            <tr><th>Type</th><th>Tier</th><th>Action</th><th>Conf</th><th>Span</th></tr>
+          </thead>
+          <tbody id="findings"></tbody>
+        </table>
+      </div>
+      <div class="grid" style="margin-top:1rem">
+        <div class="panel">
+          <h2>Raw model reply</h2>
+          <div class="hl" id="rawReply">(not sent yet)</div>
+        </div>
+        <div class="panel">
+          <h2>Restored reply</h2>
+          <div class="hl" id="restoredReply">(not sent yet)</div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let state = { sessionId: "", sanitized: "", finalAction: "allow", allowSend: false, original: "" };
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function highlight(text, findings) {
+      const spans = (findings || [])
+        .map((f) => ({ start: f.start, end: f.end, action: f.action || "" }))
+        .filter((f) => f.end > f.start)
+        .sort((a, b) => a.start - b.start);
+      let out = "";
+      let cursor = 0;
+      for (const span of spans) {
+        if (span.start < cursor) continue;
+        out += escapeHtml(text.slice(cursor, span.start));
+        const cls = span.action === "block" ? "block" : "mask";
+        out += `<mark class="${cls}">` + escapeHtml(text.slice(span.start, span.end)) + "</mark>";
+        cursor = span.end;
+      }
+      out += escapeHtml(text.slice(cursor));
+      return out;
+    }
+
+    function setStatus(msg, isErr) {
+      const el = $("status");
+      el.textContent = msg || "";
+      el.className = "status" + (isErr ? " err" : "");
+    }
+
+    $("btnReview").onclick = async () => {
+      const text = $("prompt").value;
+      if (!text.trim()) {
+        setStatus("Enter a prompt first.", true);
+        return;
+      }
+      setStatus("Reviewing…");
+      $("btnSend").disabled = true;
+      try {
+        const resp = await fetch("/api/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, session_id: state.sessionId || "", llm: "never" }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || resp.statusText);
+        state = {
+          sessionId: data.session_id,
+          sanitized: data.sanitized || "",
+          finalAction: data.final_action || "allow",
+          allowSend: !!data.allow_send,
+          original: text,
+        };
+        $("result").hidden = false;
+        $("sessionId").textContent = state.sessionId;
+        const v = $("verdict");
+        v.textContent = state.finalAction;
+        v.className = "verdict " + state.finalAction;
+        $("originalHl").innerHTML = highlight(text, data.findings);
+        $("sanitized").textContent = state.sanitized || "(empty — blocked)";
+        const tb = $("findings");
+        tb.innerHTML = "";
+        for (const f of data.findings || []) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${escapeHtml(f.entity_type)}</td><td>${escapeHtml(f.tier)}</td><td>${escapeHtml(f.action || "")}</td><td>${Number(f.confidence).toFixed(2)}</td><td>${f.start}:${f.end}</td>`;
+          tb.appendChild(tr);
+        }
+        $("rawReply").textContent = "(not sent yet)";
+        $("restoredReply").textContent = "(not sent yet)";
+        $("btnSend").disabled = !state.allowSend;
+        setStatus(state.allowSend ? "Ready to send (masked if needed)." : "Blocked — Send disabled.");
+      } catch (err) {
+        setStatus(String(err.message || err), true);
+      }
+    };
+
+    $("btnSend").onclick = async () => {
+      if (!state.allowSend || !state.sessionId) return;
+      setStatus("Sending…");
+      try {
+        const body = {
+          session_id: state.sessionId,
+          sanitized: state.sanitized,
+          model: $("model").value || null,
+          base_url: $("baseUrl").value || null,
+        };
+        const resp = await fetch("/api/review/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(typeof data.detail === "string" ? data.detail : resp.statusText);
+        if (data.blocked) {
+          setStatus(data.block_reason || "Blocked", true);
+          return;
+        }
+        if (data.error) {
+          setStatus(data.error, true);
+          $("rawReply").textContent = "";
+          $("restoredReply").textContent = "";
+          return;
+        }
+        $("rawReply").textContent = data.raw_response || "";
+        $("restoredReply").textContent = data.restored_response || "";
+        setStatus("Done · " + (data.model_used || "model") + " · " + Math.round(data.latency_ms || 0) + " ms");
+      } catch (err) {
+        setStatus(String(err.message || err), true);
+      }
+    };
+  </script>
+</body>
+</html>

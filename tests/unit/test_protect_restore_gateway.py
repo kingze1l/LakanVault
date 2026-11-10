@@ -53,6 +53,8 @@ def test_protect_blocks_secret_and_omits_raw_values(tmp_path: Path) -> None:
     out = gw.protect_prompt(SECRET_PROMPT, session_id="s1", llm="never")
     assert out.session_id == "s1"
     assert out.sanitized == ""
+    assert out.final_action == "block"
+    assert out.allow_send is False
     assert SECRET_VALUE not in out.sanitized
     assert out.finding_count >= 1
     dumped = out.model_dump()
@@ -61,6 +63,7 @@ def test_protect_blocks_secret_and_omits_raw_values(tmp_path: Path) -> None:
     for finding in out.findings:
         assert "text" not in finding.model_dump()
         assert finding.entity_type
+        assert finding.action == "block"
 
 
 def test_protect_restore_round_trip_masks_pii(tmp_path: Path) -> None:
@@ -68,6 +71,8 @@ def test_protect_restore_round_trip_masks_pii(tmp_path: Path) -> None:
     protected = gw.protect_prompt(PII_PROMPT, session_id="round", llm="never")
     assert EMAIL not in protected.sanitized
     assert protected.sanitized
+    assert protected.final_action == "mask"
+    assert protected.allow_send is True
     restored = gw.restore_prompt(protected.sanitized, session_id="round")
     assert restored.session_id == "round"
     assert EMAIL in restored.text

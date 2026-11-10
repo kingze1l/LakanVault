@@ -48,7 +48,9 @@ def protect(
     config_dir: str | Path = "./config",
 ) -> ProtectResponse:
     """Scan + sanitize via Joan process_input. Returns sanitized text + safe findings."""
-    return shared_gateway(config_dir).protect_prompt(text, session_id=session_id, llm=llm)
+    return shared_gateway(config_dir).protect_prompt(
+        text, session_id=session_id, llm=llm, source="mcp"
+    )
 
 
 def restore(

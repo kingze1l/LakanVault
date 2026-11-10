@@ -280,7 +280,7 @@ Add `code-review-and-quality` before merge. Add security rule when touching DLP/
 
 
 
-## Current status (updated 2026-08-31)
+## Current status (updated 2026-11-09)
 
 
 | Ticket / area            | Status | Notes |
@@ -288,26 +288,19 @@ Add `code-review-and-quality` before merge. Add security rule when touching DLP/
 | Cursor rules + this plan | ✅ Done | |
 | 1.1 MCP contracts        | ✅ Done | |
 | 1.2 Classify service     | ✅ Done | |
-| 1.3 MCP server           | 🔄 Partial | Tools + shim done; full stdio server loop deferred |
+| 1.3 MCP server           | ✅ Done | classify / protect / restore / audit |
 | 1.4 Tray daemon          | ✅ Done | `tray/` state + pystray; `--tray` / frozen default |
 | 1.5 PyInstaller          | 🔄 Partial | Script + path tests + windowed hardening; **frozen API smoke deferred** (hang) |
-| CS301 Option 3 proxy     | ✅ Done | On `CS301`; not merged to `main` |
-| Sprint 1 gate            | 🔄 Partial | Tests green; Joan review + tray + PR pending |
-| Sprint 2 DLP core        | 🔄 Partial | Transformer/policy in place; clipboard not started |
-
-### Sprint 1 — what's left to close
-
-1. **Frozen `.exe` smoke** — deferred until freeze slimmed (tray via Python works now)  
-2. **Joan demo** — MCP classify + `/v1` API-key block + audit  
-3. **Merge PR** — `CS301` → `main` (after review)  
-4. **New dashboard UI** — after foundation (Prompt Review mockup)
+| CS301 Option 3 proxy     | ✅ Done | On `main`; Joan process_input / Vault |
+| Prompt Review + hooks    | ✅ Done | FR1/FR8/FR9: /review, hooks gate, MASK handoff trusted once |
+| Sprint 2 DLP core        | 🔄 Partial | Joan path on proxy/MCP/hooks; clipboard optional |
 
 ### Already shipped (do not rebuild)
 
-- OpenAI `/v1/chat/completions` proxy with SSE restore  
-- In-memory token vault + opaque `[LV_…]` tokens  
-- MCP stdio sanitizing shim (`lakanvault-mcp`)  
-- Unified DLP on `/api/chat` and proxy paths  
+- OpenAI `/v1/chat/completions` proxy with Joan surrogates + SSE mapping restore  
+- MCP stdio tools + sanitizing shim (`lakanvault-mcp`)  
+- Unified Joan DLP on `/api/chat`, proxy, protect, and Prompt Review  
+- Project Cursor hooks (this workspace) — deny on block; sensitive file read deny  
 - ADR-005 + client compatibility matrix
 
 

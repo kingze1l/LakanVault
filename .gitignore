@@ -1,7 +1,11 @@
 # ── AI / planning artifacts ──
-.cursor/
+.cursor/*
 !.cursor/rules/
 !.cursor/rules/**
+!.cursor/hooks.json
+!.cursor/hooks/
+!.cursor/hooks/**
+.cursor/hooks/handoff_allow.json
 .cursorrules
 ai_planning/
 *.plan.md

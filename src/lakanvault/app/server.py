@@ -6,9 +6,10 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 from lakanvault.app.picker import list_model_files, pick_model_file, pick_models_folder
 from lakanvault.app.proxy_routes import internal_router, router as proxy_router
@@ -21,11 +22,14 @@ from lakanvault.contracts.dtos import (
     ScanResponse,
     SettingsUpdate,
 )
+from lakanvault.contracts.mcp import ProtectRequest, ProtectResponse, ReviewSendRequest, ReviewSendResponse
 from lakanvault.orchestration.gateway import Gateway
+from lakanvault.orchestration.protect_events import get_protect_ring
 from lakanvault.orchestration.proxy_gateway import ProxyGateway
 from lakanvault.infrastructure.token_vault import InMemoryTokenVault
 from lakanvault.infrastructure.upstream.openai import OpenAIUpstream
 from lakanvault.shared.config import clear_local_config_keys, load_config, save_local_config
+from lakanvault.shared.loopback import assert_loopback_client
 from lakanvault.shared.paths import resource_path, writable_data_root
 from lakanvault.shared.url_policy import assert_localhost_url
 
@@ -174,14 +178,93 @@ def _resolve_models_dir(custom_dir: str | None = None) -> Path:
     return path if path.is_absolute() else REPO_ROOT / path
 
 
+def _require_loopback(request: Request) -> None:
+    try:
+        assert_loopback_client(request.client)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="review endpoint: loopback only") from exc
+
+
+class ProtectPauseBody(BaseModel):
+    paused: bool = Field(..., description="When true, tray toasts skip new protect events")
+
+
 @app.get("/")
 def index() -> dict:
     return {
         "service": "LakanVault",
         "version": "0.1.0",
-        "status": "api-only",
-        "message": "Dashboard UI pending — use /api/* and /v1/* endpoints.",
+        "status": "ok",
+        "message": "Status at /status — Prompt Review at /review — use /api/* and /v1/* endpoints.",
+        "status_page": "/status",
+        "review": "/review",
     }
+
+
+@app.get("/status")
+def status_page() -> FileResponse:
+    path = STATIC_DIR / "status.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="status.html not found")
+    return FileResponse(path, media_type="text/html")
+
+
+@app.get("/review")
+def review_page() -> FileResponse:
+    path = STATIC_DIR / "review.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="review.html not found")
+    return FileResponse(path, media_type="text/html")
+
+
+@app.get("/api/protect/recent")
+def api_protect_recent(
+    since_id: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+) -> dict:
+    """Metadata-only protect events for tray poll / status UI."""
+    return {"events": get_protect_ring().recent(since_id=since_id, limit=limit)}
+
+
+@app.get("/api/protect/stats")
+def api_protect_stats() -> dict:
+    return get_protect_ring().stats()
+
+
+@app.post("/api/protect/pause")
+def api_protect_pause(body: ProtectPauseBody) -> dict:
+    ring = get_protect_ring()
+    ring.set_paused(body.paused)
+    return {"paused": ring.is_paused()}
+
+
+@app.post("/api/review", response_model=ProtectResponse)
+def api_review(request: Request, body: ProtectRequest) -> ProtectResponse:
+    """Joan protect for Prompt Review UI and Cursor hooks. Loopback only."""
+    _require_loopback(request)
+    return get_gateway().protect_prompt(
+        body.text, session_id=body.session_id, llm=body.llm, source="review"
+    )
+
+
+@app.post("/api/review/send", response_model=ReviewSendResponse)
+def api_review_send(request: Request, body: ReviewSendRequest) -> ReviewSendResponse:
+    """Send sanitized text from a prior /api/review session. Loopback only."""
+    _require_loopback(request)
+    if body.base_url:
+        try:
+            assert_localhost_url(body.base_url)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+    try:
+        return get_gateway().send_reviewed(
+            body.session_id,
+            body.sanitized,
+            model=body.model,
+            base_url=body.base_url,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @app.get("/api/config")

@@ -21,6 +21,8 @@ from lakanvault.contracts.mcp import (
     ProtectResponse,
     RestoreRequest,
     RestoreResponse,
+    ReviewSendRequest,
+    ReviewSendResponse,
 )
 from lakanvault.local_core.adapters.local_llm_client import LocalLLMClient
 from lakanvault.local_core.audit.stage import AuditStage
@@ -229,14 +231,19 @@ class Gateway:
         text: str,
         session_id: str = "",
         llm: str = "unsure",
+        *,
+        source: str = "review",
     ) -> ProtectResponse:
         """Joan scan + Vault sanitize. Findings metadata only — never finding.text."""
+        from lakanvault.local_core.policy.engine import Action, action_for
         from lakanvault.local_core.scan import process_input
+        from lakanvault.orchestration.protect_events import record_protect_event
 
         req = ProtectRequest(text=text, session_id=session_id or "", llm=llm)
         sid = req.session_id or uuid.uuid4().hex[:12]
         vault = self._vault_for_session(sid)
         protected = process_input(req.text, vault, llm=req.llm)  # type: ignore[arg-type]
+        final = protected.final_action
         summaries = [
             FindingSummary(
                 entity_type=f.entity_type,
@@ -246,14 +253,24 @@ class Gateway:
                 end=int(f.end),
                 source=str(f.source),
                 needs_escalation=bool(f.needs_escalation),
+                action=action_for(f).value,
             )
             for f in protected.findings
         ]
+        action_s = final.value if hasattr(final, "value") else str(final)
+        if action_s in ("warn", "mask", "block"):
+            record_protect_event(
+                action_s,
+                source=source,
+                entity_types=[s.entity_type for s in summaries],
+            )
         return ProtectResponse(
             session_id=sid,
             sanitized=protected.sanitized,
             findings=summaries,
             finding_count=len(summaries),
+            final_action=action_s,
+            allow_send=final != Action.BLOCK,
         )
 
     def restore_prompt(self, text: str, session_id: str) -> RestoreResponse:
@@ -267,6 +284,58 @@ class Gateway:
         return RestoreResponse(
             session_id=req.session_id,
             text=process_output(req.text, vault),
+        )
+
+    def send_reviewed(
+        self,
+        session_id: str,
+        sanitized: str,
+        model: str | None = None,
+        base_url: str | None = None,
+    ) -> ReviewSendResponse:
+        """Send already-sanitized text to the local LLM; restore with the review session vault."""
+        from lakanvault.local_core.scan import process_output
+
+        req = ReviewSendRequest(
+            session_id=session_id,
+            sanitized=sanitized,
+            model=model,
+            base_url=base_url,
+        )
+        vault = self._protect_vaults.get(req.session_id)
+        if vault is None:
+            raise KeyError(f"unknown protect session: {req.session_id}")
+        if not (req.sanitized or "").strip():
+            return ReviewSendResponse(
+                session_id=req.session_id,
+                blocked=True,
+                block_reason="nothing to send (blocked or empty sanitized prompt)",
+            )
+        if base_url:
+            assert_localhost_url(base_url)
+        system_hint = build_chat_system_prompt(None)
+        try:
+            result = self._local_llm.chat(
+                wrap_user_message(req.sanitized),
+                model=req.model,
+                base_url=req.base_url,
+                system=system_hint,
+            )
+        except (ConnectionError, ValueError) as exc:
+            return ReviewSendResponse(
+                session_id=req.session_id,
+                error=str(exc),
+                model_used=req.model or self._cfg.get("local_ai", {}).get("model", ""),
+                provider_url=req.base_url or self._local_llm.base_url,
+            )
+        restored = process_output(result.content, vault)
+        return ReviewSendResponse(
+            session_id=req.session_id,
+            raw_response=result.content,
+            restored_response=restored,
+            model_used=result.model_used,
+            provider_url=result.provider_url,
+            latency_ms=result.latency_ms,
         )
 
     def local_llm_status(self, base_url: str | None = None) -> dict:
@@ -288,10 +357,13 @@ class Gateway:
         t0 = monotonic()
         req_id = uuid.uuid4().hex[:12]
         vault = self._vault_for_session(f"chat-{req_id}")
+        from lakanvault.orchestration.protect_events import record_protect_event
+
         try:
             protected = process_input(prompt, vault, llm="never")
         except Exception as exc:
             sanitize_ms = round((monotonic() - t0) * 1000, 1)
+            record_protect_event("block", source="chat", entity_types=[])
             return {
                 "block_reason": f"detector failure: {type(exc).__name__}",
                 "sanitized": "",
@@ -311,6 +383,17 @@ class Gateway:
             block_reason = detect_prompt_injection(prompt)
             sanitized = protected.sanitized
             mapping = vault.mapping()
+        action_s = (
+            protected.final_action.value
+            if hasattr(protected.final_action, "value")
+            else str(protected.final_action)
+        )
+        if action_s in ("warn", "mask", "block"):
+            record_protect_event(
+                action_s,
+                source="chat",
+                entity_types=[f.entity_type for f in protected.findings],
+            )
         sanitize_ms = round((monotonic() - t0) * 1000, 1)
         system_hint = build_chat_system_prompt(
             ReversibleAnonymizer.placeholder_system_hint(mapping)
