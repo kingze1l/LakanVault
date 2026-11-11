@@ -1,4 +1,4 @@
-"""Metadata-only classification of chat payloads. Never echo prompt text."""
+# classify chat payload metadata only never echo prompt
 from __future__ import annotations
 
 import asyncio
@@ -14,7 +14,7 @@ from lakanvault.orchestration.proxy_gateway import ProxyGateway
 EMAIL = "jane.doe@example.com"
 API_KEY = "sk-9f8e7d6c5b4a3210fedcba0987654321zz"
 
-
+# asgi wrapper that fakes client addr
 class _ClientApp:
     def __init__(self, app, client: tuple[str, int] | None) -> None:
         self._app = app
@@ -25,7 +25,7 @@ class _ClientApp:
         scope["client"] = self._client
         await self._app(scope, receive, send)
 
-
+# minimal fastapi w proxy gateway state
 def _app(*, max_body: int = 1_048_576) -> FastAPI:
     app = FastAPI()
     app.include_router(internal_router)
@@ -33,7 +33,7 @@ def _app(*, max_body: int = 1_048_576) -> FastAPI:
     app.state.proxy_max_body = max_body
     return app
 
-
+# post classify-chat-payload helper
 async def _post(
     payload: dict,
     *,

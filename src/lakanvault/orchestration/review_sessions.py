@@ -1,3 +1,4 @@
+# holds original + sanitized text a bit so toast View can open Prompt Review
 """Short-lived in-memory review sessions for toast View → Prompt Review.
 
 Stores original/sanitized text in process memory only (TTL). Never written to audit/disk.
@@ -37,6 +38,7 @@ class ReviewSessionStore:
     _by_event: dict[int, ReviewSession] = field(default_factory=dict, repr=False)
     _by_session: dict[str, int] = field(default_factory=dict, repr=False)
 
+    # save a session keyed by event id n session id
     def put(
         self,
         *,
@@ -69,11 +71,13 @@ class ReviewSessionStore:
                 self._drop_unlocked(oldest_id)
         return sess
 
+    # look up by protect event id
     def get_by_event(self, event_id: int) -> ReviewSession | None:
         with self._lock:
             self._purge_unlocked()
             return self._by_event.get(int(event_id))
 
+    # look up by protect session id
     def get_by_session(self, session_id: str) -> ReviewSession | None:
         with self._lock:
             self._purge_unlocked()
@@ -82,6 +86,7 @@ class ReviewSessionStore:
                 return None
             return self._by_event.get(eid)
 
+    # mark that they already used the override send once
     def mark_override_used(self, session_id: str) -> bool:
         with self._lock:
             self._purge_unlocked()
@@ -96,6 +101,7 @@ class ReviewSessionStore:
             sess.override_used = True
             return True
 
+    # shape it for the review ui (loopback only)
     def to_public_dict(self, sess: ReviewSession) -> dict[str, Any]:
         """Full payload for Review UI (loopback only)."""
         return {
@@ -112,12 +118,14 @@ class ReviewSessionStore:
             "override_used": sess.override_used,
         }
 
+    # drop expired sessions (caller already holds the lock)
     def _purge_unlocked(self) -> None:
         now = time.time()
         expired = [eid for eid, s in self._by_event.items() if now - s.ts > self.ttl_s]
         for eid in expired:
             self._drop_unlocked(eid)
 
+    # yank one session out of both maps
     def _drop_unlocked(self, event_id: int) -> None:
         sess = self._by_event.pop(event_id, None)
         if sess is not None:
@@ -128,10 +136,12 @@ _STORE = ReviewSessionStore()
 _STORE_LOCK = threading.Lock()
 
 
+# shared store for the whole process
 def get_review_sessions() -> ReviewSessionStore:
     return _STORE
 
 
+# fresh store for unit tests
 def reset_review_sessions_for_tests() -> ReviewSessionStore:
     global _STORE
     with _STORE_LOCK:

@@ -1,3 +1,4 @@
+# shared bootstrap — dirs runtime gateway tray all the startup stuff
 """Shared bootstrap for LakanVault — bundled runtime, gateway server, tray."""
 from __future__ import annotations
 
@@ -16,12 +17,14 @@ from pathlib import Path
 _CREATE_NO_WINDOW = 0x08000000
 
 
+# find repo root (or exe folder when frozen)
 def repo_root() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parents[3]
 
 
+# copy default.yaml out of the freeze bundle if its missing
 def seed_bundled_config(root: Path) -> None:
     """Copy read-only default.yaml from the freeze bundle into writable config/.
 
@@ -48,6 +51,7 @@ def seed_bundled_config(root: Path) -> None:
             return
 
 
+# make sure data/models audit config dirs exist
 def ensure_data_dirs(root: Path) -> None:
     (root / "data" / "models").mkdir(parents=True, exist_ok=True)
     (root / "data" / "audit").mkdir(parents=True, exist_ok=True)
@@ -55,12 +59,14 @@ def ensure_data_dirs(root: Path) -> None:
     seed_bundled_config(root)
 
 
+# where we dump daemon logs
 def daemon_log_path() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent / "lakanvault-daemon.log"
     return Path("lakanvault-daemon.log")
 
 
+# append a line to the daemon log (best effort)
 def _append_log(msg: str) -> None:
     try:
         path = daemon_log_path()
@@ -70,6 +76,7 @@ def _append_log(msg: str) -> None:
         pass
 
 
+# windowed builds have no stdout — give uvicorn something to poke
 def _ensure_stdio() -> None:
     """Windowed PyInstaller builds set stdout/stderr to None; uvicorn calls isatty()."""
     if not getattr(sys, "frozen", False):
@@ -80,6 +87,7 @@ def _ensure_stdio() -> None:
         sys.stderr = open(os.devnull, "w", encoding="utf-8")
 
 
+# start bundled llama.cpp if the build shipped a runtime
 def start_bundled_runtime(root_dir: Path):
     """Auto-start llama.cpp sidecar when runtime/ ships with the build."""
     try:
@@ -101,6 +109,7 @@ def start_bundled_runtime(root_dir: Path):
     return None
 
 
+# block forever serving fastapi (main thread when frozen)
 def run_gateway_server(host: str, port: int) -> None:
     """Block forever serving the FastAPI app (call on the main thread when frozen)."""
     import asyncio
@@ -142,12 +151,14 @@ def run_gateway_server(host: str, port: int) -> None:
         raise
 
 
+# spin gateway on a background thread (dev mode)
 def start_gateway_thread(host: str, port: int) -> threading.Thread:
     thread = threading.Thread(target=run_gateway_server, args=(host, port), daemon=True)
     thread.start()
     return thread
 
 
+# argv for the frozen child daemon process
 def frozen_daemon_command(host: str, port: int) -> list[str]:
     """Child process argv for a frozen tray parent."""
     return [
@@ -161,6 +172,7 @@ def frozen_daemon_command(host: str, port: int) -> list[str]:
     ]
 
 
+# spawn sibling exe that runs uvicorn on its main thread
 def start_frozen_daemon_process(host: str, port: int) -> subprocess.Popen:
     """Spawn a sibling copy of this exe that runs uvicorn on its main thread."""
     env = os.environ.copy()
@@ -177,6 +189,7 @@ def start_frozen_daemon_process(host: str, port: int) -> subprocess.Popen:
     )
 
 
+# poll until url answers or we give up
 def wait_for_url(url: str, attempts: int = 40, delay: float = 0.15) -> bool:
     for _ in range(attempts):
         time.sleep(delay)
@@ -188,6 +201,7 @@ def wait_for_url(url: str, attempts: int = 40, delay: float = 0.15) -> bool:
     return False
 
 
+# longer wait when frozen cause cold start is slow
 def wait_for_url_ready(url: str) -> bool:
     """Frozen onedir cold-starts can take longer than a normal import."""
     if getattr(sys, "frozen", False):
@@ -195,10 +209,12 @@ def wait_for_url_ready(url: str) -> bool:
     return wait_for_url(url)
 
 
+# open url in default browser
 def open_browser(url: str) -> None:
     webbrowser.open(url)
 
 
+# foreground api only (frozen tray child uses this)
 def run_daemon_only(*, host: str = "127.0.0.1", port: int = 8080) -> int:
     """Foreground API only — used by frozen child processes (no tray)."""
     if getattr(sys, "frozen", False):
@@ -211,6 +227,7 @@ def run_daemon_only(*, host: str = "127.0.0.1", port: int = 8080) -> int:
     return 0
 
 
+# start runtime + gateway then sit until ctrl+c
 def run_daemon(
     *,
     host: str = "127.0.0.1",
@@ -254,6 +271,7 @@ def run_daemon(
     return 0
 
 
+# tray mode — start gateway then run the tray loop
 def run_tray_daemon(
     *,
     host: str = "127.0.0.1",
@@ -285,6 +303,7 @@ def run_tray_daemon(
     controller = TrayController(host=host, port=port)
     controller.set_status(TrayStatus.RUNNING if ready else TrayStatus.ERROR)
 
+    # kill child daemon + runtime when tray quits
     def on_quit() -> None:
         if child is not None and child.poll() is None:
             child.terminate()
@@ -299,6 +318,7 @@ def run_tray_daemon(
     return 0
 
 
+# parse cli flags n pick daemon / tray / daemon-only
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Start LakanVault gateway daemon")
     parser.add_argument("--host", default="127.0.0.1")

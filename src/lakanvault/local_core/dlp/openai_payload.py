@@ -1,3 +1,5 @@
+# joan — walks openai chat json without yeeting unknown fields
+# we only touch text bits; images/audio get strict-mode blocked
 """Walk OpenAI Chat Completions JSON without dropping unknown fields."""
 from __future__ import annotations
 
@@ -11,6 +13,7 @@ class UninspectedPayloadError(ValueError):
     """Strict mode: image/audio/file block cannot be scanned as text."""
 
 
+# yank plain text bits out of content (str or list parts)
 def _text_parts(content: Any) -> list[str]:
     if isinstance(content, str):
         return [content] if content else []
@@ -27,6 +30,7 @@ def _text_parts(content: Any) -> list[str]:
     return parts
 
 
+# smash system/user/tool text into one string for your detector
 def orchestrated_prompt(payload: dict[str, Any]) -> str:
     """One string of the IDE request: system, developer, user, and tool text.
 
@@ -49,6 +53,7 @@ def orchestrated_prompt(payload: dict[str, Any]) -> str:
     return "\n\n".join(blocks)
 
 
+# run transform on text parts; leave weird parts alone
 def _transform_content(
     content: Any,
     transform: Callable[[str], TransformResult],
@@ -96,6 +101,7 @@ def _transform_content(
     return content, findings, 0
 
 
+# sanitize outbound chat request text fields
 def sanitize_chat_request(
     payload: dict[str, Any],
     transform: Callable[[str], TransformResult],
@@ -131,6 +137,7 @@ def sanitize_chat_request(
     return out, findings, uninspected
 
 
+# put opaque tokens back in assistant text only (not tool_calls)
 def restore_chat_response(
     payload: dict[str, Any],
     restore: Callable[[str], str],
@@ -168,9 +175,11 @@ def restore_chat_response(
     return out
 
 
+# find tokens already sitting in the request so restore can allow them
 def collect_existing_tokens(payload: dict[str, Any], finder: Callable[[str], list[str]]) -> RestoreAllowSet:
     allow = RestoreAllowSet()
 
+    # recursive walk of messages tree
     def walk(node: Any) -> None:
         if isinstance(node, str):
             for token in finder(node):

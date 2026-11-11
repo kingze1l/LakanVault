@@ -1,4 +1,4 @@
-"""SSE parse/serialize and sliding-tail opaque token restore."""
+# sse parse/serialize + sliding opaque token restore
 from __future__ import annotations
 
 import json
@@ -32,7 +32,7 @@ def test_done_event_round_trip() -> None:
     assert data == "[DONE]"
     assert serialize_sse(fields, data) == "data: [DONE]\n\n"
 
-
+# restore works even if we drip one char at a time
 def test_restore_every_character_boundary() -> None:
     token = generate_opaque_token()
     mapping = {token: "SECRET"}

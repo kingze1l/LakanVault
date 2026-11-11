@@ -1,4 +1,4 @@
-"""Native MCP stdio server — tool discovery and classify/audit via SDK."""
+# native mcp stdio server tools classify audit etc
 from __future__ import annotations
 
 import asyncio
@@ -14,11 +14,11 @@ from lakanvault.mcp.stdio_server import build_server, resolve_config_dir
 # Joan's gitleaks-style OpenAI rule needs a real-shaped key; URI creds always match.
 SECRET_PROMPT = "connect with postgres://admin:SuperSecret99@db.example.com/app"
 
-
+# path to repo config folder
 def _repo_config() -> Path:
     return Path(__file__).resolve().parents[2] / "config"
 
-
+# spin memory client/server then run coro
 async def _with_session(server, coro):
     lowlevel = server._lowlevel_server
     async with create_client_server_memory_streams() as (client_streams, server_streams):

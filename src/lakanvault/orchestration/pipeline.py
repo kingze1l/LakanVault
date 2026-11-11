@@ -1,3 +1,4 @@
+# runs the scan stages in order n bails early if something fails
 """Pipeline runner — wires stages together, enforces fail-closed order.
 Stage order comes from config, not hard-coded here (ADR-002).
 """
@@ -21,9 +22,11 @@ class Pipeline:
     Cloud forward is handled by the bus, not here.
     """
 
+    # just hold the stage list joan
     def __init__(self, stages: list[PipelineStage]):
         self._stages = stages
 
+    # walk each stage until one fails then stop (fail closed)
     def run(self, request: ScanRequest) -> tuple[PipelineEvent, float]:
         run_id = str(uuid.uuid4())[:8]
         event = PipelineEvent(

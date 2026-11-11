@@ -1,4 +1,4 @@
-"""RQ1/RQ2 metric helpers — precision/recall/F1 and latency summary."""
+# rq1/rq2 metric helpers precision recall f1 latency
 import pytest
 
 from lakanvault.eval.metrics import latency_summary, precision_recall_f1

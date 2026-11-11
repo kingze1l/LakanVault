@@ -1,4 +1,4 @@
-"""4-tier action matrix — not wired into classify_content yet."""
+# 4-tier action matrix public→secret (not wired yet)
 import pytest
 
 from lakanvault.local_core.policy.engine import decide_action

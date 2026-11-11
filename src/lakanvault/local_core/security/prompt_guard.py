@@ -1,3 +1,5 @@
+# joan — cheap regex guard for common jailbreak / injection phrases
+# runs before stuff hits the local llm
 """Detect common prompt-injection / jailbreak patterns before they reach the local LLM."""
 from __future__ import annotations
 
@@ -68,6 +70,7 @@ BLOCKED_USER_MESSAGE = (
 )
 
 
+# return a short reason if injection looks present, else none
 def detect_prompt_injection(text: str) -> str | None:
     """Return a short reason if injection is detected, else None."""
     if not text or not text.strip():
@@ -79,6 +82,7 @@ def detect_prompt_injection(text: str) -> str | None:
     return None
 
 
+# wrap user text so the model treats it as data, not commands
 def wrap_user_message(text: str) -> str:
     """Delimit user content so the model treats it as data, not system commands."""
     return (

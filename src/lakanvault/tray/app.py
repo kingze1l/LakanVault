@@ -1,3 +1,4 @@
+# pystray shell — tray menu + poll protect events + toasts
 """pystray UI shell — thin wrapper over TrayController (ADR-004)."""
 from __future__ import annotations
 
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 _POLL_SECONDS = 2.0
 
 
+# run the tray forever (flyout on main thread when we can)
 def run_tray_loop(
     controller: TrayController,
     *,
@@ -32,9 +34,11 @@ def run_tray_loop(
     stop = threading.Event()
     host = get_flyout_host()
 
+    # left click / status menu → toggle the flyout
     def toggle_status(icon: pystray.Icon, item: object) -> None:
         toggle_status_flyout(controller.dashboard_url, open_fn=_browser_open)
 
+    # open prompt review inside the status flyout
     def open_review(icon: pystray.Icon, item: object) -> None:
         # Review lives inside the Status flyout (compact tray UI).
         host.show(
@@ -42,6 +46,7 @@ def run_tray_loop(
             open_fn=_browser_open,
         )
 
+    # quit tray n tear stuff down
     def quit_app(icon: pystray.Icon, item: object) -> None:
         stop.set()
         try:
@@ -52,6 +57,7 @@ def run_tray_loop(
             on_quit()
         icon.stop()
 
+    # os toast via pystray if the icon exists
     def _notify(title: str, body: str) -> None:
         icon = icon_holder["icon"]
         if icon is None:
@@ -61,6 +67,7 @@ def run_tray_loop(
         except Exception as exc:  # pragma: no cover - OS toast quirks
             logger.debug("icon.notify failed: %s", exc)
 
+    # refresh icon color / title from controller status
     def _refresh_icon() -> None:
         icon = icon_holder["icon"]
         if icon is None:
@@ -72,6 +79,7 @@ def run_tray_loop(
         except Exception as exc:  # pragma: no cover
             logger.debug("icon refresh failed: %s", exc)
 
+    # show our little custom toast for the latest event
     def _show_custom_toasts(events: list[dict]) -> None:
         # Show latest event toast (single slot).
         ev = events[-1]
@@ -86,6 +94,7 @@ def run_tray_loop(
         except Exception as exc:  # pragma: no cover
             logger.debug("custom toast failed: %s", exc)
 
+    # poll loop — check for new protect events every couple secs
     def _poll_loop() -> None:
         controller.poll_protect_events()
         while not stop.wait(_POLL_SECONDS):
@@ -140,12 +149,14 @@ def run_tray_loop(
             pass
 
 
+# open a url in the default browser
 def _browser_open(url: str) -> None:
     import webbrowser
 
     webbrowser.open(url)
 
 
+# old name kept for tests / older callers
 def _default_open(url: str) -> None:
     """Legacy alias used by older call sites / tests."""
     _browser_open(url)

@@ -1,4 +1,4 @@
-"""Launcher readiness helpers."""
+# launcher readiness seed config wait url frozen daemon cmd
 from __future__ import annotations
 
 from pathlib import Path
@@ -37,7 +37,7 @@ def test_seed_bundled_config_does_not_overwrite(monkeypatch, tmp_path: Path) -> 
     bootstrap.seed_bundled_config(tmp_path)
     assert existing.read_text(encoding="utf-8") == "user: true\n"
 
-
+# frozen exe gets longer wait than dev
 def test_wait_for_url_ready_uses_longer_timeout_when_frozen(monkeypatch) -> None:
     calls: list[tuple[str, int, float]] = []
 

@@ -1,3 +1,5 @@
+# joan — last stage, just writes a tiny audit note to disk
+# no raw prompts, no model bytes, no full paths ok?
 """Audit stage — writes pipeline outcomes to disk.
 Per data-classification.md: no raw prompts, no model bytes, no full paths.
 """
@@ -20,13 +22,16 @@ class AuditStage(PipelineStage, AuditWriter):
     Only stage outcomes and redacted metadata are stored.
     """
 
+    # where we dump the json files
     def __init__(self, audit_dir: str | Path = "./data/audit"):
         self._audit_dir = Path(audit_dir)
 
+    # stage name for the pipeline
     @property
     def name(self) -> str:
         return "audit"
 
+    # run = write the record, then say pass or oops
     def run(self, event: PipelineEvent) -> StageResult:
         try:
             self.write(event)
@@ -43,6 +48,7 @@ class AuditStage(PipelineStage, AuditWriter):
                 message=f"Audit write failed: {exc}",
             )
 
+    # actual disk write — counts + statuses only
     def write(self, event: PipelineEvent) -> None:
         self._audit_dir.mkdir(parents=True, exist_ok=True)
         record = {

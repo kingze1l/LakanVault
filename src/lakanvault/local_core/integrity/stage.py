@@ -1,3 +1,5 @@
+# joan — integrity stage, just chunked sha-256 of the model file
+# baseline comes out-of-band, never from cloud
 """Integrity stage — SHA-256 chunked hashing of model files."""
 from __future__ import annotations
 
@@ -15,14 +17,17 @@ class IntegrityStage(PipelineStage):
     Per ADR-003: baseline comes out-of-band, never from cloud.
     """
 
+    # chunk size + optional baseline hash
     def __init__(self, chunk_size: int = 1_048_576, baseline_hash: str | None = None):
         self._chunk_size = chunk_size
         self._baseline_hash = baseline_hash
 
+    # stage name for the pipeline
     @property
     def name(self) -> str:
         return "integrity"
 
+    # hash the target, fail if it doesnt match baseline
     def run(self, event: PipelineEvent) -> StageResult:
         path = Path(event.target_path)
 

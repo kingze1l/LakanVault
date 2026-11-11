@@ -1,4 +1,2 @@
-"""Windows system-tray shell for the LakanVault daemon (Sprint 1 ticket 1.4)."""
-from lakanvault.tray.state import TrayController, TrayStatus
-
-__all__ = ["TrayController", "TrayStatus"]
+# windows tray icon + status flyout + toasts
+# doesnt do dlp itself just hits the daemon on 8080

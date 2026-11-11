@@ -1,4 +1,4 @@
-"""Sprint 3 local image inspection — block-first, no OCR text in results."""
+# sprint 3 image inspect block-first no ocr text in results
 from __future__ import annotations
 
 import base64
@@ -8,12 +8,12 @@ from lakanvault.contracts.proxy import TransformResult
 from lakanvault.local_core.dlp import image_inspector as mod
 from lakanvault.local_core.dlp.image_inspector import ImageInspector, OcrEngine
 
-
+# tiny fake png as a data url
 def _png_data_url(payload: bytes | None = None) -> str:
     raw = payload if payload is not None else (b"\x89PNG\r\n\x1a\n" + b"\x00" * 16)
     return "data:image/png;base64," + base64.b64encode(raw).decode("ascii")
 
-
+# chat payload with one image_url
 def _payload(url: str) -> dict:
     return {
         "messages": [
@@ -24,7 +24,7 @@ def _payload(url: str) -> dict:
         ]
     }
 
-
+# ocr stub that just returns fixed text
 class FakeOcr(OcrEngine):
     def __init__(self, text: str) -> None:
         self._text = text
@@ -32,7 +32,7 @@ class FakeOcr(OcrEngine):
     def extract(self, image_bytes: bytes, mime: str) -> str:
         return self._text
 
-
+# transform stub that always allows
 def _allow(_text: str) -> TransformResult:
     return TransformResult(text=_text, action=PolicyAction.ALLOW)
 

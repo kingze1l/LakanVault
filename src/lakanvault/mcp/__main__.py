@@ -1,3 +1,4 @@
+# just kicks off the mcp stdio server when u run the module
 """python -m lakanvault.mcp.stdio_server"""
 from __future__ import annotations
 

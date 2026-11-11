@@ -1,3 +1,5 @@
+# joan — maps text to tier + action for the dlp policy
+# injection / secrets / pii, in that order
 """Content classification — maps text to tier + action for DLP policy."""
 from __future__ import annotations
 
@@ -21,10 +23,12 @@ class ClassificationResult:
     injection_category: str
 
 
+# thin wrapper — your secret detector does the real work
 def _detect_api_key(text: str) -> bool:
     return bool(detect_secrets(text))
 
 
+# unique entity types, keep order
 def _entity_types(spans: list[PiiSpan]) -> list[str]:
     seen: set[str] = set()
     ordered: list[str] = []
@@ -35,6 +39,7 @@ def _entity_types(spans: list[PiiSpan]) -> list[str]:
     return ordered
 
 
+# classify text into tier + action (no raw span text in result)
 def classify_content(text: str) -> ClassificationResult:
     """Classify text into tier + action. No raw span text in result."""
     injection = detect_prompt_injection(text)

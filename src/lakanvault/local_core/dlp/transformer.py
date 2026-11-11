@@ -1,3 +1,5 @@
+# joan — one place that ties secrets + pii + policy + opaque tokens
+# this is the transform the proxy/mcp call into
 """Unified DLP transform: secrets + PII + policy + opaque tokens."""
 from __future__ import annotations
 
@@ -13,6 +15,7 @@ _PII_TYPES = frozenset({"PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER"})
 DEFAULT_TTL = 3600.0
 
 
+# mash secret + pii spans, drop overlaps so we dont double-mint
 def _merge_spans(text: str) -> list[tuple[int, int, str]]:
     raw: list[tuple[int, int, str]] = []
     for hit in detect_secrets(text):
@@ -33,6 +36,7 @@ def _merge_spans(text: str) -> list[tuple[int, int, str]]:
     return sorted(kept, key=lambda s: s[0])
 
 
+# classify → action → maybe redact with vault tokens
 def transform_text(
     text: str,
     vault: TokenVaultPort,

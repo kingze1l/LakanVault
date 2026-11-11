@@ -1,4 +1,4 @@
-"""Tests for MCP contract DTOs."""
+# mcp contract dto shapes n forbidden fields
 from __future__ import annotations
 
 import pytest

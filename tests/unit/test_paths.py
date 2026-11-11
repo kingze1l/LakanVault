@@ -1,4 +1,4 @@
-"""Frozen vs development path helpers — never write into _MEIPASS."""
+# frozen vs dev paths never write into _MEIPASS
 from pathlib import Path
 
 from lakanvault.shared import paths

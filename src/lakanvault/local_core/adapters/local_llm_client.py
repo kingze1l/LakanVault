@@ -1,3 +1,5 @@
+# hey joan — tiny client for local llm only (lm studio / ollama)
+# stays on localhost, nothing goes to the cloud
 """Local LLM adapter — OpenAI-compatible chat on localhost only."""
 from __future__ import annotations
 
@@ -34,6 +36,7 @@ class StreamChunk:
 
 
 class LocalLLMClient:
+    # wires up the local chat endpoint + defaults
     def __init__(
         self,
         base_url: str = "http://localhost:1234",
@@ -51,10 +54,12 @@ class LocalLLMClient:
         self._stream = stream
         self._models_cache: tuple[float, list[str]] | None = None
 
+    # just the base url we talk to
     @property
     def base_url(self) -> str:
         return self._base_url
 
+    # tweak settings later if the tray flips something
     def configure(
         self,
         base_url: str | None = None,
@@ -78,6 +83,7 @@ class LocalLLMClient:
         if stream is not None:
             self._stream = stream
 
+    # pick a real model name if they left it blank
     def _resolve_model(self, model: str | None, base_url: str | None) -> str:
         requested = (model or self._model or "").strip()
         if requested and requested != "local-model":
@@ -87,6 +93,7 @@ class LocalLLMClient:
             return models[0]
         return requested or "local-model"
 
+    # ask the local server what models it has (cached a bit)
     def list_models(self, base_url: str | None = None, *, force: bool = False) -> list[str]:
         root = assert_localhost_url(base_url) if base_url else self._base_url
         now = time.monotonic()
@@ -110,6 +117,7 @@ class LocalLLMClient:
             logger.warning("Local LLM not reachable at %s: %s", url, exc)
             return []
 
+    # build the chat/completions body
     def _build_payload(
         self,
         prompt: str,
@@ -132,6 +140,7 @@ class LocalLLMClient:
             "stream": stream,
         }
 
+    # one-shot chat — streams under the hood if thats on
     def chat(
         self,
         prompt: str,
@@ -209,6 +218,7 @@ class LocalLLMClient:
         except (KeyError, IndexError) as exc:
             raise ValueError(f"Unexpected local LLM response shape: {exc}") from exc
 
+    # sse-ish streaming from the local server
     def chat_stream(
         self,
         prompt: str,

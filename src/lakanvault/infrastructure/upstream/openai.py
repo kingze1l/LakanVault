@@ -1,3 +1,5 @@
+# openai chat upstream client
+# tls + allowlisted origin only we forward a tiny header set (BYOK)
 """OpenAI Chat Completions upstream — verified TLS, allowlisted origin, BYOK headers only."""
 from __future__ import annotations
 
@@ -33,6 +35,7 @@ _DROP = frozenset({
 })
 
 
+# strip hop-by-hop junk keep only the openai-ish headers
 def filter_upstream_headers(headers: Mapping[str, str]) -> dict[str, str]:
     out: dict[str, str] = {}
     for key, value in headers.items():
@@ -45,6 +48,7 @@ def filter_upstream_headers(headers: Mapping[str, str]) -> dict[str, str]:
 
 
 class OpenAIUpstream:
+    # base_url must already pass allowlist check
     def __init__(
         self,
         client: httpx.AsyncClient,
@@ -56,6 +60,7 @@ class OpenAIUpstream:
         self._base = assert_allowed_upstream(base_url, allowlist)
         self._timeout = timeout_seconds
 
+    # post /v1/chat/completions stream path uses send(stream=True)
     async def chat_completions(
         self,
         payload: dict[str, Any],
@@ -80,11 +85,13 @@ class OpenAIUpstream:
             timeout=self._timeout,
         )
 
+    # list models with a shorter timeout
     async def list_models(self, headers: Mapping[str, str]) -> httpx.Response:
         url = f"{self._base}/v1/models"
         fwd = filter_upstream_headers(headers)
         return await self._client.get(url, headers=fwd, timeout=min(self._timeout, 30.0))
 
+    # yield body bytes then always close the response
     async def aiter_bytes(self, response: httpx.Response) -> AsyncIterator[bytes]:
         try:
             async for chunk in response.aiter_bytes():

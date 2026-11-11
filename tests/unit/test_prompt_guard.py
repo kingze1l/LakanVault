@@ -1,4 +1,4 @@
-"""Tests for prompt-injection detection."""
+# prompt injection detect + wrap user message
 from lakanvault.local_core.security.prompt_guard import detect_prompt_injection, wrap_user_message
 
 

@@ -1,4 +1,4 @@
-"""Tests for localhost URL policy."""
+# localhost url policy + upstream allowlist checks
 import pytest
 
 from lakanvault.shared.url_policy import assert_allowed_upstream, assert_localhost_url

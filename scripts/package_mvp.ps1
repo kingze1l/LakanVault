@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Assemble LakanVault-MVP/ (tutor product demo) and zip to dist/LakanVault-MVP.zip.
 
@@ -171,6 +171,8 @@ Ask the agent: call `lakanvault_classify` on `sk-9f8e7d6c5b4a3928170615243a4b5c6
 ## Coverage note
 
 This demo protects **this Cursor folder** while the daemon is running. It does not claim Tab, Copilot, or every project on the PC.
+
+**PII engine:** this zip uses lean **regex** PII (no Python/spaCy). Stronger Presidio + spaCy NER is optional on a **Python source** checkout via `scripts\INSTALL_RECOMMENDED.bat` / README — not required for this unzip demo.
 '@
 Set-Content -Path (Join-Path $root "DEMO_GUIDE.md") -Value $tutorTest -Encoding UTF8
 

@@ -1,4 +1,4 @@
-"""Review session store + event API + override send."""
+# review session store + event api + override send
 from __future__ import annotations
 
 from pathlib import Path
@@ -19,7 +19,7 @@ from lakanvault.orchestration.review_sessions import (
 EMAIL = "jane.doe@example.com"
 SECRET_PROMPT = "connect with postgres://admin:SuperSecret99@db.example.com/app"
 
-
+# clear rings n session store between tests
 @pytest.fixture(autouse=True)
 def _fresh() -> None:
     reset_protect_ring_for_tests()
@@ -73,7 +73,7 @@ def test_override_once() -> None:
     assert store.mark_override_used("ov") is True
     assert store.mark_override_used("ov") is False
 
-
+# fastapi client + stub email finder
 @pytest.fixture()
 def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     src = Path(__file__).resolve().parents[2] / "config" / "default.yaml"
@@ -108,7 +108,7 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         yield c
     server_mod.reset_gateway()
 
-
+# event api can show original but recent list stays clean
 def test_event_api_returns_original_recent_stays_clean(client: TestClient) -> None:
     resp = client.post(
         "/api/review",

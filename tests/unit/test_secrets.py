@@ -1,4 +1,4 @@
-"""Secret detector — sibling of PII, not merged into detectors.py."""
+# secret detector sibling of pii not merged into detectors
 from lakanvault.local_core.secrets.detector import detect_secrets, shannon_entropy
 
 # Avoid gitleaks global allowlist stopword "abcdefghijklmnopqrstuvwxyz".

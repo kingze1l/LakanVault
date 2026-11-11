@@ -1,3 +1,5 @@
+# in-memory token map only no disk file ever
+# opaque [LV_…] tokens live here for the proxy hop
 """In-memory SQLite token map — never writes a database file."""
 from __future__ import annotations
 
@@ -15,9 +17,11 @@ from lakanvault.contracts.proxy import (
 
 
 class VaultCapacityError(RuntimeError):
+    # hit the hard cap after we already cleaned expired rows
     """Hard cap reached after expired-row cleanup."""
 
 
+# make a fresh opaque token body (base32-ish)
 def generate_opaque_token() -> str:
     raw = secrets.token_bytes(16)
     body = base64.b32encode(raw).decode("ascii").rstrip("=")
@@ -27,6 +31,7 @@ def generate_opaque_token() -> str:
 
 
 class InMemoryTokenVault(TokenVaultPort):
+    # sqlite in :memory: + a lock so mint/get dont race
     def __init__(
         self,
         *,
@@ -57,6 +62,7 @@ class InMemoryTokenVault(TokenVaultPort):
         self._conn.execute("CREATE INDEX idx_expires ON tokens(expires_at)")
         self._conn.execute("CREATE INDEX idx_request ON tokens(request_id)")
 
+    # mint or reuse same token for same request+value
     def mint(self, value: str, *, request_id: str, ttl_seconds: float) -> str:
         now = time.time()
         expires = now + max(float(ttl_seconds), 0.0)
@@ -90,6 +96,7 @@ class InMemoryTokenVault(TokenVaultPort):
                     token = generate_opaque_token()
             raise RuntimeError("opaque token collision after retries")
 
+    # lookup by exact token expired ones get deleted
     def get(self, token: str) -> str | None:
         now = time.time()
         with self._lock:
@@ -106,6 +113,7 @@ class InMemoryTokenVault(TokenVaultPort):
                 return None
             return value
 
+    # wipe everything for one request_id
     def delete_request(self, request_id: str) -> int:
         with self._lock:
             cur = self._conn.execute(
@@ -114,10 +122,12 @@ class InMemoryTokenVault(TokenVaultPort):
             self._conn.commit()
             return int(cur.rowcount)
 
+    # public wrapper for expired cleanup
     def cleanup_expired(self) -> int:
         with self._lock:
             return self._cleanup_expired_unlocked(time.time())
 
+    # shutdown wipe n close the conn
     def close(self) -> None:
         with self._lock:
             try:
@@ -126,11 +136,13 @@ class InMemoryTokenVault(TokenVaultPort):
             finally:
                 self._conn.close()
 
+    # caller already holds the lock
     def _cleanup_expired_unlocked(self, now: float) -> int:
         cur = self._conn.execute("DELETE FROM tokens WHERE expires_at <= ?", (now,))
         self._conn.commit()
         return int(cur.rowcount)
 
+    # refuse if count or bytes would blow past caps
     def _enforce_cap_unlocked(self, incoming_bytes: int) -> None:
         count = self._conn.execute("SELECT COUNT(*) FROM tokens").fetchone()[0]
         total = self._conn.execute(

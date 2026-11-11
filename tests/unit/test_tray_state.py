@@ -1,4 +1,4 @@
-"""Tray state machine tests — no real pystray / GUI."""
+# tray state machine no real pystray gui
 from __future__ import annotations
 
 from lakanvault.tray.state import TrayController, TrayStatus

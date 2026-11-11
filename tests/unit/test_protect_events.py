@@ -1,4 +1,4 @@
-"""Protect event ring + HTTP API shape (metadata only)."""
+# protect event ring + http api shape metadata only
 from __future__ import annotations
 
 from pathlib import Path
@@ -18,14 +18,14 @@ from lakanvault.orchestration.protect_events import (
 
 FORBIDDEN_KEYS = {"text", "sanitized", "prompt", "raw", "value", "secret"}
 
-
+# reset protect ring each test
 @pytest.fixture(autouse=True)
 def _fresh_ring() -> None:
     reset_protect_ring_for_tests()
     yield
     reset_protect_ring_for_tests()
 
-
+# allow is ignored ring only keeps warn/mask/block
 def test_ring_records_warn_mask_block_only() -> None:
     ring = ProtectEventRing(capacity=5)
     assert ring.record("allow", source="review") is None
@@ -66,7 +66,7 @@ def test_ring_events_are_metadata_only() -> None:
 EMAIL = "jane.doe@example.com"
 SECRET_PROMPT = "connect with postgres://admin:SuperSecret99@db.example.com/app"
 
-
+# tiny fastapi client w stubbed pii
 @pytest.fixture()
 def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     src = Path(__file__).resolve().parents[2] / "config" / "default.yaml"

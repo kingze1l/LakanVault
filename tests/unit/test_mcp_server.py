@@ -1,4 +1,4 @@
-"""MCP tool list + classify round-trip (stdio loop is ticket 1.3)."""
+# mcp tool list + classify/protect/restore round trip
 from pathlib import Path
 
 from lakanvault.contracts.mcp import DataTier, PolicyAction

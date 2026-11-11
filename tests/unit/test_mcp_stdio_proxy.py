@@ -1,4 +1,4 @@
-"""MCP stdio shim — NDJSON framing; sanitize via daemon HTTP; stdout stays protocol-only."""
+# mcp stdio shim ndjson sanitize via daemon stdout protocol-only
 from __future__ import annotations
 
 import io
@@ -12,7 +12,7 @@ from lakanvault.mcp.stdio_proxy import (
     sanitize_tool_result,
 )
 
-
+# pack a dict into one ndjson frame
 def _frame(payload: dict) -> bytes:
     buf = io.BytesIO()
     _write_message(buf, payload)
@@ -63,7 +63,7 @@ def test_sanitize_rewrites_text_and_blocks_binary() -> None:
     assert "blocked by LakanVault" in out["content"][1]["text"]
     assert out["isError"] is True
 
-
+# daemon down → empty text fail closed
 def test_daemon_unavailable_fail_closed() -> None:
     def boom(*args, **kwargs):
         raise TimeoutError("down")

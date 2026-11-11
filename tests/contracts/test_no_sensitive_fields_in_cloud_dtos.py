@@ -1,3 +1,4 @@
+# cloud dto fields stay metadata only no raw prompt stuff
 from lakanvault.contracts.dtos import (
     CloudTelemetryDTO,
     assert_no_forbidden_cloud_fields,

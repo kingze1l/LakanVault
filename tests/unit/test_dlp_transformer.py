@@ -1,4 +1,4 @@
-"""Unified DLP transformer tests."""
+# unified dlp transformer allow redact block paths
 from lakanvault.contracts.mcp import DataTier, PolicyAction
 from lakanvault.infrastructure.token_vault import InMemoryTokenVault
 from lakanvault.local_core.dlp.transformer import transform_text
@@ -48,7 +48,7 @@ def test_repeated_value_reuses_token() -> None:
     assert len(set(result.tokens_minted)) == 1
     vault.close()
 
-
+# fake looking [LV_..] text isnt a real vault token
 def test_user_text_looking_like_token_is_not_a_vault_hit() -> None:
     vault = InMemoryTokenVault()
     fake = "[LV_AAAAAAAAAAAAAAAAAAAAAAAAAA]"
@@ -69,7 +69,7 @@ def test_injection_blocks() -> None:
     assert result.blocked is True
     vault.close()
 
-
+# nested/overlap spans keep the outer one
 def test_overlap_keeps_outer_span() -> None:
     vault = InMemoryTokenVault()
     text = "Contact jane.doe@example.com now"

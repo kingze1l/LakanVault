@@ -1,3 +1,5 @@
+# joan — reversible pii swap (NAME_001 etc), mapping stays in memory only
+# chat demo still uses this; proxy path prefers opaque tokens
 """Reversible PII anonymizer.
 
 Replaces PII spans with stable placeholders (NAME_001, EMAIL_001, ...)
@@ -32,10 +34,12 @@ class ReversibleAnonymizer:
     mapping: {"NAME_001": "John Doe", "EMAIL_001": "john@x.com", ...}
     """
 
+    # always "available" — no heavy deps here
     @property
     def available(self) -> bool:
         return True
 
+    # replace pii spans with NAME_001 style placeholders
     def anonymize(self, text: str) -> tuple[str, dict[str, str], str]:
         if not text:
             return text, {}, "none"
@@ -67,6 +71,7 @@ class ReversibleAnonymizer:
 
         return out, mapping, engine
 
+    # put the real values back into the model reply
     @staticmethod
     def restore(text: str, mapping: dict[str, str]) -> str:
         if not mapping or not text:
@@ -81,6 +86,7 @@ class ReversibleAnonymizer:
                 key = placeholder.upper()
             canon[key] = original
 
+        # regex swap for NAME_001 style tokens
         def _repl(match: re.Match[str]) -> str:
             key = f"{match.group(1).upper()}_{match.group(2)}"
             return canon.get(key, match.group(0))
@@ -91,6 +97,7 @@ class ReversibleAnonymizer:
             out = out.replace(placeholder, canon[placeholder])
         return out
 
+    # little system hint so the model echoes placeholders back
     @staticmethod
     def placeholder_system_hint(mapping: dict[str, str]) -> str | None:
         if not mapping:

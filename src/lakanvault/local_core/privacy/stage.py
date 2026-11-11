@@ -1,3 +1,5 @@
+# joan — privacy stage, count pii spans only (never store the text)
+# runs after threat so threat never sees the prompt
 """Privacy stage — PII detection and masking using pattern-only Presidio + regex.
 Per ADR-002: runs AFTER threat scanner, so threat never sees PII text.
 No spaCy runtime downloads — air-gapped safe.
@@ -19,10 +21,12 @@ class PrivacyStage(PipelineStage):
     Only stores the span *count* in metadata — never the text.
     """
 
+    # stage name for the pipeline
     @property
     def name(self) -> str:
         return "privacy"
 
+    # scan prompt, warn if we find pii (counts only in metadata)
     def run(self, event: PipelineEvent) -> StageResult:
         prompt_text = event.prompt_text or ""
 

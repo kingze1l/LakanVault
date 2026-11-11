@@ -1,3 +1,5 @@
+# joan — cs301 opaque tokens ([LV_…]) via the vault
+# chat demo can still use reversible; this is for the proxy path
 """Opaque-token anonymizer (CS301). Chat demo still may use ReversibleAnonymizer."""
 from __future__ import annotations
 
@@ -11,6 +13,7 @@ _TOKEN_RE = re.compile(OPAQUE_TOKEN_REGEX)
 class OpaqueAnonymizer:
     """Replace spans with vault-minted [LV_…] tokens. No SQLite imports here."""
 
+    # mint tokens for each span, right-to-left so offsets stay sane
     def anonymize(
         self,
         text: str,
@@ -39,6 +42,7 @@ class OpaqueAnonymizer:
                 ordered.append(token)
         return out, ordered, "opaque"
 
+    # swap tokens back using the mapping dict
     @staticmethod
     def restore(text: str, mapping: dict[str, str]) -> str:
         if not mapping or not text:
@@ -48,6 +52,7 @@ class OpaqueAnonymizer:
             out = out.replace(token, original)
         return out
 
+    # find any [LV_…] tokens already in text
     @staticmethod
     def find_tokens(text: str) -> list[str]:
         return _TOKEN_RE.findall(text or "")

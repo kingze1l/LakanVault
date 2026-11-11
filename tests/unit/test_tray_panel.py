@@ -1,4 +1,4 @@
-"""Flyout host + panel helpers — no real pywebview / GUI."""
+# flyout host / panel bits without real pywebview
 from __future__ import annotations
 
 import time
@@ -9,14 +9,14 @@ import pytest
 from lakanvault.tray import panel as panel_mod
 from lakanvault.tray.panel import FlyoutHost, flyout_anchor, reset_flyout_host_for_tests
 
-
+# wipe flyout host between tests
 @pytest.fixture(autouse=True)
 def _fresh_host() -> None:
     reset_flyout_host_for_tests()
     yield
     reset_flyout_host_for_tests()
 
-
+# stand-in window so we dont need real gui
 class _FakeWindow:
     def __init__(self) -> None:
         self.shown = False
@@ -51,7 +51,7 @@ class _FakeWindow:
     def evaluate_js(self, script: str) -> None:
         self.js.append(script)
 
-
+# wire fake window onto a prepared host
 def _attach_prepared(host: FlyoutHost, fake: _FakeWindow) -> None:
     host._window = fake  # noqa: SLF001
     host._prepared = True  # noqa: SLF001
@@ -97,7 +97,7 @@ def test_blur_dismiss_hides_after_delay() -> None:
     assert host.visible is False
     assert fake.hidden is True
 
-
+# blur during show grace shouldnt hide yet
 def test_blur_ignored_during_show_grace() -> None:
     host = FlyoutHost()
     fake = _FakeWindow()

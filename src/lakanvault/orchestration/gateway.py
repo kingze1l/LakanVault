@@ -1,3 +1,4 @@
+# main entry for scans chat protect etc — ui talks to this not local_core directly
 """Gateway — pure Python entry point for all pipeline runs.
 Zero Streamlit imports. Can be wrapped as a background .exe in Phase 2 (ADR-004).
 UI calls Gateway.receive(); gateway calls Pipeline; gateway returns ScanResponse.
@@ -54,6 +55,7 @@ class Gateway:
     Returns plain DTOs. Knows nothing about Streamlit or any UI.
     """
 
+    # load config n wire up pipeline bus llm registry
     def __init__(self, config_dir: str | Path = "./config"):
         self._config_dir = Path(config_dir)
         self._cfg = load_config(config_dir)
@@ -67,6 +69,7 @@ class Gateway:
         models_dir = self._resolve_path(local.get("models_dir", "./data/models"), self._config_dir)
         self._registry = ModelRegistry(models_dir=models_dir)
 
+    # build the local llm client from config
     def _build_local_llm(self) -> LocalLLMClient:
         ai = self._cfg.get("local_ai", {})
         return LocalLLMClient(
@@ -78,9 +81,11 @@ class Gateway:
             stream=bool(ai.get("stream", True)),
         )
 
+    # raw config dict for callers
     def get_config_snapshot(self) -> dict[str, object]:
         return self._cfg
 
+    # settings shape the ui cares about
     def get_settings(self) -> dict:
         ai = self._cfg.get("local_ai", {})
         local = self._cfg.get("local", {})
@@ -106,6 +111,7 @@ class Gateway:
             "cloud": {"enabled": cloud.get("enabled", False)},
         }
 
+    # apply partial settings live (reload cfg bits)
     def apply_settings(self, partial: dict) -> None:
         self._cfg = load_config(self._config_dir)
         if "local_ai" in partial:
@@ -129,6 +135,7 @@ class Gateway:
         if "cloud" in partial:
             self._bus = self._build_bus()
 
+    # turn relative paths into absolute ones
     @staticmethod
     def _resolve_path(path: str | Path, anchor: Path) -> Path:
         p = Path(path)
@@ -140,6 +147,7 @@ class Gateway:
                 return candidate
         return (Path.cwd() / p).resolve()
 
+    # wire stages from config order
     def _build_pipeline(self) -> Pipeline:
         local = self._cfg.get("local", {})
         chunk_size = local.get("chunk_size_bytes", 1_048_576)
@@ -157,6 +165,7 @@ class Gateway:
         stages = [stage_map[name] for name in order if name in stage_map]
         return Pipeline(stages)
 
+    # bus for optional cloud forward
     def _build_bus(self) -> EventBus:
         cloud = self._cfg.get("cloud", {})
         return EventBus(
@@ -164,6 +173,7 @@ class Gateway:
             analytics_endpoint=cloud.get("analytics_endpoint", ""),
         )
 
+    # run a file scan thru the pipeline
     def receive(self, request: ScanRequest) -> ScanResponse:
         logger.info("Gateway received scan request: %s", request.target_path)
 
@@ -197,6 +207,7 @@ class Gateway:
             duration_ms=duration_ms,
         )
 
+    # classify text for mcp / ide (no raw pii back)
     def classify_text(
         self,
         text: str,
@@ -215,6 +226,7 @@ class Gateway:
             injection_category=result.injection_category,
         )
 
+    # get or make a joan vault for this session id
     def _vault_for_session(self, session_id: str):
         from lakanvault.local_core.anonymizer.anonymizer import Vault
 
@@ -226,6 +238,7 @@ class Gateway:
             self._protect_vaults[session_id] = vault
         return vault
 
+    # scan + sanitize a prompt (review / hooks / mcp)
     def protect_prompt(
         self,
         text: str,
@@ -289,6 +302,7 @@ class Gateway:
             event_id=event_id,
         )
 
+    # put real values back from a prior protect session
     def restore_prompt(self, text: str, session_id: str) -> RestoreResponse:
         """Restore surrogates from Joan Vault for a prior protect session."""
         from lakanvault.local_core.scan import process_output
@@ -302,6 +316,7 @@ class Gateway:
             text=process_output(req.text, vault),
         )
 
+    # send reviewed text to local llm (maybe override original once)
     def send_reviewed(
         self,
         session_id: str,
@@ -394,6 +409,7 @@ class Gateway:
             override_used=used_override,
         )
 
+    # check if local llm is up
     def local_llm_status(self, base_url: str | None = None) -> dict:
         url = base_url or self._local_llm.base_url
         models = self._local_llm.list_models(base_url=url)
@@ -403,12 +419,15 @@ class Gateway:
             "base_url": url,
         }
 
+    # list lm studio models (legacy name)
     def lmstudio_models(self) -> list[str]:
         return self._local_llm.list_models()
 
+    # is lm studio reachable (legacy name)
     def lmstudio_reachable(self) -> bool:
         return bool(self._local_llm.list_models())
 
+    # sanitize prompt before chat (joan process_input)
     def _prepare_chat(self, prompt: str) -> dict:
         t0 = monotonic()
         req_id = uuid.uuid4().hex[:12]
@@ -468,12 +487,14 @@ class Gateway:
             "request_id": req_id,
         }
 
+    # restore placeholders in chat reply
     def _restore_chat_text(self, text: str, prep: dict) -> str:
         vault = prep.get("vault")
         if vault is None:
             return text
         return process_output(text, vault)
 
+    # canned blocked chat response
     def _blocked_chat_result(self, prep: dict, model: str | None, base_url: str | None) -> dict:
         reason = prep["block_reason"] or "prompt injection"
         message = BLOCKED_USER_MESSAGE.format(reason=reason)
@@ -493,6 +514,7 @@ class Gateway:
             "block_reason": reason,
         }
 
+    # full chat: sanitize → llm → restore
     def chat(
         self,
         prompt: str,
@@ -545,6 +567,7 @@ class Gateway:
             "block_reason": "",
         }
 
+    # streaming chat events (meta / token / done / error)
     def chat_stream_events(
         self,
         prompt: str,
@@ -634,15 +657,19 @@ class Gateway:
         except (ConnectionError, ValueError) as exc:
             yield {"type": "error", "error": str(exc)}
 
+    # scan models dir integrity
     def scan_models(self) -> list[dict]:
         return [asdict(e) for e in self._registry.scan()]
 
+    # quarantine a model file
     def eject_model(self, model_name: str) -> bool:
         return self._registry.quarantine(model_name)
 
+    # pin a hash baseline for a model
     def set_model_baseline(self, model_name: str, sha256_hex: str) -> None:
         self._registry.set_baseline(model_name, sha256_hex)
 
+    # bundled runtime status if we have one
     def runtime_status(self) -> dict:
         from lakanvault.local_core.runtime import get_runtime
 
@@ -651,6 +678,7 @@ class Gateway:
             return {"available": False, "running": False, "models": [], "active_model": ""}
         return runtime.status()
 
+    # switch the bundled runtime model
     def runtime_select(self, model: str) -> dict:
         from lakanvault.local_core.runtime import get_runtime
 

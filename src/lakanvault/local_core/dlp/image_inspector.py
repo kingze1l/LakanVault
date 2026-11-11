@@ -1,3 +1,5 @@
+# joan — peeks at inline images, ocr text never gets logged
+# secrets in a pic = block the whole request
 """Local inline-image inspection. OCR text is never logged; secrets block the request."""
 from __future__ import annotations
 
@@ -26,6 +28,7 @@ class OcrUnavailable(RuntimeError):
 
 
 class OcrEngine:
+    # stub — real engine gets plugged in later
     def extract(self, image_bytes: bytes, mime: str) -> str:
         raise OcrUnavailable("no local OCR engine configured")
 
@@ -37,6 +40,7 @@ class ImageInspectResult:
     inspected: int = 0
 
 
+# pull image urls out of the chat messages
 def _iter_image_urls(payload: dict) -> list[str]:
     urls: list[str] = []
     messages = payload.get("messages") or []
@@ -59,6 +63,7 @@ def _iter_image_urls(payload: dict) -> list[str]:
     return urls
 
 
+# decode a data:image/...;base64 blob + check magic bytes
 def _decode_data_url(url: str) -> tuple[str, bytes]:
     match = _DATA_URL.match(url.strip())
     if not match:
@@ -86,9 +91,11 @@ def _decode_data_url(url: str) -> tuple[str, bytes]:
 
 
 class ImageInspector:
+    # default engine is the stub that says "nope"
     def __init__(self, engine: OcrEngine | None = None) -> None:
         self._engine = engine or OcrEngine()
 
+    # ocr each image then run the same transform as text
     def inspect(
         self,
         payload: dict,

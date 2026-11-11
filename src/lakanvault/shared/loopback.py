@@ -1,9 +1,12 @@
+# loopback-only guards for internal http
+# host headers are not trusted we look at the ASGI client addr
 """Inbound client checks for daemon-internal HTTP endpoints."""
 from __future__ import annotations
 
 _LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
+# true if host is localhost / 127 / ::1 (incl ipv4-mapped)
 def is_loopback_host(host: str | None) -> bool:
     if not host:
         return False
@@ -13,6 +16,7 @@ def is_loopback_host(host: str | None) -> bool:
     return normalized in _LOOPBACK_HOSTS
 
 
+# raise if the ASGI client isnt loopback
 def assert_loopback_client(client: tuple | None) -> None:
     """Allow only loopback ASGI clients. Host headers are not trusted."""
     host = None if client is None else str(client[0])

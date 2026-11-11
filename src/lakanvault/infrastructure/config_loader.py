@@ -1,3 +1,5 @@
+# yaml config loader for the infra side
+# pydantic sections + merge default/local/cloud yaml
 from pathlib import Path
 from typing import Any
 
@@ -5,6 +7,7 @@ import yaml
 from pydantic import BaseModel, Field
 
 
+# mostly data shapes below no big logic
 class AppSection(BaseModel):
     name: str = "LakanVault"
     log_level: str = "INFO"
@@ -42,6 +45,7 @@ class AppConfig(BaseModel):
     privacy: PrivacySection = Field(default_factory=PrivacySection)
 
 
+# recursive dict merge override wins on leaves
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     merged = dict(base)
     for key, value in override.items():
@@ -52,6 +56,7 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
     return merged
 
 
+# empty dict if file missing or not a mapping
 def load_yaml(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
@@ -60,6 +65,7 @@ def load_yaml(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
+# default then local then optional cloud.yaml
 def load_config(config_dir: Path | str = "config") -> AppConfig:
     root = Path(config_dir)
     data: dict[str, Any] = {}

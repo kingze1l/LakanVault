@@ -1,3 +1,5 @@
+# joan — optional bundled llama.cpp sidecar for zero-setup demos
+# starts/stops the local server, tracks which model is up
 """Manage an optional bundled llama.cpp server (sidecar) for zero-setup demos."""
 from __future__ import annotations
 
@@ -12,6 +14,7 @@ _CREATE_NO_WINDOW = 0x08000000
 
 
 class LlamaRuntime:
+    # pull paths + ports out of config
     def __init__(self, base_dir: Path, config: dict[str, Any] | None = None) -> None:
         self.base_dir = Path(base_dir)
         rt = (config or {}).get("local_runtime", {}) if isinstance(config, dict) else {}
@@ -27,23 +30,28 @@ class LlamaRuntime:
         self._proc: subprocess.Popen | None = None
         self._active_model: str = ""
 
+    # absolute-or-relative path under base_dir
     def _resolve(self, value: str) -> Path:
         p = Path(value)
         return p if p.is_absolute() else self.base_dir / p
 
+    # openai-compat base url for the sidecar
     @property
     def base_url(self) -> str:
         return f"http://{self.host}:{self.port}"
 
+    # which gguf is currently loaded
     @property
     def active_model(self) -> str:
         return self._active_model
 
+    # list gguf files in models_dir
     def list_models(self) -> list[str]:
         if not self.models_dir.is_dir():
             return []
         return sorted(p.name for p in self.models_dir.glob("*.gguf"))
 
+    # pick a model path (named or first available)
     def _resolve_model(self, name: str | None = None) -> Path | None:
         wanted = name or self.model
         if wanted:
@@ -53,19 +61,23 @@ class LlamaRuntime:
         models = self.list_models()
         return (self.models_dir / models[0]) if models else None
 
+    # exe + at least one model present?
     def available(self) -> bool:
         return self.enabled and self.server_exe.is_file() and self._resolve_model() is not None
 
+    # quick tcp check on host:port
     def _port_open(self) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(0.4)
             return s.connect_ex((self.host, self.port)) == 0
 
+    # our proc alive or something already listening
     def is_running(self) -> bool:
         if self._proc is not None and self._proc.poll() is None:
             return True
         return self._port_open()
 
+    # spawn llama-server (or reuse if port already open)
     def start(self, model: str | None = None) -> bool:
         if not self.available():
             return False
@@ -95,6 +107,7 @@ class LlamaRuntime:
         self._active_model = model_path.name
         return True
 
+    # poll until the port answers or we give up
     def wait_until_ready(self, timeout: float = 90.0) -> bool:
         deadline = time.time() + timeout
         while time.time() < deadline:
@@ -105,12 +118,14 @@ class LlamaRuntime:
             time.sleep(0.5)
         return False
 
+    # stop then start with a different model
     def restart(self, model: str) -> bool:
         self.stop()
         if self.start(model):
             return self.wait_until_ready()
         return False
 
+    # terminate our child proc if we own it
     def stop(self) -> None:
         if self._proc is None:
             return
@@ -125,6 +140,7 @@ class LlamaRuntime:
                     pass
         self._proc = None
 
+    # small status dict for the tray / ui
     def status(self) -> dict[str, Any]:
         return {
             "available": self.available(),
@@ -139,10 +155,12 @@ class LlamaRuntime:
 _RUNTIME: "LlamaRuntime | None" = None
 
 
+# stash the process-wide runtime handle
 def set_runtime(runtime: LlamaRuntime | None) -> None:
     global _RUNTIME
     _RUNTIME = runtime
 
 
+# fetch the process-wide runtime handle
 def get_runtime() -> LlamaRuntime | None:
     return _RUNTIME

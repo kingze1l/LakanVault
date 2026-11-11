@@ -1,9 +1,12 @@
+# tiny eval helpers for RQ1 / RQ2
+# precision recall f1 + latency percentiles nothing fancy
 """Eval helpers for RQ1 (precision/recall/F1) and RQ2 (latency)."""
 from __future__ import annotations
 
 import statistics
 
 
+# classic pr/f1 from tp fp fn counts
 def precision_recall_f1(tp: int, fp: int, fn: int) -> tuple[float, float, float]:
     if tp < 0 or fp < 0 or fn < 0:
         raise ValueError("counts must be non-negative")
@@ -16,6 +19,7 @@ def precision_recall_f1(tp: int, fp: int, fn: int) -> tuple[float, float, float]
     return precision, recall, f1
 
 
+# linear interp percentile on already-sorted list
 def _percentile(ordered: list[float], pct: float) -> float:
     if not ordered:
         return 0.0
@@ -28,6 +32,7 @@ def _percentile(ordered: list[float], pct: float) -> float:
     return float(ordered[lo] + (ordered[hi] - ordered[lo]) * frac)
 
 
+# n mean p50 p95 for a list of latency samples
 def latency_summary(samples_ms: list[float]) -> dict[str, float]:
     if not samples_ms:
         return {"n": 0, "mean_ms": 0.0, "p50_ms": 0.0, "p95_ms": 0.0}

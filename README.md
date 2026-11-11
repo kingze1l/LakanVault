@@ -75,12 +75,19 @@ Honest claim: gate + one-shot paste handoff, not silent in-place rewrite. Not Co
 
 See [`scripts/README.md`](scripts/README.md) for the full index.
 
-Optional stronger PII detection (Joan Presidio + spaCy NER). The detector expects `en_core_web_lg`:
+**Recommended (stronger PII):** Joan Presidio + spaCy NER (`en_core_web_lg`). Dev/source installs only — the frozen MVP zip stays on regex PII and does not need this.
+
+```powershell
+scripts\INSTALL_RECOMMENDED.bat
+```
+
+Or manually:
 
 ```powershell
 pip install -e ".[ner]"
 python -m spacy download en_core_web_lg
 ```
+
 
 ## Architecture
 

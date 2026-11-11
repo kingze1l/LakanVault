@@ -1,3 +1,5 @@
+# shared yaml config merge (default + runtime env + local)
+# local.yaml wins when the user saved settings
 """Shared config loader — merges default.yaml with optional local.yaml overrides."""
 from __future__ import annotations
 
@@ -12,6 +14,7 @@ import yaml
 RUNTIME_BASE_URL_ENV = "LAKANVAULT_RUNTIME_BASE_URL"
 
 
+# deep merge dicts override wins on leaves
 def _deep_merge(base: dict, override: dict) -> dict:
     result = dict(base)
     for k, v in override.items():
@@ -22,6 +25,7 @@ def _deep_merge(base: dict, override: dict) -> dict:
     return result
 
 
+# load default then maybe stamp runtime url then merge local.yaml
 def load_config(config_dir: str | Path = "./config") -> dict[str, Any]:
     config_dir = Path(config_dir)
     default_path = config_dir / "default.yaml"
@@ -44,6 +48,7 @@ def load_config(config_dir: str | Path = "./config") -> dict[str, Any]:
     return config
 
 
+# write partial into local.yaml n return full merged config
 def save_local_config(config_dir: str | Path, partial: dict[str, Any]) -> dict[str, Any]:
     """Deep-merge partial settings into config/local.yaml and return full merged config."""
     config_dir = Path(config_dir)
@@ -59,6 +64,7 @@ def save_local_config(config_dir: str | Path, partial: dict[str, Any]) -> dict[s
     return load_config(config_dir)
 
 
+# drop top-level keys from local.yaml (reset to defaults)
 def clear_local_config_keys(config_dir: str | Path, keys: list[str]) -> dict[str, Any]:
     """Remove top-level keys from local.yaml (reset to defaults)."""
     config_dir = Path(config_dir)

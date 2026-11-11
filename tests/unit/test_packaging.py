@@ -1,11 +1,11 @@
-"""Packaging contract: tray, MCP tools server, hooks, MVP zip layout."""
+# packaging layout tray mcp hooks n mvp zip bits
 from pathlib import Path
 
 from lakanvault.mcp import stdio_proxy
 
 ROOT = Path(__file__).resolve().parents[2]
 
-
+# mcp console entry stays its own script
 def test_build_script_keeps_mcp_console_separate() -> None:
     script = ROOT / "scripts" / "build_tray_exe.ps1"
     text = script.read_text(encoding="utf-8")

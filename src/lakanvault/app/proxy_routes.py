@@ -1,3 +1,4 @@
+# thin routes for openai-ish proxy + internal sanitize (logic lives in ProxyGateway)
 """Thin OpenAI-compatible + internal sanitize routers. Logic lives in ProxyGateway."""
 from __future__ import annotations
 
@@ -18,6 +19,7 @@ router = APIRouter()
 internal_router = APIRouter()
 
 
+# pull the proxy gateway off app state or 503
 def _gateway(request: Request) -> ProxyGateway:
     gw = getattr(request.app.state, "proxy_gateway", None)
     if gw is None:
@@ -25,10 +27,12 @@ def _gateway(request: Request) -> ProxyGateway:
     return gw
 
 
+# just flatten request headers into a plain dict
 def _header_map(request: Request) -> dict[str, str]:
     return {k: v for k, v in request.headers.items()}
 
 
+# internal stuff is loopback only so we bounce remote callers
 def _require_loopback(request: Request) -> None:
     try:
         assert_loopback_client(request.client)
@@ -36,6 +40,7 @@ def _require_loopback(request: Request) -> None:
         raise HTTPException(status_code=403, detail="internal endpoint: loopback only") from exc
 
 
+# dont accept giant bodies
 def _enforce_body_limit(request: Request) -> None:
     max_body = int(getattr(request.app.state, "proxy_max_body", 1_048_576))
     raw_len = int(request.headers.get("content-length") or 0)
@@ -43,6 +48,7 @@ def _enforce_body_limit(request: Request) -> None:
         raise HTTPException(status_code=413, detail="payload too large")
 
 
+# main openai chat completions proxy (stream or not)
 @router.post("/v1/chat/completions", response_model=None)
 async def chat_completions(request: Request) -> JSONResponse | StreamingResponse:
     gw = _gateway(request)
@@ -58,6 +64,7 @@ async def chat_completions(request: Request) -> JSONResponse | StreamingResponse
         raise HTTPException(status_code=413, detail="payload too large")
     rid = uuid.uuid4().hex[:12]
     if payload.get("stream"):
+        # stream chunks through after sanitize
         async def gen():
             async for chunk in gw.iter_sse(payload, _header_map(request), request_id=rid):
                 yield chunk
@@ -67,6 +74,7 @@ async def chat_completions(request: Request) -> JSONResponse | StreamingResponse
     return JSONResponse(outcome.body, status_code=outcome.status_code)
 
 
+# list models from upstream so clients can pick one
 @router.get("/v1/models")
 async def list_models(request: Request) -> JSONResponse:
     gw = _gateway(request)
@@ -83,6 +91,7 @@ async def list_models(request: Request) -> JSONResponse:
     return JSONResponse(data, status_code=status)
 
 
+# classify a chat payload (meta only no prompt text back)
 @internal_router.post("/internal/v1/classify-chat-payload")
 async def classify_chat_payload(request: Request) -> ChatPayloadClassifyResponse:
     """Classify a chat-completions payload. Response is metadata only."""
@@ -101,6 +110,7 @@ async def classify_chat_payload(request: Request) -> ChatPayloadClassifyResponse
         raise HTTPException(status_code=413, detail="payload too large") from exc
 
 
+# internal sanitize for mcp shim n friends
 @internal_router.post("/internal/v1/sanitize")
 def internal_sanitize(request: Request, body: SanitizeTextRequest) -> SanitizeTextResponse:
     _require_loopback(request)

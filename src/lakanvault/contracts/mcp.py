@@ -1,3 +1,5 @@
+# mcp request/response DTOs
+# classify audit protect restore — no raw pii in responses
 """MCP (Model Context Protocol) DTOs — read-only classify and audit shapes.
 
 These models define the contract between IDE integrations (Cursor/VS Code)
@@ -10,6 +12,7 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 
 
+# four-tier ladder for dlp
 class DataTier(StrEnum):
     """Four-tier classification hierarchy for DLP policy."""
 
@@ -19,6 +22,7 @@ class DataTier(StrEnum):
     SECRET = "secret"
 
 
+# action matrix outcomes
 class PolicyAction(StrEnum):
     """Action matrix outcomes for classified content."""
 
@@ -172,6 +176,7 @@ class RestoreResponse(BaseModel):
 
 
 # Fields that must never appear in MCP responses (enforced in tests).
+# basicly the stuff that would leak secrets or raw prompts
 FORBIDDEN_MCP_RESPONSE_FIELDS = frozenset({
     "prompt_text",
     "raw_bytes",

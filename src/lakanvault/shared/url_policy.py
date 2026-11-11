@@ -1,3 +1,5 @@
+# url allow rules
+# local ai stays on localhost upstream needs an exact origin allowlist
 """URL policy — local AI endpoints must stay on localhost."""
 from __future__ import annotations
 
@@ -6,6 +8,7 @@ from urllib.parse import urlparse
 _ALLOWED_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
+# local-only base url or ValueError
 def assert_localhost_url(url: str) -> str:
     """Validate and normalize a local-only base URL. Raises ValueError if not localhost."""
     parsed = urlparse(url.strip())
@@ -20,6 +23,7 @@ def assert_localhost_url(url: str) -> str:
     return url.strip().rstrip("/")
 
 
+# scheme://host[:port] for exact origin compare
 def normalize_origin(url: str) -> str:
     parsed = urlparse(url.strip())
     if parsed.scheme not in ("http", "https"):
@@ -34,6 +38,7 @@ def normalize_origin(url: str) -> str:
     return origin
 
 
+# upstream must match allowlist origin exactly
 def assert_allowed_upstream(url: str, allowlist: list[str]) -> str:
     """Exact origin allowlist. Does not trust Host headers or arbitrary URLs."""
     origin = normalize_origin(url)

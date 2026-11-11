@@ -1,3 +1,4 @@
+# fastapi http shell — thin routes that call into Gateway (logic lives there)
 """HTTP API daemon (ADR-004: thin shell; logic in Gateway). UI shell TBD."""
 from __future__ import annotations
 
@@ -35,6 +36,7 @@ from lakanvault.shared.paths import resource_path, writable_data_root
 from lakanvault.shared.url_policy import assert_localhost_url
 
 
+# find repo root (or exe folder when frozen)
 def _find_repo_root() -> Path:
     from lakanvault.shared.paths import bundle_root, is_frozen
 
@@ -55,6 +57,7 @@ def _find_repo_root() -> Path:
     return here.parents[3].resolve()
 
 
+# pick a config dir that actually has default.yaml
 def _config_dir_with_defaults() -> Path:
     """Prefer CONFIG_DIR when default.yaml is present; else bundled read-only config."""
     if (CONFIG_DIR / "default.yaml").is_file():
@@ -67,6 +70,7 @@ def _config_dir_with_defaults() -> Path:
     return CONFIG_DIR if CONFIG_DIR.exists() else Path("./config")
 
 
+# where the static html lives
 def _resolve_static_dir() -> Path:
     bundled = resource_path("lakanvault", "app", "static")
     if bundled.is_dir():
@@ -83,11 +87,13 @@ STATIC_DIR = _resolve_static_dir()
 _gateway: Gateway | None = None
 
 
+# startup/shutdown — wire vault proxy client then clean up
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import httpx
     import traceback
 
+    # frozen builds write a tiny log next to the exe
     def _flog(msg: str) -> None:
         if not getattr(sys, "frozen", False):
             return
@@ -157,6 +163,7 @@ app.include_router(proxy_router)
 app.include_router(internal_router)
 
 
+# lazy singleton gateway
 def get_gateway() -> Gateway:
     global _gateway
     if _gateway is None:
@@ -164,11 +171,13 @@ def get_gateway() -> Gateway:
     return _gateway
 
 
+# drop gateway so next call reloads config
 def reset_gateway() -> None:
     global _gateway
     _gateway = None
 
 
+# resolve models dir from settings or custom path
 def _resolve_models_dir(custom_dir: str | None = None) -> Path:
     if custom_dir:
         path = Path(custom_dir)
@@ -179,6 +188,7 @@ def _resolve_models_dir(custom_dir: str | None = None) -> Path:
     return path if path.is_absolute() else REPO_ROOT / path
 
 
+# review endpoints are loopback only
 def _require_loopback(request: Request) -> None:
     try:
         assert_loopback_client(request.client)
@@ -190,6 +200,7 @@ class ProtectPauseBody(BaseModel):
     paused: bool = Field(..., description="When true, tray toasts skip new protect events")
 
 
+# root health-ish info
 @app.get("/")
 def index() -> dict:
     return {
@@ -202,6 +213,7 @@ def index() -> dict:
     }
 
 
+# serve status.html
 @app.get("/status")
 def status_page() -> FileResponse:
     path = STATIC_DIR / "status.html"
@@ -210,6 +222,7 @@ def status_page() -> FileResponse:
     return FileResponse(path, media_type="text/html")
 
 
+# serve review.html
 @app.get("/review")
 def review_page() -> FileResponse:
     path = STATIC_DIR / "review.html"
@@ -218,6 +231,7 @@ def review_page() -> FileResponse:
     return FileResponse(path, media_type="text/html")
 
 
+# serve toast.html
 @app.get("/toast")
 def toast_page() -> FileResponse:
     path = STATIC_DIR / "toast.html"
@@ -226,6 +240,7 @@ def toast_page() -> FileResponse:
     return FileResponse(path, media_type="text/html")
 
 
+# recent protect events for tray poll (meta only)
 @app.get("/api/protect/recent")
 def api_protect_recent(
     since_id: int = Query(0, ge=0),
@@ -235,11 +250,13 @@ def api_protect_recent(
     return {"events": get_protect_ring().recent(since_id=since_id, limit=limit)}
 
 
+# protect counts for the status ui
 @app.get("/api/protect/stats")
 def api_protect_stats() -> dict:
     return get_protect_ring().stats()
 
 
+# full review session by event id (loopback — has original text)
 @app.get("/api/protect/event/{event_id}")
 def api_protect_event(request: Request, event_id: int) -> dict:
     """Full review session for View → Prompt Review. Loopback only; includes original text."""
@@ -250,6 +267,7 @@ def api_protect_event(request: Request, event_id: int) -> dict:
     return get_review_sessions().to_public_dict(sess)
 
 
+# pause / unpause tray toasts
 @app.post("/api/protect/pause")
 def api_protect_pause(body: ProtectPauseBody) -> dict:
     ring = get_protect_ring()
@@ -257,6 +275,7 @@ def api_protect_pause(body: ProtectPauseBody) -> dict:
     return {"paused": ring.is_paused()}
 
 
+# prompt review / cursor hooks — joan protect
 @app.post("/api/review", response_model=ProtectResponse)
 def api_review(request: Request, body: ProtectRequest) -> ProtectResponse:
     """Joan protect for Prompt Review UI and Cursor hooks. Loopback only."""
@@ -272,6 +291,7 @@ def api_review(request: Request, body: ProtectRequest) -> ProtectResponse:
         ) from exc
 
 
+# send reviewed text to local llm
 @app.post("/api/review/send", response_model=ReviewSendResponse)
 def api_review_send(request: Request, body: ReviewSendRequest) -> ReviewSendResponse:
     """Send sanitized (or override original) text from a prior /api/review session. Loopback only."""
@@ -293,16 +313,19 @@ def api_review_send(request: Request, body: ReviewSendRequest) -> ReviewSendResp
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+# dump config snapshot
 @app.get("/api/config")
 def api_config() -> dict:
     return get_gateway().get_config_snapshot()
 
 
+# get settings for the ui
 @app.get("/api/settings")
 def api_get_settings() -> dict:
     return get_gateway().get_settings()
 
 
+# save settings to local.yaml n reload gateway
 @app.put("/api/settings")
 def api_put_settings(body: SettingsUpdate) -> dict:
     partial = body.model_dump(exclude_none=True)
@@ -319,6 +342,7 @@ def api_put_settings(body: SettingsUpdate) -> dict:
     return {"saved": True, "settings": gw.get_settings()}
 
 
+# wipe local settings keys back to defaults
 @app.post("/api/settings/reset")
 def api_reset_settings() -> dict:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -327,6 +351,7 @@ def api_reset_settings() -> dict:
     return {"reset": True, "settings": get_gateway().get_settings()}
 
 
+# list model files in models dir
 @app.get("/api/models")
 def api_models(dir: str | None = Query(default=None)) -> dict:
     models_dir = _resolve_models_dir(dir)
@@ -340,6 +365,7 @@ def api_models(dir: str | None = Query(default=None)) -> dict:
     }
 
 
+# native file picker for a model
 @app.get("/api/pick-file")
 def api_pick_file() -> dict:
     models_dir = _resolve_models_dir()
@@ -349,6 +375,7 @@ def api_pick_file() -> dict:
     return {"path": path, "cancelled": False}
 
 
+# native folder picker for models
 @app.get("/api/pick-folder")
 def api_pick_folder() -> dict:
     models_dir = _resolve_models_dir()
@@ -364,6 +391,7 @@ def api_pick_folder() -> dict:
     }
 
 
+# run the integrity→threat→privacy→audit scan pipeline
 @app.post("/api/scan")
 def api_scan(request: ScanRequest) -> ScanResponse:
     if not request.target_path.strip():
@@ -381,6 +409,7 @@ def api_scan(request: ScanRequest) -> ScanResponse:
     return get_gateway().receive(request)
 
 
+# is local llm reachable + list models
 @app.get("/api/local-llm/status")
 def api_local_llm_status(base_url: str | None = Query(default=None)) -> dict:
     if base_url:
@@ -391,16 +420,19 @@ def api_local_llm_status(base_url: str | None = Query(default=None)) -> dict:
     return get_gateway().local_llm_status(base_url=base_url)
 
 
+# old lmstudio path (same as local-llm)
 @app.get("/api/lmstudio/status")
 def api_lmstudio_status(base_url: str | None = Query(default=None)) -> dict:
     return api_local_llm_status(base_url=base_url)
 
 
+# bundled runtime status
 @app.get("/api/runtime/status")
 def api_runtime_status() -> dict:
     return get_gateway().runtime_status()
 
 
+# switch bundled runtime model
 @app.post("/api/runtime/select")
 def api_runtime_select(body: dict) -> dict:
     model = (body or {}).get("model", "")
@@ -412,6 +444,7 @@ def api_runtime_select(body: dict) -> dict:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
+# chat with sanitize → local llm → restore
 @app.post("/api/chat")
 def api_chat(request: ChatRequest) -> ChatResponse:
     if not request.prompt.strip():
@@ -441,6 +474,7 @@ def api_chat(request: ChatRequest) -> ChatResponse:
     )
 
 
+# streaming chat (sse)
 @app.post("/api/chat/stream")
 def api_chat_stream(request: ChatRequest) -> StreamingResponse:
     if not request.prompt.strip():
@@ -451,6 +485,7 @@ def api_chat_stream(request: ChatRequest) -> StreamingResponse:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    # yield sse data lines from gateway
     def event_gen():
         for event in get_gateway().chat_stream_events(
             request.prompt, model=request.model, base_url=request.base_url
@@ -460,6 +495,7 @@ def api_chat_stream(request: ChatRequest) -> StreamingResponse:
     return StreamingResponse(event_gen(), media_type="text/event-stream")
 
 
+# integrity scan over models dir
 @app.get("/api/integrity/scan")
 def api_integrity_scan() -> dict:
     entries = get_gateway().scan_models()
@@ -474,6 +510,7 @@ def api_integrity_scan() -> dict:
     }
 
 
+# quarantine a bad model
 @app.post("/api/integrity/eject")
 def api_integrity_eject(request: IntegrityEjectRequest) -> dict:
     if not request.model_name.strip():
@@ -484,6 +521,7 @@ def api_integrity_eject(request: IntegrityEjectRequest) -> dict:
     return {"quarantined": True, "model_name": request.model_name}
 
 
+# pin a model hash as baseline
 @app.post("/api/integrity/baseline")
 def api_integrity_baseline(request: BaselineRequest) -> dict:
     if not request.model_name.strip():
@@ -500,6 +538,7 @@ def api_integrity_baseline(request: BaselineRequest) -> dict:
     return {"pinned": True, "model_name": request.model_name}
 
 
+# recent audit jsons (meta only)
 @app.get("/api/audit")
 def api_audit() -> list[dict]:
     audit_dir = Path(get_gateway().get_config_snapshot().get("local", {}).get("audit_dir", "./data/audit"))

@@ -1,4 +1,4 @@
-"""Joan's handoff: one string from the IDE request, then regex + Presidio."""
+# joan handoff one string from ide then regex + presidio
 from lakanvault.local_core.dlp.openai_payload import orchestrated_prompt
 from lakanvault.local_core.privacy.classifier import classify_content
 

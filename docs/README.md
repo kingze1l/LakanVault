@@ -9,18 +9,19 @@ Start here. Each folder has a single purpose.
 | See current sprint status | [`v2/PHASE2_PLAN.md`](v2/PHASE2_PLAN.md) |
 | Understand Option 3 gateway | [`architecture/005-option3-hybrid-gateway.md`](architecture/005-option3-hybrid-gateway.md) |
 | Configure Continue / Cursor / MCP | [`v2/CLIENT_COMPAT.md`](v2/CLIENT_COMPAT.md) |
-| Navigate the codebase | [`REPO_STRUCTURE.md`](REPO_STRUCTURE.md) |
-| CS301 discovery notes | [`cs301/repo-audit.md`](cs301/repo-audit.md) |
+| Navigate the codebase (plain map) | [`REPO_STRUCTURE.md`](REPO_STRUCTURE.md) |
+| Cursor MCP setup (CS301) | [`cs301/CURSOR_SETUP.md`](cs301/CURSOR_SETUP.md) |
+| What shipped recently | [`../WHAT_CHANGED.md`](../WHAT_CHANGED.md) |
 
 ## Folder map
 
 ```
 docs/
 ├── README.md                 ← you are here
-├── REPO_STRUCTURE.md         ← code layout (src/, tests/, scripts/)
-├── architecture/             ← ADRs (decisions, boundaries, Option 3)
-├── cs301/                    ← CS301 course / discovery artifacts
-└── v2/                       ← Phase 2 plans, backlog, client compat
+├── REPO_STRUCTURE.md         ← code layout in plain English
+├── architecture/             ← ADRs (keep — these are the real decisions)
+├── cs301/                    ← course Cursor setup
+└── v2/                       ← sprint plan + client compat
 ```
 
 ## Architecture decisions (`architecture/`)
@@ -33,14 +34,19 @@ docs/
 | [004](architecture/004-ui-state-isolation.md) | UI shell vs gateway logic |
 | [005](architecture/005-option3-hybrid-gateway.md) | **CS301 Option 3** — proxy, vault, MCP shim |
 
-## Phase 2 planning (`v2/`)
+## Phase 2 (`v2/`)
 
 | File | Purpose |
 |------|---------|
 | [PHASE2_PLAN.md](v2/PHASE2_PLAN.md) | Sprint tickets, done/remaining checklist |
 | [CLIENT_COMPAT.md](v2/CLIENT_COMPAT.md) | Continue, Cursor, Claude Code hooks |
-| [RESEARCH_BACKLOG.md](v2/RESEARCH_BACKLOG.md) | RQ1/RQ2 research items |
-| [IDE_EXTENSION_NOTES.md](v2/IDE_EXTENSION_NOTES.md) | Future IDE extension notes |
+
+## CS301 (`cs301/`)
+
+| File | Purpose |
+|------|---------|
+| [CURSOR_SETUP.md](CURSOR_SETUP.md) | Dev MCP / Cursor wiring |
+| [README.md](cs301/README.md) | Course folder index |
 
 ## Not in git (local only)
 

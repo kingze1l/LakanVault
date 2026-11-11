@@ -1,3 +1,4 @@
+# teams-ish status flyout via pywebview (falls back to browser if needed)
 """Teams-style Status flyout via pywebview (main-thread GUI), with browser fallback."""
 from __future__ import annotations
 
@@ -18,6 +19,7 @@ _SHOW_GRACE_S = 1.5
 _BLUR_HIDE_DELAY_S = 0.5
 
 
+# figure out where to park the popup near the tray corner
 def flyout_anchor(width: int = FLYOUT_WIDTH, height: int = FLYOUT_HEIGHT) -> tuple[int, int]:
     """Return top-left (x, y) for a tray-corner popup (Windows work area; else primary screen)."""
     margin = 12
@@ -72,6 +74,7 @@ class FlyoutHost:
     Call ``prepare()`` then ``pump()`` from the main thread; run pystray elsewhere.
     """
 
+    # set up locks n window handles
     def __init__(self) -> None:
         self._lock = threading.RLock()
         self._window = None
@@ -88,20 +91,24 @@ class FlyoutHost:
         self._toast_visible = False
         self._base_url = "http://127.0.0.1:8080"
 
+    # is the flyout showing
     @property
     def visible(self) -> bool:
         with self._lock:
             return self._visible
 
+    # did prepare fail so we use browser
     @property
     def failed(self) -> bool:
         with self._lock:
             return self._failed
 
+    # gui ready to open extra windows
     @property
     def gui_ready(self) -> bool:
         return self._ready.is_set() and not self.failed and self._prepared
 
+    # create hidden flyout + toast windows (call before pump)
     def prepare(self, url: str) -> bool:
         """Create the hidden flyout window. Call before ``pump()``. Returns False → use browser."""
         with self._lock:
@@ -143,9 +150,11 @@ class FlyoutHost:
             if window is None:
                 raise RuntimeError("create_window returned None")
 
+            # js can ask us to hide on blur
             def dismiss_flyout() -> None:
                 self.dismiss_from_blur()
 
+            # js minimize button
             def minimize_flyout() -> None:
                 self.hide()
 
@@ -171,9 +180,11 @@ class FlyoutHost:
                 background_color="#12171e",
             )
             if toast is not None:
+                # close the toast window
                 def toast_dismiss() -> None:
                     self.hide_toast()
 
+                # view → open status flyout with that event
                 def toast_view(event_id: str = "") -> None:
                     # Stay inside the small Status flyout (not a separate Review window).
                     self.hide_toast()
@@ -204,6 +215,7 @@ class FlyoutHost:
                 self._ready.set()
             return False
 
+    # block on the webview gui loop (main thread on win)
     def pump(self) -> None:
         """Block on the webview GUI loop (must be main thread on Windows)."""
         if not self._prepared or self._failed:
@@ -212,6 +224,7 @@ class FlyoutHost:
 
         webview.start()
 
+    # show/hide toggle
     def toggle(
         self,
         url: str,
@@ -225,6 +238,7 @@ class FlyoutHost:
             else:
                 self._show_unlocked(url, open_fn=open_fn)
 
+    # force show the flyout
     def show(
         self,
         url: str,
@@ -235,11 +249,13 @@ class FlyoutHost:
             self._cancel_hide_timer()
             self._show_unlocked(url, open_fn=open_fn)
 
+    # hide the flyout
     def hide(self) -> None:
         with self._lock:
             self._cancel_hide_timer()
             self._hide_unlocked()
 
+    # little toast above the status corner
     def show_toast(
         self,
         *,
@@ -276,6 +292,7 @@ class FlyoutHost:
         except Exception as exc:
             logger.debug("toast show failed: %s", exc)
 
+    # hide the toast window
     def hide_toast(self) -> None:
         with self._lock:
             win = self._toast_window
@@ -287,6 +304,7 @@ class FlyoutHost:
         except Exception as exc:  # pragma: no cover
             logger.debug("toast hide: %s", exc)
 
+    # js blur → hide after a short delay (ignore tray focus steal)
     def dismiss_from_blur(self) -> None:
         """JS blur → delayed hide (ignored during post-show grace / tray focus steal)."""
         with self._lock:
@@ -300,6 +318,7 @@ class FlyoutHost:
             self._hide_timer = timer
             timer.start()
 
+    # quit path — really destroy windows so pump can end
     def shutdown(self) -> None:
         """Allow the flyout window to destroy (tray Quit) and end ``pump()``."""
         with self._lock:
@@ -317,17 +336,20 @@ class FlyoutHost:
             except Exception as exc:  # pragma: no cover
                 logger.debug("flyout destroy: %s", exc)
 
+    # timer callback that actually hides after blur
     def _blur_hide_fire(self) -> None:
         with self._lock:
             self._hide_timer = None
             if self._visible:
                 self._hide_unlocked()
 
+    # cancel a pending blur-hide timer
     def _cancel_hide_timer(self) -> None:
         if self._hide_timer is not None:
             self._hide_timer.cancel()
             self._hide_timer = None
 
+    # open in browser if flyout is dead
     def _fallback(self, url: str, open_fn: Callable[[str], None] | None) -> None:
         if open_fn is not None:
             open_fn(url)
@@ -336,6 +358,7 @@ class FlyoutHost:
 
         webbrowser.open(url)
 
+    # show path (caller holds lock)
     def _show_unlocked(
         self,
         url: str,
@@ -371,6 +394,7 @@ class FlyoutHost:
             self._failed = True
             self._fallback(url, self._open_fn)
 
+    # hide path (caller holds lock)
     def _hide_unlocked(self) -> None:
         win = self._window
         self._visible = False
@@ -381,6 +405,7 @@ class FlyoutHost:
         except Exception as exc:  # pragma: no cover
             logger.debug("flyout hide: %s", exc)
 
+    # closing X → hide instead of destroy unless quitting
     def _on_closing(self) -> bool:
         # Return False → Event.set reports abort → window stays alive; we just hide.
         with self._lock:
@@ -395,6 +420,7 @@ class FlyoutHost:
                 pass
         return False
 
+    # same for toast window
     def _on_toast_closing(self) -> bool:
         with self._lock:
             if self._allow_destroy:
@@ -408,6 +434,7 @@ class FlyoutHost:
                 pass
         return False
 
+    # inject blur handler js (kept around if we need it)
     def _inject_blur_handler(self) -> None:
         """Dismiss only on genuine focus loss after grace — not mousedown inside the panel."""
         win = self._window
@@ -438,10 +465,12 @@ class FlyoutHost:
 _HOST = FlyoutHost()
 
 
+# singleton flyout host for the process
 def get_flyout_host() -> FlyoutHost:
     return _HOST
 
 
+# swap host for unit tests
 def reset_flyout_host_for_tests() -> FlyoutHost:
     """Replace process-wide host (unit tests only)."""
     global _HOST
@@ -449,6 +478,7 @@ def reset_flyout_host_for_tests() -> FlyoutHost:
     return _HOST
 
 
+# tray menu helper to toggle status
 def toggle_status_flyout(
     url: str,
     *,
@@ -457,6 +487,7 @@ def toggle_status_flyout(
     get_flyout_host().toggle(url, open_fn=open_fn)
 
 
+# open a bigger review panel window (or browser)
 def open_panel(
     url: str,
     *,
@@ -467,6 +498,7 @@ def open_panel(
 ) -> None:
     """Open Prompt Review: extra webview window if GUI ready, else browser."""
 
+    # browser fallback if gui isnt ready
     def _fallback() -> None:
         if open_fn is not None:
             open_fn(url)

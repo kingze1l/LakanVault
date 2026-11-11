@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# cursor beforeReadFile — block .env / vault keys / certs when hooks are on
 """Cursor beforeReadFile: deny sensitive local files (.env, vault keys, certs).
 
 Respects the same toggle as the prompt hook:
@@ -13,6 +14,7 @@ import re
 import sys
 from pathlib import Path
 
+# where the hooks folder lives
 def _resolve_hook_dir() -> Path:
     override = (os.environ.get("LAKANVAULT_HOOKS_DIR") or "").strip()
     if override:
@@ -32,6 +34,7 @@ _DENY_SUFFIXES = (".pem", ".p12", ".pfx", ".key")
 _DENY_BASENAME_RE = re.compile(r"^\.env(\..+)?$", re.IGNORECASE)
 
 
+# file-read deny only when mode is fully on (not tag)
 def _hooks_enabled() -> bool:
     """File-read deny only in full on mode (not tag — keep this chat usable)."""
     env = (os.environ.get("LAKANVAULT_HOOKS") or "").strip().lower()
@@ -50,6 +53,7 @@ def _hooks_enabled() -> bool:
     return False
 
 
+# pull file paths out of the hook payload
 def _paths_from(payload: dict) -> list[str]:
     out: list[str] = []
     for key in ("file_path", "path", "filePath", "uri", "file"):
@@ -63,6 +67,7 @@ def _paths_from(payload: dict) -> list[str]:
     return out
 
 
+# is this path one of the sensitive ones we block
 def _is_denied(path: str) -> bool:
     normalized = path.replace("\\", "/")
     base = os.path.basename(normalized)
@@ -76,6 +81,7 @@ def _is_denied(path: str) -> bool:
     return False
 
 
+# main read hook — deny sensitive files when gate is on
 def main() -> int:
     try:
         raw = sys.stdin.read()
