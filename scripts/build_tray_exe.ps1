@@ -81,7 +81,7 @@ Write-Host "[..] Building console MCP tools server (classify/protect) ..."
     @excludeArgs `
     src/lakanvault/mcp/stdio_server.py
 
-Write-Host "[..] Building Cursor hook exes (no system Python on tutor PC) ..."
+Write-Host "[..] Building Cursor hook exes (no system Python on demo PC) ..."
 & $python -m PyInstaller --noconfirm --clean --onedir --console --name lakanvault-hook-prompt `
     @excludeArgs `
     .cursor/hooks/lakanvault_prompt.py

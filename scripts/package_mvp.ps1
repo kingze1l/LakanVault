@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Assemble LakanVault-MVP/ (tutor product demo) and zip to dist/LakanVault-MVP.zip.
+  Assemble LakanVault-MVP/ (product demo) and zip to dist/LakanVault-MVP.zip.
 
   Prerequisites: .\scripts\build_tray_exe.ps1
 #>
@@ -115,7 +115,7 @@ if not exist "%EXE%" (
 exit /b %ERRORLEVEL%
 '@ | Set-Content -Path (Join-Path $demo ".cursor\hooks\run_read.cmd") -Encoding ASCII
 
-$tutorTest = @'
+$demoGuide = @'
 # LakanVault MVP — Demo guide
 
 **PC needs:** Windows 10/11, Cursor, unzip. **No Python / Git / pip required.**
@@ -174,7 +174,7 @@ This demo protects **this Cursor folder** while the daemon is running. It does n
 
 **PII engine:** this zip uses lean **regex** PII (no Python/spaCy). Stronger Presidio + spaCy NER is optional on a **Python source** checkout via `scripts\INSTALL_RECOMMENDED.bat` / README — not required for this unzip demo.
 '@
-Set-Content -Path (Join-Path $root "DEMO_GUIDE.md") -Value $tutorTest -Encoding UTF8
+Set-Content -Path (Join-Path $root "DEMO_GUIDE.md") -Value $demoGuide -Encoding UTF8
 
 $startBat = @'
 @echo off

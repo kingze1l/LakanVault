@@ -1,8 +1,8 @@
 # joan — keeps track of which local models we trust
-# baselines come off usb / tutor json, never from the cloud
+# baselines come off usb / demo json, never from the cloud
 """Model registry — tracks trusted baseline hashes for local models.
 
-Per ADR-003: baselines come out-of-band (USB / tutor JSON), never from cloud.
+Per ADR-003: baselines come out-of-band (USB / demo JSON), never from cloud.
 A model whose live hash doesn't match its recorded baseline is flagged
 POISONED and can be quarantined (moved to data/quarantine/, removed from
 the active models directory).

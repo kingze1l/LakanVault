@@ -28,7 +28,7 @@ python -m lakanvault.launcher --tray --no-runtime
 
 Frozen `.exe`: Edge WebView2 / Chromium may be required for flyout/toast; otherwise open `http://127.0.0.1:8080/status` in a browser.
 
-### Tutor / product demo (no Python on their PC)
+### Product demo (no Python on their PC)
 
 ```powershell
 .\scripts\build_tray_exe.ps1
@@ -68,7 +68,7 @@ Honest claim: gate + one-shot paste handoff, not silent in-place rewrite. Not Co
 |--------|---------|
 | `python -m uvicorn lakanvault.app.server:app --reload` | Dev daemon on `:8080` (after `pip install -e .`) |
 | `scripts/build_tray_exe.ps1` | PyInstaller: tray + MCP server/shim + hook exes |
-| `scripts/package_mvp.ps1` | Assemble **`LakanVault-MVP.zip`** for tutor handoff |
+| `scripts/package_mvp.ps1` | Assemble **`LakanVault-MVP.zip`** for demo handoff |
 | `scripts/smoke_frozen_exe.ps1` | Smoke frozen/MVP tree (API 403 + hooks) |
 | `scripts/smoke_test.py` | Live endpoint + proxy block checks |
 | `scripts/verify_boundaries.py` | Architecture import checks |
