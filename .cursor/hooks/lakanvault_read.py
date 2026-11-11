@@ -13,7 +13,14 @@ import re
 import sys
 from pathlib import Path
 
-_MODE_FILE = Path(__file__).resolve().parent / "mode.txt"
+def _resolve_hook_dir() -> Path:
+    override = (os.environ.get("LAKANVAULT_HOOKS_DIR") or "").strip()
+    if override:
+        return Path(override)
+    return Path(__file__).resolve().parent
+
+
+_MODE_FILE = _resolve_hook_dir() / "mode.txt"
 _DENY_NAMES = frozenset({
     ".env",
     ".env.local",

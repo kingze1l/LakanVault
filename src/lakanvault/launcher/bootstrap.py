@@ -201,6 +201,9 @@ def open_browser(url: str) -> None:
 
 def run_daemon_only(*, host: str = "127.0.0.1", port: int = 8080) -> int:
     """Foreground API only — used by frozen child processes (no tray)."""
+    if getattr(sys, "frozen", False):
+        # Match tray child: lean freeze excludes spaCy; use regex PII layers.
+        os.environ.setdefault("LAKANVAULT_PRIVACY_ENGINE", "regex")
     root_dir = repo_root()
     os.chdir(root_dir)
     ensure_data_dirs(root_dir)

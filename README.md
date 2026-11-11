@@ -26,7 +26,16 @@ python -m lakanvault.launcher --tray --no-runtime
 
 **Left-click** the tray icon toggles a Teams-style Status flyout (`/status`). **Right-click** → **Prompt Review** (same flyout) / **Quit**. Protect hits show a **small toast only** (View / Dismiss) — the Status flyout does not auto-open. **View** or an activity row opens **Prompt Review inside the flyout** (Original / Filtered / Send Filtered / Override). Use **−** or Esc to minimize. Pause skips toasts. (On Windows, pywebview owns the main thread.)
 
-Frozen `.exe`: Edge WebView2 / Chromium may be required for flyout/toast; otherwise browser fallback. A one-click portable package (any folder) is planned next — not shipped yet.
+Frozen `.exe`: Edge WebView2 / Chromium may be required for flyout/toast; otherwise open `http://127.0.0.1:8080/status` in a browser.
+
+### Tutor / product demo (no Python on their PC)
+
+```powershell
+.\scripts\build_tray_exe.ps1
+.\scripts\package_mvp.ps1 -SkipBuild
+```
+
+Share **`dist/LakanVault-MVP.zip`**. Unzip → **`START.bat`** → in Cursor **Open Folder → `demo-workspace`** → follow **`DEMO_GUIDE.md`**. Includes tray, MCP tools, and frozen hooks (`[[lv]]` tag mode). Protects that demo folder only — not every Cursor project on the machine.
 
 ### Cursor project hooks (this workspace)
 
@@ -58,7 +67,9 @@ Honest claim: gate + one-shot paste handoff, not silent in-place rewrite. Not Co
 | Script | Purpose |
 |--------|---------|
 | `python -m uvicorn lakanvault.app.server:app --reload` | Dev daemon on `:8080` (after `pip install -e .`) |
-| `scripts/build_tray_exe.ps1` | PyInstaller onedir: `LakanVault.exe` + `lakanvault-mcp.exe` |
+| `scripts/build_tray_exe.ps1` | PyInstaller: tray + MCP server/shim + hook exes |
+| `scripts/package_mvp.ps1` | Assemble **`LakanVault-MVP.zip`** for tutor handoff |
+| `scripts/smoke_frozen_exe.ps1` | Smoke frozen/MVP tree (API 403 + hooks) |
 | `scripts/smoke_test.py` | Live endpoint + proxy block checks |
 | `scripts/verify_boundaries.py` | Architecture import checks |
 
@@ -100,13 +111,15 @@ Sanitized chat via `/api/chat` needs a local LLM service (LM Studio, Ollama, or 
 
 Configure via `/api/settings` or `config/local.yaml` (`local_ai.base_url`).
 
-## Build tray `.exe`
+## Build tray `.exe` / MVP zip
 
 ```powershell
 .\scripts\build_tray_exe.ps1
+.\scripts\package_mvp.ps1 -SkipBuild
+.\scripts\smoke_frozen_exe.ps1 -Root dist\LakanVault-MVP
 ```
 
-Output: `dist/LakanVault/LakanVault.exe` and `dist/lakanvault-mcp/lakanvault-mcp.exe`.
+Outputs: `dist/LakanVault/`, MCP + hook onedirs, and **`dist/LakanVault-MVP.zip`**.
 
 Native Status/Review panels need a WebView2/Chromium runtime on the machine; without it the tray opens the system browser instead.
 

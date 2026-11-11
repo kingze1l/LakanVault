@@ -261,9 +261,15 @@ def api_protect_pause(body: ProtectPauseBody) -> dict:
 def api_review(request: Request, body: ProtectRequest) -> ProtectResponse:
     """Joan protect for Prompt Review UI and Cursor hooks. Loopback only."""
     _require_loopback(request)
-    return get_gateway().protect_prompt(
-        body.text, session_id=body.session_id, llm=body.llm, source="review"
-    )
+    try:
+        return get_gateway().protect_prompt(
+            body.text, session_id=body.session_id, llm=body.llm, source="review"
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"review failed: {type(exc).__name__}: {exc}",
+        ) from exc
 
 
 @app.post("/api/review/send", response_model=ReviewSendResponse)

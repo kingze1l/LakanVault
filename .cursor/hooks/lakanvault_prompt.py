@@ -27,7 +27,16 @@ import urllib.request
 from pathlib import Path
 
 DEFAULT_URL = os.environ.get("LAKANVAULT_REVIEW_URL", "http://127.0.0.1:8080/api/review")
-_HOOK_DIR = Path(__file__).resolve().parent
+
+
+def _resolve_hook_dir() -> Path:
+    override = (os.environ.get("LAKANVAULT_HOOKS_DIR") or "").strip()
+    if override:
+        return Path(override)
+    return Path(__file__).resolve().parent
+
+
+_HOOK_DIR = _resolve_hook_dir()
 _MODE_FILE = _HOOK_DIR / "mode.txt"
 _TAG = "[[lv]]"
 _HANDOFF_TTL_SEC = float(os.environ.get("LAKANVAULT_HANDOFF_TTL", "600"))  # 10 min
