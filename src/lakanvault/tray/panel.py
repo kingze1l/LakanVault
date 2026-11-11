@@ -146,9 +146,13 @@ class FlyoutHost:
             def dismiss_flyout() -> None:
                 self.dismiss_from_blur()
 
+            def minimize_flyout() -> None:
+                self.hide()
+
             window.events.closing += self._on_closing
             # Blur-dismiss is unreliable with tray focus steal on Windows; left-click toggles.
             window.expose(dismiss_flyout)
+            window.expose(minimize_flyout)
 
             toast_x, toast_y = flyout_anchor(TOAST_WIDTH, TOAST_HEIGHT)
             toast = webview.create_window(

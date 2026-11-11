@@ -114,7 +114,7 @@ def test_notify_for_events_skips_when_paused() -> None:
     assert notes == []
 
 
-def test_notify_block_events_are_returned_for_auto_flyout() -> None:
+def test_notify_block_events_are_returned_for_toast() -> None:
     ctl = TrayController()
     ctl.start_gateway(lambda: True)
     notes: list[tuple[str, str]] = []

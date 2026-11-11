@@ -203,7 +203,8 @@ class LocalLLMClient:
             )
         except urllib.error.URLError as exc:
             raise ConnectionError(
-                f"Cannot reach local LLM at {url}. Is the server running on localhost?"
+                "Local LLM is not running. Start LM Studio or Ollama "
+                f"(OpenAI-compatible API) so {url} responds, then try again."
             ) from exc
         except (KeyError, IndexError) as exc:
             raise ValueError(f"Unexpected local LLM response shape: {exc}") from exc
@@ -268,5 +269,6 @@ class LocalLLMClient:
             )
         except urllib.error.URLError as exc:
             raise ConnectionError(
-                f"Cannot reach local LLM at {url}. Is the server running on localhost?"
+                "Local LLM is not running. Start LM Studio or Ollama "
+                f"(OpenAI-compatible API) so {url} responds, then try again."
             ) from exc

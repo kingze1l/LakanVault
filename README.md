@@ -24,7 +24,7 @@ pip install -e ".[tray]"   # pywebview Status flyout + toasts
 python -m lakanvault.launcher --tray --no-runtime
 ```
 
-**Left-click** the tray icon toggles a Teams-style Status flyout (`/status`). **Right-click** → **Prompt Review** (same flyout) / **Quit**. Protect toasts have **View / Dismiss**; **View** or tapping an activity row opens **Prompt Review inside the flyout** (Original / Filtered / Send Filtered / Override). Blocks also surface the flyout. Pause skips toasts. (On Windows, pywebview owns the main thread.)
+**Left-click** the tray icon toggles a Teams-style Status flyout (`/status`). **Right-click** → **Prompt Review** (same flyout) / **Quit**. Protect hits show a **small toast only** (View / Dismiss) — the Status flyout does not auto-open. **View** or an activity row opens **Prompt Review inside the flyout** (Original / Filtered / Send Filtered / Override). Use **−** or Esc to minimize. Pause skips toasts. (On Windows, pywebview owns the main thread.)
 
 Frozen `.exe`: Edge WebView2 / Chromium may be required for flyout/toast; otherwise browser fallback. A one-click portable package (any folder) is planned next — not shipped yet.
 

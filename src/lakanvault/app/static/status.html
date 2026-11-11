@@ -57,6 +57,20 @@
       font-style: normal; font-size: 0.68rem; color: var(--dim);
       font-family: var(--mono); font-weight: 500;
     }
+    .header-right { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+    .icon-btn {
+      appearance: none;
+      width: 1.55rem; height: 1.55rem;
+      padding: 0; margin: 0;
+      border: 1px solid var(--line-2);
+      background: var(--surface);
+      color: var(--muted);
+      border-radius: 2px;
+      font: inherit; font-size: 0.95rem; line-height: 1;
+      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .icon-btn:hover { color: var(--text); border-color: rgba(255,255,255,.22); background: var(--surface-2); }
     .chip {
       font-family: var(--mono);
       font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em;
@@ -215,7 +229,10 @@
         <strong>LakanVault</strong>
         <em>local</em>
       </div>
-      <span id="protection-pill" class="chip">on</span>
+      <div class="header-right">
+        <span id="protection-pill" class="chip">on</span>
+        <button type="button" class="icon-btn" id="btn-minimize" title="Minimize" aria-label="Minimize">−</button>
+      </div>
     </header>
     <div class="strip">
       <span id="protection-label"><b>Protection</b> active</span>
@@ -242,7 +259,10 @@
         <button type="button" class="back" id="btn-back">← status</button>
         <strong>Prompt Review</strong>
       </div>
-      <span class="chip" id="review-verdict">—</span>
+      <div class="header-right">
+        <span class="chip" id="review-verdict">—</span>
+        <button type="button" class="icon-btn" id="btn-minimize-review" title="Minimize" aria-label="Minimize">−</button>
+      </div>
     </header>
     <div class="pair">
       <div>
@@ -316,9 +336,26 @@
       return out + escapeHtml(text.slice(cursor));
     }
 
+    function friendlyError(msg) {
+      const s = String(msg || "");
+      if (/cannot reach local llm|local llm is not running|connection refused|failed to establish|urlerror/i.test(s)) {
+        return "Local LLM offline — start LM Studio/Ollama on :1234, then retry Send or Override.";
+      }
+      return s;
+    }
+
+    function minimizeFlyout() {
+      try {
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.minimize_flyout) {
+          window.pywebview.api.minimize_flyout();
+          return;
+        }
+      } catch (_) {}
+    }
+
     function setReviewStatus(msg, isErr) {
       const node = el("review-status");
-      node.textContent = msg || "";
+      node.textContent = isErr ? friendlyError(msg) : (msg || "");
       node.className = "status-msg" + (isErr ? " err" : "");
     }
 
@@ -462,6 +499,8 @@
       }
     }
 
+    el("btn-minimize").addEventListener("click", minimizeFlyout);
+    el("btn-minimize-review").addEventListener("click", minimizeFlyout);
     el("btn-pause").addEventListener("click", async () => {
       try {
         const resp = await fetch("/api/protect/pause", {
@@ -495,6 +534,10 @@
     const panel = params.get("panel");
     if (eventParam) openEvent(eventParam);
     else if (panel === "review") openEmptyReview();
+
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") minimizeFlyout();
+    });
 
     refresh();
     setInterval(refresh, 2000);

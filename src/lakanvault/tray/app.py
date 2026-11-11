@@ -92,14 +92,9 @@ def run_tray_loop(
             events = controller.poll_protect_events()
             if events:
                 notified = controller.notify_for_events(events, _notify)
+                # Warn/mask/block → small toast only (do not auto-open Status flyout).
                 if notified:
                     _show_custom_toasts(notified)
-                # Prefer toast; still surface Status on block for counts.
-                if any(str(e.get("action") or "").lower() == "block" for e in notified):
-                    try:
-                        host.show(controller.dashboard_url, open_fn=_browser_open)
-                    except Exception as exc:  # pragma: no cover
-                        logger.debug("auto flyout on block failed: %s", exc)
             _refresh_icon()
 
     menu = pystray.Menu(
