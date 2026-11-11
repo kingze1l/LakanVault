@@ -13,6 +13,7 @@
       --accent: #3d9a78;
       --warn: #c9a227;
       --block: #c45c5c;
+      --token: #8b6cc9;
       --border: #2a3542;
       --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
       --sans: "Segoe UI", system-ui, sans-serif;
@@ -25,89 +26,79 @@
       color: var(--text);
       min-height: 100vh;
     }
-    main {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 2rem 1.25rem 4rem;
+    main { max-width: 920px; margin: 0 auto; padding: 1.5rem 1.15rem 3rem; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 0.75rem; margin-bottom: 0.85rem;
     }
-    h1 {
-      font-size: 1.6rem;
-      font-weight: 650;
-      letter-spacing: -0.02em;
-      margin: 0 0 0.35rem;
+    h1 { font-size: 1.35rem; font-weight: 650; letter-spacing: -0.02em; margin: 0; }
+    .sub { color: var(--muted); margin: 0 0 1.1rem; font-size: 0.9rem; }
+    .verdict {
+      display: inline-block; padding: 0.28rem 0.65rem; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em;
     }
-    .sub { color: var(--muted); margin: 0 0 1.5rem; font-size: 0.95rem; }
-    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.4rem; }
-    textarea, input, select {
-      width: 100%;
-      background: var(--panel);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.75rem 0.9rem;
-      font: inherit;
+    .verdict.allow, .verdict.warn { background: rgba(61,154,120,.2); color: #7ddec0; }
+    .verdict.mask { background: rgba(201,162,39,.2); color: #e6c96a; }
+    .verdict.block { background: rgba(196,92,92,.28); color: #f0a0a0; }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; }
+    textarea, input {
+      width: 100%; background: var(--panel); color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.7rem 0.85rem; font: inherit;
     }
-    textarea { min-height: 140px; font-family: var(--mono); font-size: 0.9rem; resize: vertical; }
-    .row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 0.75rem 0 1rem; }
+    textarea { min-height: 100px; font-family: var(--mono); font-size: 0.86rem; resize: vertical; }
+    .row { display: flex; gap: 0.7rem; flex-wrap: wrap; margin: 0.65rem 0 0.9rem; }
     .row > * { flex: 1 1 180px; }
-    .actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 1rem 0; }
+    .actions { display: flex; gap: 0.55rem; flex-wrap: wrap; margin: 0.85rem 0; }
     button {
-      border: 0;
-      border-radius: 8px;
-      padding: 0.65rem 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      background: var(--accent);
-      color: #04140f;
+      border: 0; border-radius: 8px; padding: 0.65rem 1.05rem;
+      font-weight: 650; cursor: pointer; font: inherit; font-size: 0.9rem;
     }
-    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary { background: var(--accent); color: #04140f; }
     button.secondary { background: #2a3542; color: var(--text); }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      margin-top: 1rem;
+    button.danger { background: #6b2e2e; color: #f5c4c4; }
+    button.linkish {
+      background: transparent; color: var(--muted); text-decoration: underline;
+      padding-left: 0.2rem; padding-right: 0.2rem;
     }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-top: 0.75rem; }
     @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
     .panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.9rem 1rem;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.85rem 0.95rem;
     }
-    .panel h2 { margin: 0 0 0.6rem; font-size: 0.95rem; color: var(--muted); font-weight: 600; }
-    .hl { font-family: var(--mono); font-size: 0.85rem; white-space: pre-wrap; word-break: break-word; line-height: 1.45; }
-    mark {
-      background: rgba(201, 162, 39, 0.35);
-      color: inherit;
-      border-radius: 2px;
-      padding: 0 2px;
-    }
-    mark.block { background: rgba(196, 92, 92, 0.4); }
-    mark.mask { background: rgba(61, 154, 120, 0.35); }
-    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    th, td { text-align: left; padding: 0.45rem 0.35rem; border-bottom: 1px solid var(--border); }
+    .panel h2 { margin: 0 0 0.5rem; font-size: 0.8rem; color: var(--muted); font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; }
+    .hl { font-family: var(--mono); font-size: 0.84rem; white-space: pre-wrap; word-break: break-word; line-height: 1.45; }
+    mark { background: rgba(201,162,39,.35); color: inherit; border-radius: 2px; padding: 0 2px; }
+    mark.block { background: rgba(196,92,92,.45); }
+    mark.mask { background: rgba(139,108,201,.35); color: #e4d7ff; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th, td { text-align: left; padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--border); }
     th { color: var(--muted); font-weight: 600; }
-    .verdict {
-      display: inline-block;
-      padding: 0.25rem 0.55rem;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .verdict.allow, .verdict.warn { background: rgba(61, 154, 120, 0.2); color: #7ddec0; }
-    .verdict.mask { background: rgba(201, 162, 39, 0.2); color: #e6c96a; }
-    .verdict.block { background: rgba(196, 92, 92, 0.25); color: #f0a0a0; }
-    .status { margin: 0.75rem 0; color: var(--muted); font-size: 0.9rem; min-height: 1.2em; }
+    .status { margin: 0.55rem 0; color: var(--muted); font-size: 0.88rem; min-height: 1.2em; }
     .err { color: #f0a0a0; }
+    #overridePanel {
+      display: none; margin-top: 0.75rem; padding: 0.9rem 1rem;
+      border: 1px solid rgba(196,92,92,.45); border-radius: 10px;
+      background: rgba(196,92,92,.1);
+    }
+    #overridePanel.visible { display: block; }
+    #overridePanel p { margin: 0 0 0.65rem; font-size: 0.88rem; line-height: 1.4; }
+    #overridePanel label.check {
+      display: flex; gap: 0.5rem; align-items: flex-start;
+      color: var(--text); font-size: 0.85rem; margin-bottom: 0.75rem; cursor: pointer;
+    }
+    #overridePanel input[type=checkbox] { margin-top: 0.15rem; }
   </style>
 </head>
 <body>
   <main>
-    <h1>LakanVault Prompt Review</h1>
-    <p class="sub">Scan with Joan’s detector before anything leaves the machine. Secrets block; PII is masked.</p>
+    <header>
+      <h1>Prompt Review</h1>
+      <span class="verdict" id="verdict">—</span>
+    </header>
+    <p class="sub">Compare original vs filtered before anything leaves the machine. Secrets block; PII is masked. Override is explicit and one-time.</p>
 
     <label for="prompt">Prompt</label>
     <textarea id="prompt" placeholder="Paste a prompt that might contain secrets or PII…"></textarea>
@@ -124,24 +115,37 @@
     </div>
 
     <div class="actions">
-      <button type="button" id="btnReview">Review</button>
-      <button type="button" id="btnSend" class="secondary" disabled>Send</button>
+      <button type="button" class="primary" id="btnReview">Review</button>
+      <button type="button" class="primary" id="btnSend" disabled>Send Filtered</button>
+      <button type="button" class="linkish" id="btnOverride" disabled>Request Override</button>
     </div>
     <p class="status" id="status"></p>
 
+    <div id="overridePanel">
+      <p id="overrideWarn">This will send unmasked sensitive content outside your device. This cannot be undone.</p>
+      <label class="check">
+        <input type="checkbox" id="overrideAck" />
+        <span>I understand this exposes real credentials or PII.</span>
+      </label>
+      <div class="actions" style="margin:0">
+        <button type="button" class="danger" id="btnConfirmOverride" disabled>Confirm Send Unmasked</button>
+        <button type="button" class="secondary" id="btnCancelOverride">Cancel</button>
+      </div>
+    </div>
+
     <div id="result" hidden>
-      <p>Verdict: <span class="verdict" id="verdict">—</span> · session <code id="sessionId"></code></p>
+      <p style="color:var(--muted);font-size:0.85rem;margin:0.25rem 0 0">session <code id="sessionId"></code></p>
       <div class="grid">
         <div class="panel">
-          <h2>Original (highlighted)</h2>
+          <h2>Original</h2>
           <div class="hl" id="originalHl"></div>
         </div>
         <div class="panel">
-          <h2>Sanitized (outbound)</h2>
+          <h2>Filtered</h2>
           <div class="hl" id="sanitized"></div>
         </div>
       </div>
-      <div class="panel" style="margin-top:1rem">
+      <div class="panel" style="margin-top:0.85rem">
         <h2>Findings</h2>
         <table>
           <thead>
@@ -150,7 +154,7 @@
           <tbody id="findings"></tbody>
         </table>
       </div>
-      <div class="grid" style="margin-top:1rem">
+      <div class="grid" style="margin-top:0.85rem">
         <div class="panel">
           <h2>Raw model reply</h2>
           <div class="hl" id="rawReply">(not sent yet)</div>
@@ -164,14 +168,15 @@
   </main>
   <script>
     const $ = (id) => document.getElementById(id);
-    let state = { sessionId: "", sanitized: "", finalAction: "allow", allowSend: false, original: "" };
+    let state = {
+      sessionId: "", sanitized: "", finalAction: "allow", allowSend: false,
+      original: "", eventId: null, findings: [],
+    };
 
     function escapeHtml(s) {
       return String(s)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
     function highlight(text, findings) {
@@ -179,8 +184,7 @@
         .map((f) => ({ start: f.start, end: f.end, action: f.action || "" }))
         .filter((f) => f.end > f.start)
         .sort((a, b) => a.start - b.start);
-      let out = "";
-      let cursor = 0;
+      let out = "", cursor = 0;
       for (const span of spans) {
         if (span.start < cursor) continue;
         out += escapeHtml(text.slice(cursor, span.start));
@@ -198,61 +202,54 @@
       el.className = "status" + (isErr ? " err" : "");
     }
 
-    $("btnReview").onclick = async () => {
-      const text = $("prompt").value;
-      if (!text.trim()) {
-        setStatus("Enter a prompt first.", true);
-        return;
+    function applyResult(data, originalText) {
+      state = {
+        sessionId: data.session_id,
+        sanitized: data.sanitized || "",
+        finalAction: data.final_action || "allow",
+        allowSend: !!data.allow_send,
+        original: originalText,
+        eventId: data.event_id ?? state.eventId,
+        findings: data.findings || [],
+      };
+      $("result").hidden = false;
+      $("sessionId").textContent = state.sessionId;
+      const v = $("verdict");
+      v.textContent = state.finalAction;
+      v.className = "verdict " + state.finalAction;
+      $("originalHl").innerHTML = highlight(originalText, state.findings);
+      $("sanitized").textContent = state.sanitized || "(empty — blocked)";
+      const tb = $("findings");
+      tb.innerHTML = "";
+      for (const f of state.findings) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${escapeHtml(f.entity_type)}</td><td>${escapeHtml(f.tier)}</td><td>${escapeHtml(f.action || "")}</td><td>${Number(f.confidence || 0).toFixed(2)}</td><td>${f.start}:${f.end}</td>`;
+        tb.appendChild(tr);
       }
-      setStatus("Reviewing…");
-      $("btnSend").disabled = true;
-      try {
-        const resp = await fetch("/api/review", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, session_id: state.sessionId || "", llm: "never" }),
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.detail || resp.statusText);
-        state = {
-          sessionId: data.session_id,
-          sanitized: data.sanitized || "",
-          finalAction: data.final_action || "allow",
-          allowSend: !!data.allow_send,
-          original: text,
-        };
-        $("result").hidden = false;
-        $("sessionId").textContent = state.sessionId;
-        const v = $("verdict");
-        v.textContent = state.finalAction;
-        v.className = "verdict " + state.finalAction;
-        $("originalHl").innerHTML = highlight(text, data.findings);
-        $("sanitized").textContent = state.sanitized || "(empty — blocked)";
-        const tb = $("findings");
-        tb.innerHTML = "";
-        for (const f of data.findings || []) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${escapeHtml(f.entity_type)}</td><td>${escapeHtml(f.tier)}</td><td>${escapeHtml(f.action || "")}</td><td>${Number(f.confidence).toFixed(2)}</td><td>${f.start}:${f.end}</td>`;
-          tb.appendChild(tr);
-        }
-        $("rawReply").textContent = "(not sent yet)";
-        $("restoredReply").textContent = "(not sent yet)";
-        $("btnSend").disabled = !state.allowSend;
-        setStatus(state.allowSend ? "Ready to send (masked if needed)." : "Blocked — Send disabled.");
-      } catch (err) {
-        setStatus(String(err.message || err), true);
-      }
-    };
+      $("rawReply").textContent = "(not sent yet)";
+      $("restoredReply").textContent = "(not sent yet)";
+      $("btnSend").disabled = !state.allowSend;
+      $("btnOverride").disabled = !state.sessionId;
+      hideOverride();
+      setStatus(state.allowSend ? "Ready to send filtered." : "Blocked — use Request Override to send unmasked (local LLM only).");
+    }
 
-    $("btnSend").onclick = async () => {
-      if (!state.allowSend || !state.sessionId) return;
-      setStatus("Sending…");
+    function hideOverride() {
+      $("overridePanel").classList.remove("visible");
+      $("overrideAck").checked = false;
+      $("btnConfirmOverride").disabled = true;
+    }
+
+    async function sendPayload(override) {
+      if (!state.sessionId) return;
+      setStatus(override ? "Sending unmasked (override)…" : "Sending filtered…");
       try {
         const body = {
           session_id: state.sessionId,
           sanitized: state.sanitized,
           model: $("model").value || null,
           base_url: $("baseUrl").value || null,
+          override: !!override,
         };
         const resp = await fetch("/api/review/send", {
           method: "POST",
@@ -267,17 +264,77 @@
         }
         if (data.error) {
           setStatus(data.error, true);
-          $("rawReply").textContent = "";
-          $("restoredReply").textContent = "";
           return;
         }
         $("rawReply").textContent = data.raw_response || "";
         $("restoredReply").textContent = data.restored_response || "";
-        setStatus("Done · " + (data.model_used || "model") + " · " + Math.round(data.latency_ms || 0) + " ms");
+        hideOverride();
+        const tag = data.override_used ? "override" : "filtered";
+        setStatus("Done (" + tag + ") · " + (data.model_used || "model") + " · " + Math.round(data.latency_ms || 0) + " ms");
+      } catch (err) {
+        setStatus(String(err.message || err), true);
+      }
+    }
+
+    $("btnReview").onclick = async () => {
+      const text = $("prompt").value;
+      if (!text.trim()) { setStatus("Enter a prompt first.", true); return; }
+      setStatus("Reviewing…");
+      $("btnSend").disabled = true;
+      try {
+        const resp = await fetch("/api/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, session_id: state.sessionId || "", llm: "never" }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || resp.statusText);
+        applyResult(data, text);
       } catch (err) {
         setStatus(String(err.message || err), true);
       }
     };
+
+    $("btnSend").onclick = () => sendPayload(false);
+    $("btnOverride").onclick = () => {
+      const types = (state.findings || []).map((f) => f.entity_type).filter(Boolean);
+      const uniq = [...new Set(types)].slice(0, 4).join(", ") || "sensitive content";
+      $("overrideWarn").textContent =
+        "This will send unmasked content (" + uniq + ") outside your device via the local LLM. This cannot be undone.";
+      $("overridePanel").classList.add("visible");
+    };
+    $("overrideAck").onchange = () => {
+      $("btnConfirmOverride").disabled = !$("overrideAck").checked;
+    };
+    $("btnConfirmOverride").onclick = () => sendPayload(true);
+    $("btnCancelOverride").onclick = hideOverride;
+
+    async function loadEvent(eventId) {
+      setStatus("Loading event…");
+      try {
+        const resp = await fetch("/api/protect/event/" + encodeURIComponent(eventId));
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || resp.statusText);
+        $("prompt").value = data.original || "";
+        applyResult(
+          {
+            session_id: data.session_id,
+            sanitized: data.sanitized,
+            final_action: data.final_action,
+            allow_send: data.allow_send,
+            findings: data.findings || [],
+            event_id: data.event_id,
+          },
+          data.original || "",
+        );
+      } catch (err) {
+        setStatus(String(err.message || err), true);
+      }
+    }
+
+    const params = new URLSearchParams(location.search);
+    const eventParam = params.get("event");
+    if (eventParam) loadEvent(eventParam);
   </script>
 </body>
 </html>

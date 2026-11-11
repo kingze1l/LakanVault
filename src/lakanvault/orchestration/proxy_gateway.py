@@ -152,11 +152,35 @@ class ProxyGateway:
                 else str(protected.final_action)
             )
             if action_s in ("warn", "mask", "block"):
-                record_protect_event(
+                from lakanvault.orchestration.review_sessions import get_review_sessions
+
+                ev = record_protect_event(
                     action_s,
                     source="proxy",
                     entity_types=entity_types,
                 )
+                if ev is not None:
+                    get_review_sessions().put(
+                        event_id=ev.id,
+                        session_id=f"proxy-{request_id}",
+                        original=text,
+                        sanitized=protected.sanitized if action_s != "block" else "",
+                        action=action_s,
+                        source="proxy",
+                        entity_types=entity_types,
+                        findings=[
+                            {
+                                "entity_type": f.entity_type,
+                                "tier": f.tier.value if hasattr(f.tier, "value") else str(f.tier),
+                                "confidence": float(f.confidence),
+                                "start": int(f.start),
+                                "end": int(f.end),
+                                "source": str(f.source),
+                                "action": action_s,
+                            }
+                            for f in protected.findings
+                        ],
+                    )
             if protected.final_action == Action.BLOCK:
                 # Keep reason free of secret substrings (e.g. entity types containing "sk-").
                 reason = "API key or credential pattern detected"

@@ -20,13 +20,13 @@ Prompt Review UI: **http://127.0.0.1:8080/review** (loopback Joan scan → mask/
 Tray mode (Windows):
 
 ```powershell
-pip install -e ".[tray]"   # optional: pywebview Status flyout
+pip install -e ".[tray]"   # pywebview Status flyout + toasts
 python -m lakanvault.launcher --tray --no-runtime
 ```
 
-**Left-click** the tray icon toggles a Teams-style frameless Status flyout (`/status`, tray-corner). **Right-click** → **Open Prompt Review** / **Quit**. A **block** also auto-opens the flyout (and toasts). Left-click again to hide. (On Windows, pywebview owns the main thread; the tray icon runs beside it.) Tray polls `/api/protect/recent` and uses `icon.notify` for warn / mask / block (skipped while Pause is on).
+**Left-click** the tray icon toggles a Teams-style Status flyout (`/status`). **Right-click** → **Prompt Review** (same flyout) / **Quit**. Protect toasts have **View / Dismiss**; **View** or tapping an activity row opens **Prompt Review inside the flyout** (Original / Filtered / Send Filtered / Override). Blocks also surface the flyout. Pause skips toasts. (On Windows, pywebview owns the main thread.)
 
-Frozen `.exe`: Edge WebView2 / Chromium runtime may be required for the native flyout; if webview fails, Status/Review fall back to the default browser.
+Frozen `.exe`: Edge WebView2 / Chromium may be required for flyout/toast; otherwise browser fallback. A one-click portable package (any folder) is planned next — not shipped yet.
 
 ### Cursor project hooks (this workspace)
 

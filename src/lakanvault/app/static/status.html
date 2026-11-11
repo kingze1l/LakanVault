@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LakanVault Status</title>
+  <title>LakanVault</title>
   <style>
     :root {
       --bg: #0c1015;
@@ -15,180 +15,124 @@
       --warn: #c9a227;
       --block: #c45c5c;
       --mask: #5b8def;
+      --token: #8b6cc9;
       --border: rgba(255,255,255,.07);
       --sans: "Segoe UI", system-ui, sans-serif;
+      --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
     }
     * { box-sizing: border-box; }
     html, body {
-      margin: 0;
-      height: 100%;
-      overflow: hidden;
-      font-family: var(--sans);
-      background: var(--bg);
-      color: var(--text);
+      margin: 0; height: 100%; overflow: hidden;
+      font-family: var(--sans); background: var(--bg); color: var(--text);
       user-select: none;
     }
-    main {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      padding: 0.85rem 0.9rem 0.9rem;
-      gap: 0.65rem;
+    .screen {
+      height: 100%; display: none; flex-direction: column;
+      padding: 0.75rem 0.8rem 0.8rem; gap: 0.55rem;
       background:
         radial-gradient(420px 180px at 100% 0%, rgba(61,154,120,.12), transparent 60%),
         var(--bg);
     }
+    .screen.active { display: flex; }
     header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
     }
-    .brand {
-      display: flex;
-      flex-direction: column;
-      gap: 0.1rem;
-      min-width: 0;
-    }
-    .brand strong {
-      font-size: 0.95rem;
-      font-weight: 650;
-      letter-spacing: -0.02em;
-    }
-    .brand span { color: var(--muted); font-size: 0.72rem; }
+    .brand { display: flex; flex-direction: column; gap: 0.08rem; min-width: 0; }
+    .brand strong { font-size: 0.92rem; font-weight: 650; letter-spacing: -0.02em; }
+    .brand span { color: var(--muted); font-size: 0.7rem; }
     .pill {
-      flex-shrink: 0;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      padding: 0.28rem 0.5rem;
-      border-radius: 999px;
-      background: rgba(61, 154, 120, 0.16);
-      color: var(--accent);
-      border: 1px solid rgba(61, 154, 120, 0.28);
+      flex-shrink: 0; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em;
+      text-transform: uppercase; padding: 0.25rem 0.48rem; border-radius: 999px;
+      background: rgba(61,154,120,.16); color: var(--accent);
+      border: 1px solid rgba(61,154,120,.28);
     }
-    .pill.paused {
-      background: rgba(201, 162, 39, 0.14);
-      color: var(--warn);
-      border-color: rgba(201, 162, 39, 0.3);
-    }
+    .pill.paused { background: rgba(201,162,39,.14); color: var(--warn); border-color: rgba(201,162,39,.3); }
+    .pill.block { background: rgba(196,92,92,.22); color: #f0a0a0; border-color: rgba(196,92,92,.4); }
+    .pill.mask, .pill.warn { background: rgba(201,162,39,.16); color: #e6c96a; border-color: rgba(201,162,39,.35); }
     .line {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.55rem 0.7rem;
-      font-size: 0.82rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.5rem 0.65rem; font-size: 0.8rem;
     }
-    .line .hint { color: var(--muted); font-size: 0.72rem; }
-    .metrics {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.4rem;
-    }
+    .line .hint { color: var(--muted); font-size: 0.7rem; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; }
     .metric {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.55rem 0.35rem 0.5rem;
-      text-align: center;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.5rem 0.3rem; text-align: center;
     }
-    .metric .n { font-size: 1.25rem; font-weight: 700; line-height: 1; }
-    .metric .l {
-      font-size: 0.6rem;
-      color: var(--muted);
-      letter-spacing: 0.07em;
-      margin-top: 0.28rem;
-      font-weight: 600;
-    }
+    .metric .n { font-size: 1.15rem; font-weight: 700; line-height: 1; }
+    .metric .l { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.06em; margin-top: 0.22rem; font-weight: 600; }
     .metric.block .n { color: var(--block); }
     .metric.warn .n { color: var(--warn); }
     .metric.mask .n { color: var(--mask); }
     .section-label {
-      font-size: 0.65rem;
-      color: var(--muted);
-      font-weight: 650;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin: 0;
+      font-size: 0.62rem; color: var(--muted); font-weight: 650;
+      letter-spacing: 0.06em; text-transform: uppercase; margin: 0;
     }
-    .activity-wrap {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-    }
+    .activity-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.3rem; }
     ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: auto;
-      flex: 1;
+      list-style: none; margin: 0; padding: 0; background: var(--panel);
+      border: 1px solid var(--border); border-radius: 10px; overflow: auto; flex: 1;
     }
     li {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 0.45rem;
-      align-items: center;
-      padding: 0.45rem 0.6rem;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.76rem;
+      display: grid; grid-template-columns: auto 1fr auto; gap: 0.4rem; align-items: center;
+      padding: 0.42rem 0.55rem; border-bottom: 1px solid var(--border); font-size: 0.74rem;
     }
     li:last-child { border-bottom: none; }
-    .act {
-      font-size: 0.62rem;
-      font-weight: 750;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      min-width: 3.1rem;
-    }
+    li.row { cursor: pointer; }
+    li.row:hover { background: rgba(255,255,255,.04); }
+    .act { font-size: 0.6rem; font-weight: 750; letter-spacing: 0.04em; text-transform: uppercase; min-width: 3rem; }
     .act.block { color: var(--block); }
     .act.warn { color: var(--warn); }
     .act.mask { color: var(--mask); }
-    .meta { color: var(--muted); font-size: 0.68rem; text-align: right; line-height: 1.25; }
+    .meta { color: var(--muted); font-size: 0.66rem; text-align: right; line-height: 1.25; }
     .types { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .empty { color: var(--muted); padding: 0.7rem; font-size: 0.78rem; }
-    .actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.4rem;
+    .empty { color: var(--muted); padding: 0.65rem; font-size: 0.76rem; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+    .actions.triple { grid-template-columns: 1fr 1fr 1fr; }
+    button, .btn {
+      appearance: none; border: 1px solid var(--border); background: var(--panel-2);
+      color: var(--text); border-radius: 8px; padding: 0.5rem 0.45rem; font: inherit;
+      font-size: 0.74rem; font-weight: 600; cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; justify-content: center; text-align: center;
     }
-    button, a.btn {
-      appearance: none;
-      border: 1px solid var(--border);
-      background: var(--panel-2);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 0.55rem 0.5rem;
-      font: inherit;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
+    button.primary, .btn.primary {
+      background: rgba(61,154,120,.18); border-color: rgba(61,154,120,.4); color: #b7e6d2;
     }
-    a.btn.primary {
-      background: rgba(61, 154, 120, 0.18);
-      border-color: rgba(61, 154, 120, 0.4);
-      color: #b7e6d2;
+    button.danger { background: #6b2e2e; border-color: #8a3d3d; color: #f5c4c4; }
+    button.linkish { background: transparent; border-color: transparent; color: var(--muted); text-decoration: underline; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button:hover:not(:disabled), .btn:hover { filter: brightness(1.08); }
+    .back {
+      border: 0; background: transparent; color: var(--muted); font-size: 0.72rem;
+      font-weight: 600; padding: 0; cursor: pointer; text-align: left;
     }
-    button:hover, a.btn:hover { filter: brightness(1.08); }
-    button:active, a.btn:active { filter: brightness(0.96); }
+    .hl {
+      font-family: var(--mono); font-size: 0.72rem; white-space: pre-wrap; word-break: break-word;
+      line-height: 1.4; max-height: 88px; overflow: auto; user-select: text;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.55rem;
+    }
+    mark { background: rgba(201,162,39,.35); color: inherit; border-radius: 2px; padding: 0 1px; }
+    mark.block { background: rgba(196,92,92,.45); }
+    mark.mask { background: rgba(139,108,201,.35); color: #e4d7ff; }
+    .pair { display: grid; grid-template-columns: 1fr; gap: 0.4rem; flex: 1; min-height: 0; overflow: auto; }
+    .pair label { font-size: 0.62rem; color: var(--muted); font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 0.2rem; display: block; }
+    .status-msg { color: var(--muted); font-size: 0.72rem; min-height: 1em; }
+    .status-msg.err { color: #f0a0a0; }
+    #overrideBox {
+      display: none; padding: 0.55rem 0.6rem; border-radius: 8px;
+      border: 1px solid rgba(196,92,92,.45); background: rgba(196,92,92,.1); gap: 0.4rem;
+      flex-direction: column;
+    }
+    #overrideBox.visible { display: flex; }
+    #overrideBox p { margin: 0; font-size: 0.72rem; line-height: 1.35; }
+    #overrideBox label.check {
+      display: flex; gap: 0.4rem; align-items: flex-start; font-size: 0.72rem; cursor: pointer; color: var(--text);
+    }
   </style>
 </head>
 <body>
-  <main>
+  <section class="screen active" id="screen-status">
     <header>
       <div class="brand">
         <strong>LakanVault</strong>
@@ -196,40 +140,174 @@
       </div>
       <span id="protection-pill" class="pill">On</span>
     </header>
-
     <div class="line">
       <span id="protection-label">Protection active</span>
       <span class="hint" id="protection-hint">metadata only</span>
     </div>
-
     <div class="metrics">
       <div class="metric block"><div class="n" id="n-block">0</div><div class="l">BLOCKED</div></div>
       <div class="metric warn"><div class="n" id="n-warn">0</div><div class="l">WARNED</div></div>
       <div class="metric mask"><div class="n" id="n-mask">0</div><div class="l">MASKED</div></div>
     </div>
-
     <div class="activity-wrap">
-      <p class="section-label">Recent activity</p>
+      <p class="section-label">Recent activity · tap to review</p>
       <ul id="activity"><li class="empty">No protect events yet.</li></ul>
     </div>
-
     <div class="actions">
-      <a class="btn primary" href="/review" target="_blank" rel="noopener">Prompt Review</a>
+      <button type="button" class="primary" id="btn-open-review">Prompt Review</button>
       <button type="button" id="btn-pause">Pause</button>
     </div>
-  </main>
+  </section>
+
+  <section class="screen" id="screen-review">
+    <header>
+      <div class="brand">
+        <button type="button" class="back" id="btn-back">← Status</button>
+        <strong>Prompt Review</strong>
+      </div>
+      <span class="pill" id="review-verdict">—</span>
+    </header>
+    <div class="pair">
+      <div>
+        <label>Original</label>
+        <div class="hl" id="originalHl">(none)</div>
+      </div>
+      <div>
+        <label>Filtered</label>
+        <div class="hl" id="sanitized">(none)</div>
+      </div>
+    </div>
+    <p class="status-msg" id="review-status"></p>
+    <div id="overrideBox">
+      <p id="overrideWarn">This will send unmasked content outside your device. This cannot be undone.</p>
+      <label class="check">
+        <input type="checkbox" id="overrideAck" />
+        <span>I understand this exposes real credentials or PII.</span>
+      </label>
+      <div class="actions">
+        <button type="button" class="danger" id="btn-confirm-override" disabled>Confirm Unmasked</button>
+        <button type="button" id="btn-cancel-override">Cancel</button>
+      </div>
+    </div>
+    <div class="actions triple" id="review-actions">
+      <button type="button" class="primary" id="btn-send" disabled>Send Filtered</button>
+      <button type="button" class="linkish" id="btn-override" disabled>Override</button>
+      <button type="button" id="btn-back-2">Back</button>
+    </div>
+  </section>
+
   <script>
     const el = (id) => document.getElementById(id);
     let paused = false;
+    let reviewState = {
+      sessionId: "", sanitized: "", original: "", action: "allow",
+      allowSend: false, findings: [],
+    };
+
+    function showScreen(name) {
+      document.querySelectorAll(".screen").forEach((n) => n.classList.remove("active"));
+      el("screen-" + name).classList.add("active");
+    }
 
     function fmtTime(ts) {
       try {
         return new Date(ts * 1000).toLocaleTimeString([], {
           hour: "2-digit", minute: "2-digit", second: "2-digit"
         });
-      } catch {
-        return "";
+      } catch { return ""; }
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function highlight(text, findings) {
+      const spans = (findings || [])
+        .map((f) => ({ start: f.start, end: f.end, action: f.action || "" }))
+        .filter((f) => f.end > f.start)
+        .sort((a, b) => a.start - b.start);
+      let out = "", cursor = 0;
+      for (const span of spans) {
+        if (span.start < cursor) continue;
+        out += escapeHtml(text.slice(cursor, span.start));
+        const cls = span.action === "block" ? "block" : "mask";
+        out += `<mark class="${cls}">` + escapeHtml(text.slice(span.start, span.end)) + "</mark>";
+        cursor = span.end;
       }
+      return out + escapeHtml(text.slice(cursor));
+    }
+
+    function setReviewStatus(msg, isErr) {
+      const node = el("review-status");
+      node.textContent = msg || "";
+      node.className = "status-msg" + (isErr ? " err" : "");
+    }
+
+    function hideOverride() {
+      el("overrideBox").classList.remove("visible");
+      el("overrideAck").checked = false;
+      el("btn-confirm-override").disabled = true;
+      el("review-actions").style.display = "grid";
+    }
+
+    function applyReview(data) {
+      const original = data.original || "";
+      reviewState = {
+        sessionId: data.session_id || "",
+        sanitized: data.sanitized || "",
+        original,
+        action: data.final_action || "allow",
+        allowSend: !!data.allow_send,
+        findings: data.findings || [],
+      };
+      const v = el("review-verdict");
+      v.textContent = reviewState.action;
+      v.className = "pill " + reviewState.action;
+      el("originalHl").innerHTML = original
+        ? highlight(original, reviewState.findings)
+        : "(none)";
+      el("sanitized").textContent = reviewState.sanitized || "(empty — blocked)";
+      el("btn-send").disabled = !reviewState.allowSend;
+      el("btn-override").disabled = !reviewState.sessionId;
+      hideOverride();
+      setReviewStatus(
+        reviewState.allowSend
+          ? "Ready to send filtered (local LLM)."
+          : "Blocked — Override sends unmasked once (local LLM only)."
+      );
+      showScreen("review");
+    }
+
+    async function openEvent(eventId) {
+      if (!eventId) return;
+      setReviewStatus("Loading…");
+      showScreen("review");
+      try {
+        const resp = await fetch("/api/protect/event/" + encodeURIComponent(eventId));
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || resp.statusText);
+        applyReview(data);
+      } catch (err) {
+        setReviewStatus(String(err.message || err), true);
+      }
+    }
+
+    function openEmptyReview() {
+      reviewState = {
+        sessionId: "", sanitized: "", original: "", action: "allow",
+        allowSend: false, findings: [],
+      };
+      el("review-verdict").textContent = "—";
+      el("review-verdict").className = "pill";
+      el("originalHl").textContent = "Pick an activity row, or use toast View after a protect hit.";
+      el("sanitized").textContent = "(none)";
+      el("btn-send").disabled = true;
+      el("btn-override").disabled = true;
+      hideOverride();
+      setReviewStatus("No event loaded.");
+      showScreen("review");
     }
 
     function render(stats) {
@@ -252,12 +330,16 @@
       }
       list.innerHTML = activity.map((e) => {
         const types = (e.entity_types || []).slice(0, 4).join(", ") || "—";
-        return `<li>
+        const id = Number(e.id) || 0;
+        return `<li class="row" data-event="${id}" title="Review in tray">
           <span class="act ${e.action}">${e.action}</span>
           <span class="types" title="${types}">${types}</span>
           <span class="meta">${e.source}<br/>${fmtTime(e.ts)}</span>
         </li>`;
       }).join("");
+      list.querySelectorAll("li.row").forEach((node) => {
+        node.addEventListener("click", () => openEvent(node.getAttribute("data-event")));
+      });
     }
 
     async function refresh() {
@@ -268,6 +350,39 @@
       } catch (_) {}
     }
 
+    async function sendPayload(override) {
+      if (!reviewState.sessionId) return;
+      setReviewStatus(override ? "Sending unmasked…" : "Sending filtered…");
+      try {
+        const body = {
+          session_id: reviewState.sessionId,
+          sanitized: reviewState.sanitized,
+          override: !!override,
+          base_url: "http://127.0.0.1:1234",
+        };
+        const resp = await fetch("/api/review/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(typeof data.detail === "string" ? data.detail : resp.statusText);
+        if (data.blocked) {
+          setReviewStatus(data.block_reason || "Blocked", true);
+          return;
+        }
+        if (data.error) {
+          setReviewStatus(data.error, true);
+          return;
+        }
+        hideOverride();
+        const tag = data.override_used ? "override" : "filtered";
+        setReviewStatus("Sent (" + tag + ") · " + (data.model_used || "model"));
+      } catch (err) {
+        setReviewStatus(String(err.message || err), true);
+      }
+    }
+
     el("btn-pause").addEventListener("click", async () => {
       try {
         const resp = await fetch("/api/protect/pause", {
@@ -275,12 +390,32 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ paused: !paused }),
         });
-        if (resp.ok) {
-          const stats = await (await fetch("/api/protect/stats")).json();
-          render(stats);
-        }
+        if (resp.ok) render(await (await fetch("/api/protect/stats")).json());
       } catch (_) {}
     });
+    el("btn-open-review").addEventListener("click", openEmptyReview);
+    el("btn-back").addEventListener("click", () => showScreen("status"));
+    el("btn-back-2").addEventListener("click", () => showScreen("status"));
+    el("btn-send").addEventListener("click", () => sendPayload(false));
+    el("btn-override").addEventListener("click", () => {
+      const types = [...new Set((reviewState.findings || []).map((f) => f.entity_type).filter(Boolean))]
+        .slice(0, 4).join(", ") || "sensitive content";
+      el("overrideWarn").textContent =
+        "This will send unmasked content (" + types + ") outside your device. This cannot be undone.";
+      el("overrideBox").classList.add("visible");
+      el("review-actions").style.display = "none";
+    });
+    el("overrideAck").addEventListener("change", () => {
+      el("btn-confirm-override").disabled = !el("overrideAck").checked;
+    });
+    el("btn-confirm-override").addEventListener("click", () => sendPayload(true));
+    el("btn-cancel-override").addEventListener("click", hideOverride);
+
+    const params = new URLSearchParams(location.search);
+    const eventParam = params.get("event");
+    const panel = params.get("panel");
+    if (eventParam) openEvent(eventParam);
+    else if (panel === "review") openEmptyReview();
 
     refresh();
     setInterval(refresh, 2000);

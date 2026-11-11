@@ -116,17 +116,22 @@ class ProtectResponse(BaseModel):
     finding_count: int = 0
     final_action: str = "allow"  # Joan whole-prompt verdict
     allow_send: bool = True
+    event_id: int | None = None  # tray/Status View link (when warn/mask/block)
 
     model_config = {"extra": "forbid"}
 
 
 class ReviewSendRequest(BaseModel):
-    """Send an already-reviewed (sanitized) prompt via the local LLM."""
+    """Send an already-reviewed prompt via the local LLM."""
 
     session_id: str = Field(min_length=1, max_length=64)
     sanitized: str = Field(min_length=0, max_length=100_000)
     model: str | None = None
     base_url: str | None = None
+    override: bool = Field(
+        default=False,
+        description="If true, send original unmasked text once (Prompt Review only).",
+    )
 
     model_config = {"extra": "forbid"}
 
@@ -143,6 +148,7 @@ class ReviewSendResponse(BaseModel):
     error: str | None = None
     blocked: bool = False
     block_reason: str = ""
+    override_used: bool = False
 
     model_config = {"extra": "forbid"}
 

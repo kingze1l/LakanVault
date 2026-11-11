@@ -26,6 +26,7 @@ from lakanvault.contracts.mcp import ProtectRequest, ProtectResponse, ReviewSend
 from lakanvault.orchestration.gateway import Gateway
 from lakanvault.orchestration.protect_events import get_protect_ring
 from lakanvault.orchestration.proxy_gateway import ProxyGateway
+from lakanvault.orchestration.review_sessions import get_review_sessions
 from lakanvault.infrastructure.token_vault import InMemoryTokenVault
 from lakanvault.infrastructure.upstream.openai import OpenAIUpstream
 from lakanvault.shared.config import clear_local_config_keys, load_config, save_local_config
@@ -217,6 +218,14 @@ def review_page() -> FileResponse:
     return FileResponse(path, media_type="text/html")
 
 
+@app.get("/toast")
+def toast_page() -> FileResponse:
+    path = STATIC_DIR / "toast.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="toast.html not found")
+    return FileResponse(path, media_type="text/html")
+
+
 @app.get("/api/protect/recent")
 def api_protect_recent(
     since_id: int = Query(0, ge=0),
@@ -229,6 +238,16 @@ def api_protect_recent(
 @app.get("/api/protect/stats")
 def api_protect_stats() -> dict:
     return get_protect_ring().stats()
+
+
+@app.get("/api/protect/event/{event_id}")
+def api_protect_event(request: Request, event_id: int) -> dict:
+    """Full review session for View → Prompt Review. Loopback only; includes original text."""
+    _require_loopback(request)
+    sess = get_review_sessions().get_by_event(event_id)
+    if sess is None:
+        raise HTTPException(status_code=404, detail="event expired or unknown")
+    return get_review_sessions().to_public_dict(sess)
 
 
 @app.post("/api/protect/pause")
@@ -249,7 +268,7 @@ def api_review(request: Request, body: ProtectRequest) -> ProtectResponse:
 
 @app.post("/api/review/send", response_model=ReviewSendResponse)
 def api_review_send(request: Request, body: ReviewSendRequest) -> ReviewSendResponse:
-    """Send sanitized text from a prior /api/review session. Loopback only."""
+    """Send sanitized (or override original) text from a prior /api/review session. Loopback only."""
     _require_loopback(request)
     if body.base_url:
         try:
@@ -262,6 +281,7 @@ def api_review_send(request: Request, body: ReviewSendRequest) -> ReviewSendResp
             body.sanitized,
             model=body.model,
             base_url=body.base_url,
+            override=body.override,
         )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

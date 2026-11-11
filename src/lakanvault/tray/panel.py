@@ -10,7 +10,9 @@ from typing import Callable
 logger = logging.getLogger(__name__)
 
 FLYOUT_WIDTH = 380
-FLYOUT_HEIGHT = 520
+FLYOUT_HEIGHT = 580
+TOAST_WIDTH = 360
+TOAST_HEIGHT = 118
 # Tray left-click steals focus briefly; ignore blur until the flyout settles.
 _SHOW_GRACE_S = 1.5
 _BLUR_HIDE_DELAY_S = 0.5
@@ -82,6 +84,9 @@ class FlyoutHost:
         self._allow_destroy = False
         self._open_fn: Callable[[str], None] | None = None
         self._ignore_blur_until = 0.0
+        self._toast_window = None
+        self._toast_visible = False
+        self._base_url = "http://127.0.0.1:8080"
 
     @property
     def visible(self) -> bool:
@@ -105,6 +110,11 @@ class FlyoutHost:
             if self._failed:
                 return False
             self._url = url
+            if url.startswith("http://") or url.startswith("https://"):
+                # status URL → origin for toast/review
+                parts = url.split("/", 3)
+                if len(parts) >= 3:
+                    self._base_url = parts[0] + "//" + parts[2]
         try:
             import webview
         except Exception as exc:
@@ -140,10 +150,47 @@ class FlyoutHost:
             # Blur-dismiss is unreliable with tray focus steal on Windows; left-click toggles.
             window.expose(dismiss_flyout)
 
+            toast_x, toast_y = flyout_anchor(TOAST_WIDTH, TOAST_HEIGHT)
+            toast = webview.create_window(
+                "LakanVault Alert",
+                f"{self._base_url}/toast",
+                width=TOAST_WIDTH,
+                height=TOAST_HEIGHT,
+                x=toast_x,
+                y=toast_y,
+                resizable=False,
+                frameless=True,
+                on_top=True,
+                focus=False,
+                easy_drag=False,
+                hidden=True,
+                background_color="#12171e",
+            )
+            if toast is not None:
+                def toast_dismiss() -> None:
+                    self.hide_toast()
+
+                def toast_view(event_id: str = "") -> None:
+                    # Stay inside the small Status flyout (not a separate Review window).
+                    self.hide_toast()
+                    eid = str(event_id or "").strip()
+                    url = f"{self._base_url}/status"
+                    if eid:
+                        url = f"{url}?event={eid}"
+                    else:
+                        url = f"{url}?panel=review"
+                    self.show(url, open_fn=self._open_fn)
+
+                toast.events.closing += self._on_toast_closing
+                toast.expose(toast_dismiss)
+                toast.expose(toast_view)
+
             with self._lock:
                 self._window = window
+                self._toast_window = toast
                 self._prepared = True
                 self._visible = False
+                self._toast_visible = False
                 self._ready.set()
             return True
         except Exception as exc:
@@ -189,6 +236,53 @@ class FlyoutHost:
             self._cancel_hide_timer()
             self._hide_unlocked()
 
+    def show_toast(
+        self,
+        *,
+        event_id: int | str,
+        action: str,
+        source: str = "protect",
+        entity_types: list[str] | tuple[str, ...] | None = None,
+        open_fn: Callable[[str], None] | None = None,
+    ) -> None:
+        """Show Fig 17–19 style toast; falls back to browser/OS notify caller on failure."""
+        if open_fn is not None:
+            self._open_fn = open_fn
+        act = (action or "warn").lower()
+        types = ",".join(list(entity_types or [])[:4])
+        from urllib.parse import quote
+
+        url = (
+            f"{self._base_url}/toast?event={quote(str(event_id))}"
+            f"&action={quote(act)}&source={quote(source or 'protect')}"
+            f"&types={quote(types)}"
+        )
+        with self._lock:
+            if self._failed or not self._prepared or self._toast_window is None:
+                return
+            win = self._toast_window
+        try:
+            win.load_url(url)
+            x, y = flyout_anchor(TOAST_WIDTH, TOAST_HEIGHT)
+            # Stack above Status corner with a small gap.
+            win.move(x, max(0, y - TOAST_HEIGHT - 8))
+            win.show()
+            with self._lock:
+                self._toast_visible = True
+        except Exception as exc:
+            logger.debug("toast show failed: %s", exc)
+
+    def hide_toast(self) -> None:
+        with self._lock:
+            win = self._toast_window
+            self._toast_visible = False
+        if win is None:
+            return
+        try:
+            win.hide()
+        except Exception as exc:  # pragma: no cover
+            logger.debug("toast hide: %s", exc)
+
     def dismiss_from_blur(self) -> None:
         """JS blur → delayed hide (ignored during post-show grace / tray focus steal)."""
         with self._lock:
@@ -208,10 +302,14 @@ class FlyoutHost:
             self._allow_destroy = True
             self._cancel_hide_timer()
             win = self._window
+            toast = self._toast_window
             self._visible = False
-        if win is not None:
+            self._toast_visible = False
+        for w in (toast, win):
+            if w is None:
+                continue
             try:
-                win.destroy()
+                w.destroy()
             except Exception as exc:  # pragma: no cover
                 logger.debug("flyout destroy: %s", exc)
 
@@ -286,6 +384,19 @@ class FlyoutHost:
                 return True
             self._visible = False
             win = self._window
+        if win is not None:
+            try:
+                win.hide()
+            except Exception:
+                pass
+        return False
+
+    def _on_toast_closing(self) -> bool:
+        with self._lock:
+            if self._allow_destroy:
+                return True
+            self._toast_visible = False
+            win = self._toast_window
         if win is not None:
             try:
                 win.hide()

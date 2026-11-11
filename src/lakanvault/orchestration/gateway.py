@@ -257,13 +257,28 @@ class Gateway:
             )
             for f in protected.findings
         ]
+        from lakanvault.orchestration.review_sessions import get_review_sessions
+
         action_s = final.value if hasattr(final, "value") else str(final)
+        event_id: int | None = None
         if action_s in ("warn", "mask", "block"):
-            record_protect_event(
+            ev = record_protect_event(
                 action_s,
                 source=source,
                 entity_types=[s.entity_type for s in summaries],
             )
+            if ev is not None:
+                event_id = ev.id
+                get_review_sessions().put(
+                    event_id=ev.id,
+                    session_id=sid,
+                    original=req.text,
+                    sanitized=protected.sanitized,
+                    action=action_s,
+                    source=source,
+                    entity_types=[s.entity_type for s in summaries],
+                    findings=[s.model_dump() for s in summaries],
+                )
         return ProtectResponse(
             session_id=sid,
             sanitized=protected.sanitized,
@@ -271,6 +286,7 @@ class Gateway:
             finding_count=len(summaries),
             final_action=action_s,
             allow_send=final != Action.BLOCK,
+            event_id=event_id,
         )
 
     def restore_prompt(self, text: str, session_id: str) -> RestoreResponse:
@@ -292,31 +308,66 @@ class Gateway:
         sanitized: str,
         model: str | None = None,
         base_url: str | None = None,
+        *,
+        override: bool = False,
     ) -> ReviewSendResponse:
-        """Send already-sanitized text to the local LLM; restore with the review session vault."""
+        """Send reviewed text to the local LLM; restore with the review session vault.
+
+        ``override=True`` sends the stored original once (Prompt Review confirm path).
+        Audit/metadata only — raw text is never logged here.
+        """
         from lakanvault.local_core.scan import process_output
+        from lakanvault.orchestration.review_sessions import get_review_sessions
 
         req = ReviewSendRequest(
             session_id=session_id,
             sanitized=sanitized,
             model=model,
             base_url=base_url,
+            override=override,
         )
         vault = self._protect_vaults.get(req.session_id)
-        if vault is None:
-            raise KeyError(f"unknown protect session: {req.session_id}")
-        if not (req.sanitized or "").strip():
-            return ReviewSendResponse(
-                session_id=req.session_id,
-                blocked=True,
-                block_reason="nothing to send (blocked or empty sanitized prompt)",
+        outbound = (req.sanitized or "").strip()
+        used_override = False
+        if req.override:
+            store = get_review_sessions()
+            sess = store.get_by_session(req.session_id)
+            if sess is None or not (sess.original or "").strip():
+                return ReviewSendResponse(
+                    session_id=req.session_id,
+                    blocked=True,
+                    block_reason="override unavailable (session expired or unknown)",
+                )
+            if not store.mark_override_used(req.session_id):
+                return ReviewSendResponse(
+                    session_id=req.session_id,
+                    blocked=True,
+                    block_reason="override already used for this session",
+                )
+            outbound = sess.original
+            used_override = True
+            logger = __import__("logging").getLogger(__name__)
+            logger.warning(
+                "review override send session=%s action=%s entities=%s",
+                req.session_id,
+                sess.action,
+                list(sess.entity_types),
             )
+        else:
+            if vault is None:
+                raise KeyError(f"unknown protect session: {req.session_id}")
+            if not outbound:
+                return ReviewSendResponse(
+                    session_id=req.session_id,
+                    blocked=True,
+                    block_reason="nothing to send (blocked or empty sanitized prompt)",
+                )
         if base_url:
             assert_localhost_url(base_url)
         system_hint = build_chat_system_prompt(None)
         try:
             result = self._local_llm.chat(
-                wrap_user_message(req.sanitized),
+                wrap_user_message(outbound),
                 model=req.model,
                 base_url=req.base_url,
                 system=system_hint,
@@ -327,8 +378,12 @@ class Gateway:
                 error=str(exc),
                 model_used=req.model or self._cfg.get("local_ai", {}).get("model", ""),
                 provider_url=req.base_url or self._local_llm.base_url,
+                override_used=used_override,
             )
-        restored = process_output(result.content, vault)
+        if used_override or vault is None:
+            restored = result.content
+        else:
+            restored = process_output(result.content, vault)
         return ReviewSendResponse(
             session_id=req.session_id,
             raw_response=result.content,
@@ -336,6 +391,7 @@ class Gateway:
             model_used=result.model_used,
             provider_url=result.provider_url,
             latency_ms=result.latency_ms,
+            override_used=used_override,
         )
 
     def local_llm_status(self, base_url: str | None = None) -> dict:

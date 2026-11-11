@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LakanVault Alert</title>
+  <style>
+    :root {
+      --bg: #12171e;
+      --text: #e7ecf1;
+      --muted: #9aa7b5;
+      --warn: #c9a227;
+      --block: #c45c5c;
+      --mask: #c9a227;
+      --btn: #5b4a9e;
+      --btn-dim: #2a3340;
+      --sans: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+    .card {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 6px 1fr;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 28px rgba(0,0,0,.45);
+    }
+    .accent { background: var(--warn); }
+    .card.block .accent { background: var(--block); }
+    .card.mask .accent, .card.warn .accent { background: var(--warn); }
+    .body {
+      padding: 0.7rem 0.75rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      min-width: 0;
+    }
+    h1 {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .meta { color: var(--muted); font-size: 0.72rem; }
+    .actions { display: flex; gap: 0.4rem; margin-top: auto; }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 7px;
+      padding: 0.4rem 0.75rem;
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    #btn-view { background: var(--btn); color: #fff; }
+    #btn-dismiss { background: var(--btn-dim); color: var(--text); }
+    button:hover { filter: brightness(1.08); }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="accent"></div>
+    <div class="body">
+      <h1 id="title">Protect alert</h1>
+      <div class="meta" id="meta">—</div>
+      <div class="actions">
+        <button type="button" id="btn-view">View</button>
+        <button type="button" id="btn-dismiss">Dismiss</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const action = (params.get("action") || "warn").toLowerCase();
+    const source = params.get("source") || "protect";
+    const eventId = params.get("event") || "";
+    const types = params.get("types") || "";
+
+    const titles = {
+      block: "Credential blocked",
+      mask: "PII value masked",
+      warn: "Low-sensitivity data detected",
+    };
+    document.getElementById("card").classList.add(action);
+    document.getElementById("title").textContent = titles[action] || "Protect alert";
+    document.getElementById("meta").textContent =
+      source + " · just now" + (types ? " · " + types : "");
+
+    function api(name) {
+      try {
+        if (window.pywebview && window.pywebview.api && window.pywebview.api[name]) {
+          return window.pywebview.api[name]();
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    document.getElementById("btn-view").onclick = () => {
+      try {
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.toast_view) {
+          window.pywebview.api.toast_view(eventId);
+          return;
+        }
+      } catch (_) {}
+      if (eventId) location.href = "/review?event=" + encodeURIComponent(eventId);
+    };
+    document.getElementById("btn-dismiss").onclick = () => {
+      api("toast_dismiss");
+    };
+  </script>
+</body>
+</html>

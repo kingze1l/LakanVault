@@ -6,7 +6,7 @@ import threading
 from typing import Callable
 
 from lakanvault.tray.icons import make_status_icon
-from lakanvault.tray.panel import get_flyout_host, open_panel, toggle_status_flyout
+from lakanvault.tray.panel import get_flyout_host, toggle_status_flyout
 from lakanvault.tray.state import TrayController
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ def run_tray_loop(
     *,
     on_quit: Callable[[], None] | None = None,
 ) -> None:
-    """Run tray + Teams-style Status flyout.
+    """Run tray + Teams-style Status flyout + protect toasts.
 
     pywebview must own the **main** thread on Windows. pystray runs on a
     background thread when the flyout GUI is available; otherwise the tray
@@ -36,9 +36,9 @@ def run_tray_loop(
         toggle_status_flyout(controller.dashboard_url, open_fn=_browser_open)
 
     def open_review(icon: pystray.Icon, item: object) -> None:
-        open_panel(
-            controller.review_url,
-            title="LakanVault Prompt Review",
+        # Review lives inside the Status flyout (compact tray UI).
+        host.show(
+            f"{controller.dashboard_url}?panel=review",
             open_fn=_browser_open,
         )
 
@@ -72,13 +72,29 @@ def run_tray_loop(
         except Exception as exc:  # pragma: no cover
             logger.debug("icon refresh failed: %s", exc)
 
+    def _show_custom_toasts(events: list[dict]) -> None:
+        # Show latest event toast (single slot).
+        ev = events[-1]
+        try:
+            host.show_toast(
+                event_id=ev.get("id", ""),
+                action=str(ev.get("action") or "warn"),
+                source=str(ev.get("source") or "protect"),
+                entity_types=list(ev.get("entity_types") or []),
+                open_fn=_browser_open,
+            )
+        except Exception as exc:  # pragma: no cover
+            logger.debug("custom toast failed: %s", exc)
+
     def _poll_loop() -> None:
         controller.poll_protect_events()
         while not stop.wait(_POLL_SECONDS):
             events = controller.poll_protect_events()
             if events:
                 notified = controller.notify_for_events(events, _notify)
-                # Teams-like: surface Status when something is blocked.
+                if notified:
+                    _show_custom_toasts(notified)
+                # Prefer toast; still surface Status on block for counts.
                 if any(str(e.get("action") or "").lower() == "block" for e in notified):
                     try:
                         host.show(controller.dashboard_url, open_fn=_browser_open)
@@ -105,7 +121,6 @@ def run_tray_loop(
     flyout_ok = host.prepare(controller.dashboard_url)
     try:
         if flyout_ok:
-            # Tray off main thread; webview.pump() blocks here (required on Windows).
             tray_thread = threading.Thread(
                 target=icon.run,
                 name="lv-pystray",
