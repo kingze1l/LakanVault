@@ -49,3 +49,19 @@ lakanvault-daemon.log
 
 # sample, local core for regex and presidio testing
 samples.py
+
+# unsloth
+unsloth_compiled_cache
+
+# every part of llm
+checkpoints
+lakan-model
+lakan-model_gguf
+lakan-model-lora
+
+# evaluations
+lakan_vault_combined_results.csv
+lakan_vault_pii_results.csv
+pii_benchmark.csv
+pii_benchmark_negative.csv
+training_data.jsonl

@@ -10,3 +10,9 @@ pandas
 pyarrow
 fsspec
 huggingface_hub
+
+#llm training, not needed if training is not donce
+# unsloth
+# torch
+# torchvision
+# --index-url https://download.pytorch.org/whl/cu128

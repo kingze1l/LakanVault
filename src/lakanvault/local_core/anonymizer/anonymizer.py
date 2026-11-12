@@ -10,6 +10,10 @@ from .helper import KEY_PATH, load_key, make_rng
 from .secret_fakes import create_fake_secret
 from .pii_fakes import PII_GENERATORS, create_fake_pii
 
+# logging just for NFR
+import logging 
+logger = logging.getLogger(__name__)
+
 def _is_pii(entity_type, tier):
     return entity_type in PII_GENERATORS or (tier is not None and tier != 'SECRET')
 
@@ -40,8 +44,7 @@ class Vault:
         is_secret = int(not _is_pii(et, tier))
         for attempt in range(20):
             fake = create_fake(real, entity_type, tier, self.key, attempt)
-            row = self.db.execute('SELECT real FROM mapping WHERE workspace=? AND fake=?',
-                                  (self.workspace, fake)).fetchone()
+            row = self.db.execute('SELECT real FROM mapping WHERE workspace=? AND fake=?', (self.workspace, fake)).fetchone()
             if row and row[0] == real:
                 return fake
             if fake != real and not row:
@@ -74,8 +77,7 @@ class Vault:
 
     # run after the external LLM returns its response
     def restore(self, text):
-        rows = self.db.execute('SELECT fake, real, is_secret FROM mapping WHERE workspace=?',
-                               (self.workspace,)).fetchall()
+        rows = self.db.execute('SELECT fake, real, is_secret FROM mapping WHERE workspace=?', (self.workspace,)).fetchall()
         if not rows:
             return text
         m = {fake: real for fake, real, _ in rows}
@@ -86,7 +88,10 @@ class Vault:
             return p if fake in secret else rf'(?<!\w){p}(?!\w)'   # mirrors sanitize()
 
         pat = re.compile('|'.join(alt(f) for f in sorted(m, key=len, reverse=True)))
-        return pat.sub(lambda x: m[x.group()], text)
+        out, n = pat.subn(lambda x: m[x.group()], text)
+        if n == 0:
+            logger.warning('restore: no fake found in LLM response (potential failure or no sensitive data)')
+        return out
 
 if __name__ == '__main__':
     from .samples import SAMPLES_SECRET  # optional local smoke samples
