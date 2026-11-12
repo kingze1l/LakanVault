@@ -268,13 +268,10 @@ python -m pytest tests/ -q            # must pass
 
 
 
-## Cursor usage
+## Scope reference (for humans)
 
-Rules in `.cursor/rules/` load automatically. When starting work, say:
-
-> Follow `lakanvault-v2-scope` and `incremental-implementation`. Implement Sprint 1 Ticket X only.
-
-Add `code-review-and-quality` before merge. Add security rule when touching DLP/clipboard (copy from agent-skills when needed).
+Product scope and out-of-scope lines live in this plan and [`docs/architecture/`](../architecture/).  
+Do **not** commit Cursor agent rule files under `.cursor/rules/` — demos/submissions should only ship product hooks (`.cursor/hooks*`).
 
 ---
 
