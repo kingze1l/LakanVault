@@ -16,7 +16,7 @@ client = OpenAI(
 
 # available models (model.id) : google/gemma-4-e4b and qwen/qwen3.5-9b or gemma-4-e4b-it@q8_0 (this is fine tuned local model)
 # config line below
-MODEL = 'gemma-4-e4b-it@q8_0'
+MODEL = 'google/gemma-4-e4b'
 MAX_TOKENS =  500
 CONF = {'low': 0.4, 'medium': 0.6, 'high': 0.9}
 DEBUG = __name__ == '__main__'
@@ -88,7 +88,7 @@ def ask_llm(text: str) -> list[Finding] | None:
         response = client.chat.completions.create(
     model = MODEL,
     messages = [
-        { 'role': 'system', 'content': SYSTEM_PROMPT_TUNED},
+        { 'role': 'system', 'content': SYSTEM_PROMPT},
         { 'role' : 'user','content': ('classify this text: \n'f'<text>\n{text}\n</text>')},
         ], temperature = 0, max_tokens=500, reasoning_effort='none',
         response_format={

@@ -61,7 +61,9 @@ class PresidioDetector(DetectionEngine):
             supported = set(analyzer.get_supported_entities("en"))
             self._entities = [e for e in PII_ENTITY_TIER if e in supported]
             for missing in sorted(set(PII_ENTITY_TIER) - supported):
-                logger.warning("Presidio has no recognizer for %s; skipping it", missing)
+                # commenting it out cause it is loud
+                # logger.warning("Presidio has no recognizer for %s; skipping it", missing)
+                pass
             self._analyzer = analyzer
         return self._analyzer
 

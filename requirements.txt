@@ -5,13 +5,13 @@ Faker
 # llm
 openai
 
-# evaluation benchmark
-pandas
-pyarrow
-fsspec
-huggingface_hub
+# only install for evaluation benchmark
+# pandas
+# pyarrow
+# fsspec
+# huggingface_hub
 
-#llm training, not needed if training is not donce
+# only install for llm training
 # unsloth
 # torch
 # torchvision
