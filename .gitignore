@@ -44,6 +44,11 @@ build/
 lakanvault-daemon.log
 **/lakanvault-daemon.log
 
+# ── Local leftovers (not product) ──
+/public/
+/site/
+src/lakanvault/local_core/evaluation/combined_report.txt
+
 # sample, local core for regex and presidio testing
 samples.py
 
