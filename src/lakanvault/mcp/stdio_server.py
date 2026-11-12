@@ -13,19 +13,7 @@ from pathlib import Path
 from mcp.server import MCPServer
 
 from lakanvault.mcp.server import audit_recent, classify, protect, restore, shared_gateway
-
-
-# figure out where config/ lives
-def resolve_config_dir(explicit: str | Path | None = None) -> Path:
-    if explicit is not None:
-        return Path(explicit)
-    cwd = Path.cwd() / "config"
-    if (cwd / "default.yaml").is_file():
-        return cwd
-    here = Path(__file__).resolve().parents[3] / "config"
-    if (here / "default.yaml").is_file():
-        return here
-    return Path("config")
+from lakanvault.shared.config import resolve_config_dir
 
 
 # build the mcp server with our tools wired up

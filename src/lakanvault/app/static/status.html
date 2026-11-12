@@ -150,6 +150,31 @@
     .empty { color: var(--dim); padding: 0.75rem 0.65rem; font-size: 0.76rem; }
     .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
     .actions.triple { grid-template-columns: 1fr 1fr 1fr; }
+    .gate-row {
+      display: flex; flex-direction: column; gap: 0.28rem;
+      padding: 0.35rem 0 0.15rem;
+      border-top: 1px solid var(--line);
+    }
+    .gate-row .gate-label {
+      font-family: var(--mono);
+      font-size: 0.58rem; color: var(--dim); font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .gate-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.3rem; }
+    .gate-btns button.active {
+      background: var(--green-soft);
+      border-color: rgba(90,158,111,.5);
+      color: #b7e6d2;
+    }
+    .gate-btns button.active.off-mode {
+      background: rgba(196,160,53,.14);
+      border-color: rgba(196,160,53,.4);
+      color: #e6c96a;
+    }
+    .gate-hint {
+      font-size: 0.62rem; color: var(--dim); line-height: 1.35;
+      margin: 0;
+    }
     button {
       appearance: none;
       border: 1px solid var(--line-2);
@@ -247,8 +272,18 @@
       <p class="section-label">activity · select to review</p>
       <ul id="activity"><li class="empty">No protect events yet.</li></ul>
     </div>
+    <div class="gate-row">
+      <div class="gate-label">Cursor chat gate</div>
+      <div class="gate-btns">
+        <button type="button" id="btn-mode-off" data-mode="off" title="Never gate — chat always works">Off</button>
+        <button type="button" id="btn-mode-tag" data-mode="tag" title="Only gate prompts with [[lv]]">Tag</button>
+        <button type="button" id="btn-mode-on" data-mode="on" title="Gate every prompt in this workspace">On</button>
+      </div>
+      <p class="gate-hint" id="gate-hint">Off = chat free. Tag = [[lv]] only. MCP refresh is manual in Cursor if tools missing.</p>
+    </div>
     <div class="actions">
       <button type="button" class="primary" id="btn-open-review">Review</button>
+      <button type="button" id="btn-open-dashboard" title="Open full dashboard in browser">Dashboard</button>
       <button type="button" id="btn-pause">Pause</button>
     </div>
   </section>
@@ -296,6 +331,7 @@
   <script>
     const el = (id) => document.getElementById(id);
     let paused = false;
+    let hooksMode = "tag";
     let reviewState = {
       sessionId: "", sanitized: "", original: "", action: "allow",
       allowSend: false, findings: [],
@@ -424,6 +460,53 @@
       showScreen("review");
     }
 
+    function renderGate() {
+      ["off", "tag", "on"].forEach((m) => {
+        const btn = el("btn-mode-" + m);
+        if (!btn) return;
+        const on = hooksMode === m;
+        btn.classList.toggle("active", on);
+        btn.classList.toggle("off-mode", on && m === "off");
+      });
+      const hints = {
+        off: "Chat gate Off — Cursor chat stays normal. Flip Tag/On when you want blocking.",
+        tag: "Tag mode — only prompts with [[lv]] are gated. Normal chat works.",
+        on: "Full On — every prompt in this workspace is gated. Use Off if chat gets stuck.",
+      };
+      el("gate-hint").textContent = hints[hooksMode] || hints.tag;
+    }
+
+    async function refreshGate() {
+      try {
+        const resp = await fetch("/api/hooks/mode");
+        if (!resp.ok) return;
+        const data = await resp.json();
+        hooksMode = (data.mode || "tag").toLowerCase();
+        renderGate();
+      } catch (_) {}
+    }
+
+    async function setGate(mode) {
+      try {
+        const resp = await fetch("/api/hooks/mode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+          el("gate-hint").textContent = String(data.detail || "could not set mode");
+          return;
+        }
+        hooksMode = (data.mode || mode).toLowerCase();
+        renderGate();
+        el("gate-hint").textContent =
+          (data.hint || "") + " Next chat send picks this up — no Cursor restart needed for hooks.";
+      } catch (err) {
+        el("gate-hint").textContent = String(err.message || err);
+      }
+    }
+
     function render(stats) {
       paused = !!stats.paused;
       el("n-block").textContent = String(stats.blocked ?? 0);
@@ -492,8 +575,14 @@
           return;
         }
         hideOverride();
-        const tag = data.override_used ? "override" : "filtered";
-        setReviewStatus("Sent (" + tag + ") · " + (data.model_used || "model"));
+        if (data.override_used) {
+          setReviewStatus(
+            (data.raw_response || "Override accepted.") +
+              " Copy Original above and paste it into Cursor (exact paste once)."
+          );
+          return;
+        }
+        setReviewStatus("Sent (filtered) · " + (data.model_used || "model"));
       } catch (err) {
         setReviewStatus(String(err.message || err), true);
       }
@@ -501,6 +590,9 @@
 
     el("btn-minimize").addEventListener("click", minimizeFlyout);
     el("btn-minimize-review").addEventListener("click", minimizeFlyout);
+    ["off", "tag", "on"].forEach((m) => {
+      el("btn-mode-" + m).addEventListener("click", () => setGate(m));
+    });
     el("btn-pause").addEventListener("click", async () => {
       try {
         const resp = await fetch("/api/protect/pause", {
@@ -512,6 +604,16 @@
       } catch (_) {}
     });
     el("btn-open-review").addEventListener("click", openEmptyReview);
+    el("btn-open-dashboard").addEventListener("click", () => {
+      const url = location.origin + "/dashboard";
+      try {
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.open_external) {
+          window.pywebview.api.open_external(url);
+          return;
+        }
+      } catch (_) {}
+      window.open(url, "_blank");
+    });
     el("btn-back").addEventListener("click", () => showScreen("status"));
     el("btn-back-2").addEventListener("click", () => showScreen("status"));
     el("btn-send").addEventListener("click", () => sendPayload(false));
@@ -519,7 +621,9 @@
       const types = [...new Set((reviewState.findings || []).map((f) => f.entity_type).filter(Boolean))]
         .slice(0, 4).join(", ") || "sensitive content";
       el("overrideWarn").textContent =
-        "This will send unmasked content (" + types + ") outside your device. This cannot be undone.";
+        "This allows the Original (" +
+        types +
+        ") through Cursor once when you paste it — no local LLM. This cannot be undone.";
       el("overrideBox").classList.add("visible");
       el("review-actions").style.display = "none";
     });
@@ -540,7 +644,9 @@
     });
 
     refresh();
+    refreshGate();
     setInterval(refresh, 2000);
+    setInterval(refreshGate, 4000);
   </script>
 </body>
 </html>

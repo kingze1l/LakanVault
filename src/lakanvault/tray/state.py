@@ -47,11 +47,17 @@ class TrayController:
     def status(self) -> TrayStatus:
         return self._status
 
-    # url for the status flyout
+    # url for the compact status flyout
+    @property
+    def status_url(self) -> str:
+        """Compact Status flyout URL (tray default)."""
+        return f"http://{self._host}:{self._port}/status"
+
+    # url for the full Sami dashboard
     @property
     def dashboard_url(self) -> str:
-        """Status panel URL (tray default)."""
-        return f"http://{self._host}:{self._port}/status"
+        """Full browser dashboard."""
+        return f"http://{self._host}:{self._port}/dashboard"
 
     # url for prompt review page
     @property

@@ -248,7 +248,11 @@
       $("btnSend").disabled = !state.allowSend;
       $("btnOverride").disabled = !state.sessionId;
       hideOverride();
-      setStatus(state.allowSend ? "Ready to send filtered." : "Blocked — use Request Override to send unmasked (local LLM only).");
+      setStatus(
+        state.allowSend
+          ? "Ready to send filtered."
+          : "Blocked — use Request Override to allow one paste of the Original into Cursor (no local LLM)."
+      );
     }
 
     function hideOverride() {
@@ -286,8 +290,20 @@
         $("rawReply").textContent = data.raw_response || "";
         $("restoredReply").textContent = data.restored_response || "";
         hideOverride();
-        const tag = data.override_used ? "override" : "filtered";
-        setStatus("Done (" + tag + ") · " + (data.model_used || "model") + " · " + Math.round(data.latency_ms || 0) + " ms");
+        if (data.override_used) {
+          setStatus(
+            (data.raw_response || "Override accepted.") +
+              " Paste Original into Cursor (exact text, once)."
+          );
+          return;
+        }
+        setStatus(
+          "Done (filtered) · " +
+            (data.model_used || "model") +
+            " · " +
+            Math.round(data.latency_ms || 0) +
+            " ms"
+        );
       } catch (err) {
         setStatus(String(err.message || err), true);
       }
@@ -317,7 +333,9 @@
       const types = (state.findings || []).map((f) => f.entity_type).filter(Boolean);
       const uniq = [...new Set(types)].slice(0, 4).join(", ") || "sensitive content";
       $("overrideWarn").textContent =
-        "This will send unmasked content (" + uniq + ") outside your device via the local LLM. This cannot be undone.";
+        "This will allow the Original unmasked text (" +
+        uniq +
+        ") to pass the Cursor hook once when you paste it. No local LLM call. This cannot be undone.";
       $("overridePanel").classList.add("visible");
     };
     $("overrideAck").onchange = () => {

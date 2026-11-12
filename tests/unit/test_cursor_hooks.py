@@ -187,6 +187,35 @@ def test_prompt_hook_daemon_down_denies(monkeypatch: pytest.MonkeyPatch) -> None
     assert "unreachable" in out["user_message"].lower()
 
 
+def test_prompt_hook_bad_json_allows_soft(monkeypatch: pytest.MonkeyPatch) -> None:
+    buf_in = io.StringIO("not-json{{{")
+    buf_out = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", buf_in)
+    monkeypatch.setattr(sys, "stdout", buf_out)
+    try:
+        runpy.run_path(str(PROMPT_HOOK), run_name="__main__")
+    except SystemExit as exc:
+        assert exc.code in (0, None)
+    out = json.loads(buf_out.getvalue())
+    assert out["continue"] is True
+    assert out["permission"] == "allow"
+    assert "parse" in (out.get("user_message") or "").lower()
+
+
+def test_read_hook_bad_json_allows_soft(monkeypatch: pytest.MonkeyPatch) -> None:
+    buf_in = io.StringIO("<<<broken")
+    buf_out = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", buf_in)
+    monkeypatch.setattr(sys, "stdout", buf_out)
+    try:
+        runpy.run_path(str(READ_HOOK), run_name="__main__")
+    except SystemExit as exc:
+        assert exc.code in (0, None)
+    out = json.loads(buf_out.getvalue())
+    assert out["continue"] is True
+    assert out["permission"] == "allow"
+
+
 def test_read_hook_denies_env(monkeypatch: pytest.MonkeyPatch) -> None:
     out = _run_hook(READ_HOOK, {"file_path": "C:/proj/.env"}, monkeypatch)
     assert out["permission"] == "deny"

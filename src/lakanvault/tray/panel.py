@@ -19,14 +19,16 @@ _SHOW_GRACE_S = 1.5
 _BLUR_HIDE_DELAY_S = 0.5
 
 
-# figure out where to park the popup near the tray corner
-def flyout_anchor(width: int = FLYOUT_WIDTH, height: int = FLYOUT_HEIGHT) -> tuple[int, int]:
-    """Return top-left (x, y) for a tray-corner popup (Windows work area; else primary screen)."""
-    margin = 12
+# work area of the monitor under the cursor (laptop vs big monitor)
+def work_area_rect() -> tuple[int, int, int, int]:
+    """Return (left, top, right, bottom) for the monitor under the mouse, else primary."""
     if sys.platform == "win32":
         try:
             import ctypes
             from ctypes import wintypes
+
+            class POINT(ctypes.Structure):
+                _fields_ = [("x", wintypes.LONG), ("y", wintypes.LONG)]
 
             class RECT(ctypes.Structure):
                 _fields_ = [
@@ -36,17 +38,29 @@ def flyout_anchor(width: int = FLYOUT_WIDTH, height: int = FLYOUT_HEIGHT) -> tup
                     ("bottom", wintypes.LONG),
                 ]
 
+            class MONITORINFO(ctypes.Structure):
+                _fields_ = [
+                    ("cbSize", wintypes.DWORD),
+                    ("rcMonitor", RECT),
+                    ("rcWork", RECT),
+                    ("dwFlags", wintypes.DWORD),
+                ]
+
+            pt = POINT()
+            ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
+            MONITOR_DEFAULTTONEAREST = 2
+            hmon = ctypes.windll.user32.MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST)
+            info = MONITORINFO()
+            info.cbSize = ctypes.sizeof(MONITORINFO)
+            if hmon and ctypes.windll.user32.GetMonitorInfoW(hmon, ctypes.byref(info)):
+                r = info.rcWork
+                return int(r.left), int(r.top), int(r.right), int(r.bottom)
+
             rect = RECT()
-            SPI_GETWORKAREA = 0x0030
-            ok = ctypes.windll.user32.SystemParametersInfoW(
-                SPI_GETWORKAREA, 0, ctypes.byref(rect), 0
-            )
-            if ok:
-                x = int(rect.right - width - margin)
-                y = int(rect.bottom - height - margin)
-                return max(int(rect.left), x), max(int(rect.top), y)
+            if ctypes.windll.user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(rect), 0):
+                return int(rect.left), int(rect.top), int(rect.right), int(rect.bottom)
         except Exception as exc:  # pragma: no cover - platform quirks
-            logger.debug("work-area anchor failed: %s", exc)
+            logger.debug("work_area_rect failed: %s", exc)
 
     try:
         import webview
@@ -56,15 +70,46 @@ def flyout_anchor(width: int = FLYOUT_WIDTH, height: int = FLYOUT_HEIGHT) -> tup
             screen = min(screens, key=lambda s: (getattr(s, "y", 0), getattr(s, "x", 0)))
             sx = int(getattr(screen, "x", 0))
             sy = int(getattr(screen, "y", 0))
-            sw = int(getattr(screen, "width", width + margin))
-            sh = int(getattr(screen, "height", height + margin))
-            if sys.platform == "darwin":
-                return sx + sw - width - margin, sy + 28
-            return sx + sw - width - margin, sy + sh - height - margin
+            sw = int(getattr(screen, "width", 1280))
+            sh = int(getattr(screen, "height", 800))
+            return sx, sy, sx + sw, sy + sh
     except Exception as exc:  # pragma: no cover
-        logger.debug("screen anchor failed: %s", exc)
+        logger.debug("webview work area failed: %s", exc)
 
-    return margin, margin
+    return 0, 0, 1280, 800
+
+
+# shrink flyout so it fits the screen youre on now
+def flyout_size(
+    preferred_w: int = FLYOUT_WIDTH,
+    preferred_h: int = FLYOUT_HEIGHT,
+) -> tuple[int, int]:
+    """Clamp popup size to the current monitor work area (big monitor vs laptop)."""
+    left, top, right, bottom = work_area_rect()
+    aw = max(320, right - left)
+    ah = max(400, bottom - top)
+    margin = 24
+    w = min(preferred_w, aw - margin, max(280, int(aw * 0.42)))
+    h = min(preferred_h, ah - margin, max(320, int(ah * 0.78)))
+    w = max(260, min(w, aw - margin))
+    h = max(300, min(h, ah - margin))
+    return int(w), int(h)
+
+
+# figure out where to park the popup near the tray corner
+def flyout_anchor(width: int | None = None, height: int | None = None) -> tuple[int, int]:
+    """Return top-left (x, y) for a tray-corner popup on the current screen."""
+    if width is None or height is None:
+        fw, fh = flyout_size()
+        width = fw if width is None else width
+        height = fh if height is None else height
+    margin = 12
+    left, top, right, bottom = work_area_rect()
+    x = int(right - width - margin)
+    y = int(bottom - height - margin)
+    if sys.platform == "darwin":
+        y = int(top + 28)
+    return max(left, x), max(top, y)
 
 
 class FlyoutHost:
@@ -131,12 +176,13 @@ class FlyoutHost:
                 self._ready.set()
             return False
         try:
-            x, y = flyout_anchor()
+            fw, fh = flyout_size()
+            x, y = flyout_anchor(fw, fh)
             window = webview.create_window(
                 "LakanVault",
                 url,
-                width=FLYOUT_WIDTH,
-                height=FLYOUT_HEIGHT,
+                width=fw,
+                height=fh,
                 x=x,
                 y=y,
                 resizable=False,
@@ -158,17 +204,32 @@ class FlyoutHost:
             def minimize_flyout() -> None:
                 self.hide()
 
+            # open full dashboard (or any url) in the system browser
+            def open_external(url: str = "") -> None:
+                target = (url or "").strip() or f"{self._base_url}/dashboard"
+                if target.startswith("/"):
+                    target = f"{self._base_url.rstrip('/')}{target}"
+                try:
+                    import webbrowser
+
+                    webbrowser.open(target)
+                except Exception as exc:  # pragma: no cover
+                    logger.debug("open_external failed: %s", exc)
+
             window.events.closing += self._on_closing
             # Blur-dismiss is unreliable with tray focus steal on Windows; left-click toggles.
             window.expose(dismiss_flyout)
             window.expose(minimize_flyout)
+            window.expose(open_external)
 
-            toast_x, toast_y = flyout_anchor(TOAST_WIDTH, TOAST_HEIGHT)
+            tw = min(TOAST_WIDTH, flyout_size(TOAST_WIDTH, TOAST_HEIGHT)[0])
+            th = TOAST_HEIGHT
+            toast_x, toast_y = flyout_anchor(tw, th)
             toast = webview.create_window(
                 "LakanVault Alert",
                 f"{self._base_url}/toast",
-                width=TOAST_WIDTH,
-                height=TOAST_HEIGHT,
+                width=tw,
+                height=th,
                 x=toast_x,
                 y=toast_y,
                 resizable=False,
@@ -283,9 +344,15 @@ class FlyoutHost:
             win = self._toast_window
         try:
             win.load_url(url)
-            x, y = flyout_anchor(TOAST_WIDTH, TOAST_HEIGHT)
+            tw = min(TOAST_WIDTH, flyout_size(TOAST_WIDTH, TOAST_HEIGHT)[0])
+            th = TOAST_HEIGHT
+            x, y = flyout_anchor(tw, th)
             # Stack above Status corner with a small gap.
-            win.move(x, max(0, y - TOAST_HEIGHT - 8))
+            try:
+                win.resize(tw, th)
+            except Exception:
+                pass
+            win.move(x, max(0, y - th - 8))
             win.show()
             with self._lock:
                 self._toast_visible = True
@@ -384,7 +451,13 @@ class FlyoutHost:
             # Reload so counts/activity are fresh when popping for a block.
             if url:
                 win.load_url(url)
-            x, y = flyout_anchor()
+            # Re-size + re-anchor every show (laptop vs big monitor / dock change).
+            fw, fh = flyout_size()
+            x, y = flyout_anchor(fw, fh)
+            try:
+                win.resize(fw, fh)
+            except Exception:
+                pass
             win.move(x, y)
             self._ignore_blur_until = time.monotonic() + _SHOW_GRACE_S
             win.show()

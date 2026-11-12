@@ -200,6 +200,10 @@ class ProtectPauseBody(BaseModel):
     paused: bool = Field(..., description="When true, tray toasts skip new protect events")
 
 
+class HooksModeBody(BaseModel):
+    mode: str = Field(..., description="Cursor hooks gate: off | tag | on")
+
+
 # root health-ish info
 @app.get("/")
 def index() -> dict:
@@ -207,7 +211,11 @@ def index() -> dict:
         "service": "LakanVault",
         "version": "0.1.0",
         "status": "ok",
-        "message": "Status at /status — Prompt Review at /review — use /api/* and /v1/* endpoints.",
+        "message": (
+            "Dashboard at /dashboard — Status at /status — "
+            "Prompt Review at /review — use /api/* and /v1/* endpoints."
+        ),
+        "dashboard": "/dashboard",
         "status_page": "/status",
         "review": "/review",
     }
@@ -219,6 +227,15 @@ def status_page() -> FileResponse:
     path = STATIC_DIR / "status.html"
     if not path.is_file():
         raise HTTPException(status_code=404, detail="status.html not found")
+    return FileResponse(path, media_type="text/html")
+
+
+# full Sami product dashboard (browser)
+@app.get("/dashboard")
+def dashboard_page() -> FileResponse:
+    path = STATIC_DIR / "dashboard.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="dashboard.html not found")
     return FileResponse(path, media_type="text/html")
 
 
@@ -273,6 +290,57 @@ def api_protect_pause(body: ProtectPauseBody) -> dict:
     ring = get_protect_ring()
     ring.set_paused(body.paused)
     return {"paused": ring.is_paused()}
+
+
+# cursor hooks gate — status ui on/off/tag (loopback write)
+@app.get("/api/hooks/mode")
+def api_hooks_mode_get() -> dict:
+    from lakanvault.orchestration.hooks_gate import get_hooks_mode
+
+    mode = get_hooks_mode()
+    return {
+        "mode": mode,
+        "labels": {
+            "off": "chat free — hooks never gate",
+            "tag": "only prompts with [[lv]] are gated",
+            "on": "every prompt in the workspace is gated",
+        },
+        "hint": (
+            "Off keeps Cursor chat working. Cursor MCP will not auto-reload — "
+            "refresh MCP or Reload Window if tools are missing."
+        ),
+    }
+
+
+@app.post("/api/hooks/mode")
+def api_hooks_mode_set(request: Request, body: HooksModeBody) -> dict:
+    from lakanvault.orchestration.hooks_gate import set_hooks_mode
+
+    _require_loopback(request)
+    try:
+        return set_hooks_mode(body.mode)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+class DictionaryBody(BaseModel):
+    overlook: list[str] = Field(default_factory=list)
+    flag: list[str] = Field(default_factory=list)
+
+
+@app.get("/api/dictionary")
+def api_dictionary_get() -> dict:
+    from lakanvault.orchestration.word_dictionary import load_dictionary
+
+    return load_dictionary()
+
+
+@app.put("/api/dictionary")
+def api_dictionary_put(request: Request, body: DictionaryBody) -> dict:
+    from lakanvault.orchestration.word_dictionary import save_dictionary
+
+    _require_loopback(request)
+    return save_dictionary({"overlook": body.overlook, "flag": body.flag})
 
 
 # prompt review / cursor hooks — joan protect

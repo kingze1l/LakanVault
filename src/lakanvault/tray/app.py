@@ -36,15 +36,19 @@ def run_tray_loop(
 
     # left click / status menu → toggle the flyout
     def toggle_status(icon: pystray.Icon, item: object) -> None:
-        toggle_status_flyout(controller.dashboard_url, open_fn=_browser_open)
+        toggle_status_flyout(controller.status_url, open_fn=_browser_open)
 
     # open prompt review inside the status flyout
     def open_review(icon: pystray.Icon, item: object) -> None:
         # Review lives inside the Status flyout (compact tray UI).
         host.show(
-            f"{controller.dashboard_url}?panel=review",
+            f"{controller.status_url}?panel=review",
             open_fn=_browser_open,
         )
+
+    # full browser dashboard
+    def open_dashboard(icon: pystray.Icon, item: object) -> None:
+        controller.open_dashboard(_browser_open)
 
     # quit tray n tear stuff down
     def quit_app(icon: pystray.Icon, item: object) -> None:
@@ -109,6 +113,7 @@ def run_tray_loop(
     menu = pystray.Menu(
         # Left-click (default); hidden from right-click menu — Teams pattern.
         Item("Status", toggle_status, default=True, visible=False),
+        Item("Open dashboard", open_dashboard),
         Item("Open Prompt Review", open_review),
         Item("Quit", quit_app),
     )
@@ -122,7 +127,7 @@ def run_tray_loop(
     poller = threading.Thread(target=_poll_loop, name="lv-tray-poll", daemon=True)
     poller.start()
 
-    flyout_ok = host.prepare(controller.dashboard_url)
+    flyout_ok = host.prepare(controller.status_url)
     try:
         if flyout_ok:
             tray_thread = threading.Thread(

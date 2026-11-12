@@ -7,7 +7,8 @@ from lakanvault.tray.state import TrayController, TrayStatus
 def test_initial_status_is_stopped() -> None:
     ctl = TrayController(host="127.0.0.1", port=8080)
     assert ctl.status == TrayStatus.STOPPED
-    assert ctl.dashboard_url == "http://127.0.0.1:8080/status"
+    assert ctl.status_url == "http://127.0.0.1:8080/status"
+    assert ctl.dashboard_url == "http://127.0.0.1:8080/dashboard"
     assert ctl.review_url == "http://127.0.0.1:8080/review"
 
 
@@ -45,7 +46,8 @@ def test_set_status_warning_and_error() -> None:
     assert ctl.status == TrayStatus.WARNING
     ctl.set_status(TrayStatus.ERROR)
     assert ctl.status == TrayStatus.ERROR
-    assert ctl.dashboard_url == "http://127.0.0.1:9090/status"
+    assert ctl.dashboard_url == "http://127.0.0.1:9090/dashboard"
+    assert ctl.status_url == "http://127.0.0.1:9090/status"
 
 
 def test_open_dashboard_and_review_call_opener() -> None:
@@ -54,7 +56,7 @@ def test_open_dashboard_and_review_call_opener() -> None:
     ctl.open_dashboard(lambda url: opened.append(url))
     ctl.open_review(lambda url: opened.append(url))
     assert opened == [
-        "http://127.0.0.1:8080/status",
+        "http://127.0.0.1:8080/dashboard",
         "http://127.0.0.1:8080/review",
     ]
 

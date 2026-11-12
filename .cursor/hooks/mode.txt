@@ -1,1 +1,2 @@
 tag
+# set by LakanVault Status UI — off=chat free, tag=[[lv]] only, on=all prompts

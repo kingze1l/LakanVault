@@ -42,7 +42,7 @@ from lakanvault.local_core.privacy.stage import PrivacyStage
 from lakanvault.local_core.threat_scanner.stage import ThreatScannerStage
 from lakanvault.orchestration.bus import EventBus
 from lakanvault.orchestration.pipeline import Pipeline
-from lakanvault.shared.config import load_config
+from lakanvault.shared.config import load_config, resolve_config_dir
 from lakanvault.shared.system_prompt import build_chat_system_prompt
 from lakanvault.shared.url_policy import assert_localhost_url
 
@@ -57,8 +57,8 @@ class Gateway:
 
     # load config n wire up pipeline bus llm registry
     def __init__(self, config_dir: str | Path = "./config"):
-        self._config_dir = Path(config_dir)
-        self._cfg = load_config(config_dir)
+        self._config_dir = resolve_config_dir(config_dir)
+        self._cfg = load_config(self._config_dir)
         self._pipeline = self._build_pipeline()
         self._bus = self._build_bus()
         self._anonymizer = ReversibleAnonymizer()
@@ -247,16 +247,26 @@ class Gateway:
         *,
         source: str = "review",
     ) -> ProtectResponse:
-        """Joan scan + Vault sanitize. Findings metadata only — never finding.text."""
-        from lakanvault.local_core.policy.engine import Action, action_for
+        """Joan scan + dictionary apply + Vault sanitize. Findings metadata only."""
+        from lakanvault.local_core.policy.engine import Action, action_for, decide
         from lakanvault.local_core.scan import process_input
         from lakanvault.orchestration.protect_events import record_protect_event
+        from lakanvault.orchestration.word_dictionary import apply_dictionary
 
         req = ProtectRequest(text=text, session_id=session_id or "", llm=llm)
         sid = req.session_id or uuid.uuid4().hex[:12]
         vault = self._vault_for_session(sid)
         protected = process_input(req.text, vault, llm=req.llm)  # type: ignore[arg-type]
-        final = protected.final_action
+        # Sami dictionary layer: overlook Joan hits / force CUSTOM_FLAG masks.
+        findings = apply_dictionary(req.text, list(protected.findings))
+        final, per = decide(findings)
+        if final == Action.BLOCK:
+            sanitized = ""
+        elif final == Action.MASK:
+            mask_findings = [f for f, action in per if action == Action.MASK]
+            sanitized = vault.sanitize(req.text, mask_findings)
+        else:
+            sanitized = req.text
         summaries = [
             FindingSummary(
                 entity_type=f.entity_type,
@@ -268,7 +278,7 @@ class Gateway:
                 needs_escalation=bool(f.needs_escalation),
                 action=action_for(f).value,
             )
-            for f in protected.findings
+            for f in findings
         ]
         from lakanvault.orchestration.review_sessions import get_review_sessions
 
@@ -286,7 +296,7 @@ class Gateway:
                     event_id=ev.id,
                     session_id=sid,
                     original=req.text,
-                    sanitized=protected.sanitized,
+                    sanitized=sanitized,
                     action=action_s,
                     source=source,
                     entity_types=[s.entity_type for s in summaries],
@@ -294,7 +304,7 @@ class Gateway:
                 )
         return ProtectResponse(
             session_id=sid,
-            sanitized=protected.sanitized,
+            sanitized=sanitized,
             findings=summaries,
             finding_count=len(summaries),
             final_action=action_s,
@@ -328,10 +338,12 @@ class Gateway:
     ) -> ReviewSendResponse:
         """Send reviewed text to the local LLM; restore with the review session vault.
 
-        ``override=True`` sends the stored original once (Prompt Review confirm path).
-        Audit/metadata only — raw text is never logged here.
+        ``override=True`` does **not** call the local LLM. It trusts the stored
+        original once for Cursor paste (FR8-style handoff) so a blocked/confidential
+        prompt can go through after explicit confirm.
         """
         from lakanvault.local_core.scan import process_output
+        from lakanvault.orchestration.hooks_gate import remember_trusted_paste
         from lakanvault.orchestration.review_sessions import get_review_sessions
 
         req = ReviewSendRequest(
@@ -363,10 +375,23 @@ class Gateway:
             used_override = True
             logger = __import__("logging").getLogger(__name__)
             logger.warning(
-                "review override send session=%s action=%s entities=%s",
+                "review override (no LLM) session=%s action=%s entities=%s",
                 req.session_id,
                 sess.action,
                 list(sess.entity_types),
+            )
+            remember_trusted_paste(outbound)
+            return ReviewSendResponse(
+                session_id=req.session_id,
+                raw_response=(
+                    "Override accepted (no local LLM). "
+                    "Paste the Original text into Cursor as a new message — "
+                    "exact paste is trusted once."
+                ),
+                restored_response=outbound,
+                model_used="(override — paste into Cursor)",
+                provider_url="",
+                override_used=True,
             )
         else:
             if vault is None:
@@ -386,6 +411,7 @@ class Gateway:
                 model=req.model,
                 base_url=req.base_url,
                 system=system_hint,
+                stream=False,
             )
         except (ConnectionError, ValueError) as exc:
             return ReviewSendResponse(
@@ -395,10 +421,7 @@ class Gateway:
                 provider_url=req.base_url or self._local_llm.base_url,
                 override_used=used_override,
             )
-        if used_override or vault is None:
-            restored = result.content
-        else:
-            restored = process_output(result.content, vault)
+        restored = process_output(result.content, vault)
         return ReviewSendResponse(
             session_id=req.session_id,
             raw_response=result.content,

@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -152,16 +150,11 @@ def test_override_send_blocked_without_flag_and_works_with_flag(
     assert no_ov.status_code == 200
     assert no_ov.json()["blocked"] is True
 
-    fake = MagicMock()
-    fake.content = "ok"
-    fake.model_used = "mock"
-    fake.provider_url = "http://127.0.0.1:1234"
-    fake.latency_ms = 1.0
-    monkeypatch.setattr(
-        server_mod.get_gateway()._local_llm,
-        "chat",
-        lambda *a, **k: fake,
-    )
+    # Override must work with no local LLM (paste-once trust, not chat/completions).
+    def boom(*a, **k):
+        raise ConnectionError("LLM should not be called on override")
+
+    monkeypatch.setattr(server_mod.get_gateway()._local_llm, "chat", boom)
 
     ov = client.post(
         "/api/review/send",
@@ -171,7 +164,9 @@ def test_override_send_blocked_without_flag_and_works_with_flag(
     body = ov.json()
     assert body["blocked"] is False
     assert body["override_used"] is True
-    assert body["raw_response"] == "ok"
+    assert body["error"] is None
+    assert SECRET_PROMPT in body["restored_response"]
+    assert "Override accepted" in body["raw_response"]
 
     again = client.post(
         "/api/review/send",

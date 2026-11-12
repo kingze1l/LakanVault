@@ -11,11 +11,12 @@ trusted once (TTL) so pasting a fake name/email is not denied again.
 
 Toggle (first match wins):
   1) env LAKANVAULT_HOOKS=on|off|tag
-  2) this folder's mode.txt first word: on | off | tag
+  2) daemon GET http://127.0.0.1:8080/api/hooks/mode  (Status UI Off/Tag/On)
+  3) this folder's mode.txt first word: on | off | tag
 
-  off  — never gate (default; this chat stays normal)
+  off  — never gate (chat stays normal)
   on   — gate every prompt in this workspace
-  tag  — gate only when the prompt contains [[lv]] (other chats keep working)
+  tag  — gate only when the prompt contains [[lv]]
 """
 from __future__ import annotations
 
@@ -50,7 +51,22 @@ def _handoff_path() -> Path:
     return Path(override) if override else (_HOOK_DIR / "handoff_allow.json")
 
 
-# read on/off/tag from env or mode.txt
+# ask the running daemon what the Status UI set (fast fail if down)
+def _daemon_mode() -> str | None:
+    url = os.environ.get("LAKANVAULT_HOOKS_MODE_URL", "http://127.0.0.1:8080/api/hooks/mode")
+    try:
+        req = urllib.request.Request(url, method="GET")
+        with urllib.request.urlopen(req, timeout=0.45) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="replace"))
+        word = str((data or {}).get("mode") or "").strip().lower()
+        if word in {"on", "off", "tag"}:
+            return word
+    except Exception:
+        return None
+    return None
+
+
+# read on/off/tag from env, then daemon Status UI, then mode.txt
 def _mode() -> str:
     env = (os.environ.get("LAKANVAULT_HOOKS") or "").strip().lower()
     if env in {"on", "1", "true", "yes", "enable", "enabled"}:
@@ -59,6 +75,9 @@ def _mode() -> str:
         return "off"
     if env in {"tag", "opt-in", "optin", "test"}:
         return "tag"
+    daemon = _daemon_mode()
+    if daemon:
+        return daemon
     try:
         for line in _MODE_FILE.read_text(encoding="utf-8").splitlines():
             word = line.strip().split("#", 1)[0].strip().lower()
@@ -178,13 +197,44 @@ def _allow(message: str = "") -> dict:
     return out
 
 
+# parse cursor stdin — empty/BOM/noise should not hard-block the chat
+def _parse_hook_payload(raw: str) -> tuple[dict | None, str | None]:
+    text = (raw or "").lstrip("\ufeff").strip()
+    if not text:
+        return {}, None
+    try:
+        data = json.loads(text)
+        if isinstance(data, dict):
+            return data, None
+        return {}, None
+    except json.JSONDecodeError:
+        pass
+    start = text.find("{")
+    end = text.rfind("}")
+    if start >= 0 and end > start:
+        try:
+            data = json.loads(text[start : end + 1])
+            if isinstance(data, dict):
+                return data, None
+        except json.JSONDecodeError:
+            pass
+    return None, "invalid_json"
+
+
 # main hook — read stdin call daemon decide allow/deny
 def main() -> int:
-    try:
-        raw = sys.stdin.read()
-        payload = json.loads(raw) if raw.strip() else {}
-    except json.JSONDecodeError:
-        print(json.dumps(_deny("LakanVault: invalid hook input")))
+    raw = sys.stdin.read()
+    payload, err = _parse_hook_payload(raw)
+    if err or payload is None:
+        # Fail-open on bad stdin so demo PCs are not stuck ("invalid hook input").
+        print(
+            json.dumps(
+                _allow(
+                    "LakanVault: could not parse hook input — allowing send. "
+                    "If this keeps happening, restart Cursor / reinstall MVP hooks."
+                )
+            )
+        )
         return 0
 
     prompt = _extract_prompt(payload if isinstance(payload, dict) else {})

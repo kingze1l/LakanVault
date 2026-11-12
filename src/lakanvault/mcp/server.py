@@ -12,6 +12,7 @@ from lakanvault.contracts.mcp import (
     RestoreResponse,
 )
 from lakanvault.orchestration.gateway import Gateway
+from lakanvault.shared.config import resolve_config_dir
 
 TOOLS: tuple[str, ...] = (
     "lakanvault_classify",
@@ -26,13 +27,13 @@ _GATEWAYS: dict[str, Gateway] = {}
 
 # reuse one gateway per config path so vault sessions stick
 def shared_gateway(config_dir: str | Path = "./config") -> Gateway:
-    key = str(Path(config_dir).resolve())
+    resolved = resolve_config_dir(config_dir)
+    key = str(resolved)
     gw = _GATEWAYS.get(key)
     if gw is None:
-        gw = Gateway(config_dir=config_dir)
+        gw = Gateway(config_dir=resolved)
         _GATEWAYS[key] = gw
     return gw
-
 
 # names of tools we expose
 def list_tools() -> tuple[str, ...]:
