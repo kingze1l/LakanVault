@@ -1,4 +1,4 @@
-# python -m lakanvault.local_core.local_llm.eval_llm
+# to run just python -m lakanvault.local_core.local_llm.eval_llm
 import csv, json
 from pathlib import Path
 from ..findings import Tier
