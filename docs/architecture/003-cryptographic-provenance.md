@@ -6,7 +6,7 @@ Phase 1a — anything from outside gets verified locally before I trust it.
 
 | Thing | How I check | If it fails |
 |-------|-------------|-------------|
-| Model manifest baseline | SHA-256 vs trusted baseline (USB / tutor JSON) | Fail closed — don't mark verified |
+| Model manifest baseline | SHA-256 vs trusted baseline (USB / demo JSON) | Fail closed — don't mark verified |
 | Enrichment pack from cloud | Ed25519 (or similar) vs pinned public key | Reject — don't apply |
 | Cloud telemetry in | Field allowlist from `data-classification.md` | Drop it — log rejection |
 

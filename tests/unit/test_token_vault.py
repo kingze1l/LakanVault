@@ -1,4 +1,4 @@
-"""Unit tests for the in-memory SQLite token vault."""
+# in-memory sqlite token vault mint restore isolation
 from __future__ import annotations
 
 import re
@@ -89,7 +89,7 @@ def test_concurrent_mints_do_not_corrupt() -> None:
     assert errors == []
     vault.close()
 
-
+# close wipes memory n leaves no sqlite file
 def test_close_wipes_and_creates_no_db_file(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     vault = InMemoryTokenVault()

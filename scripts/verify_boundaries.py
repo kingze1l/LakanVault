@@ -1,3 +1,5 @@
+# ADR-001 import boundary checker
+# run this before commit so we dont sneak local_core into app etc
 """
 Boundary checker — catches import violations per ADR-001.
 Run after P1b: python scripts/verify_boundaries.py
@@ -32,6 +34,7 @@ RULES: list[tuple[str, list[str]]] = [
 ]
 
 
+# pull import names out of a py file via ast
 def get_imports(path: Path) -> list[str]:
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -48,6 +51,7 @@ def get_imports(path: Path) -> list[str]:
     return names
 
 
+# walk packages apply RULES return violation count
 def check() -> int:
     violations = 0
     for package, forbidden in RULES:

@@ -1,4 +1,4 @@
-"""Flyout host + panel helpers — no real pywebview / GUI."""
+# flyout host / panel bits without real pywebview
 from __future__ import annotations
 
 import time
@@ -7,16 +7,22 @@ from types import SimpleNamespace
 import pytest
 
 from lakanvault.tray import panel as panel_mod
-from lakanvault.tray.panel import FlyoutHost, flyout_anchor, reset_flyout_host_for_tests
+from lakanvault.tray.panel import (
+    FlyoutHost,
+    flyout_anchor,
+    flyout_size,
+    reset_flyout_host_for_tests,
+    work_area_rect,
+)
 
-
+# wipe flyout host between tests
 @pytest.fixture(autouse=True)
 def _fresh_host() -> None:
     reset_flyout_host_for_tests()
     yield
     reset_flyout_host_for_tests()
 
-
+# stand-in window so we dont need real gui
 class _FakeWindow:
     def __init__(self) -> None:
         self.shown = False
@@ -51,7 +57,7 @@ class _FakeWindow:
     def evaluate_js(self, script: str) -> None:
         self.js.append(script)
 
-
+# wire fake window onto a prepared host
 def _attach_prepared(host: FlyoutHost, fake: _FakeWindow) -> None:
     host._window = fake  # noqa: SLF001
     host._prepared = True  # noqa: SLF001
@@ -62,7 +68,22 @@ def _attach_prepared(host: FlyoutHost, fake: _FakeWindow) -> None:
 def test_flyout_anchor_returns_ints() -> None:
     x, y = flyout_anchor(380, 520)
     assert isinstance(x, int) and isinstance(y, int)
-    assert x >= 0 and y >= 0
+
+
+def test_flyout_size_fits_work_area() -> None:
+    left, top, right, bottom = work_area_rect()
+    aw, ah = right - left, bottom - top
+    w, h = flyout_size(380, 580)
+    assert w <= aw - 24
+    assert h <= ah - 24
+    assert w >= 260 and h >= 300
+
+
+def test_flyout_size_shrinks_on_tiny_screen(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(panel_mod, "work_area_rect", lambda: (0, 0, 800, 500))
+    w, h = flyout_size(380, 580)
+    assert w <= 800 - 24
+    assert h <= 500 - 24
 
 
 def test_toggle_show_hide_with_fake_window() -> None:
@@ -97,7 +118,7 @@ def test_blur_dismiss_hides_after_delay() -> None:
     assert host.visible is False
     assert fake.hidden is True
 
-
+# blur during show grace shouldnt hide yet
 def test_blur_ignored_during_show_grace() -> None:
     host = FlyoutHost()
     fake = _FakeWindow()

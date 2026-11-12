@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# cursor beforeSubmitPrompt gate — hit the daemon so raw secrets dont leave
 """Cursor beforeSubmitPrompt gate (Joan via daemon).
 
 Cursor cannot rewrite the prompt (only continue / user_message).
@@ -10,11 +11,12 @@ trusted once (TTL) so pasting a fake name/email is not denied again.
 
 Toggle (first match wins):
   1) env LAKANVAULT_HOOKS=on|off|tag
-  2) this folder's mode.txt first word: on | off | tag
+  2) daemon GET http://127.0.0.1:8080/api/hooks/mode  (Status UI Off/Tag/On)
+  3) this folder's mode.txt first word: on | off | tag
 
-  off  — never gate (default; this chat stays normal)
+  off  — never gate (chat stays normal)
   on   — gate every prompt in this workspace
-  tag  — gate only when the prompt contains [[lv]] (other chats keep working)
+  tag  — gate only when the prompt contains [[lv]]
 """
 from __future__ import annotations
 
@@ -27,17 +29,44 @@ import urllib.request
 from pathlib import Path
 
 DEFAULT_URL = os.environ.get("LAKANVAULT_REVIEW_URL", "http://127.0.0.1:8080/api/review")
-_HOOK_DIR = Path(__file__).resolve().parent
+
+
+# where the hooks folder lives (or env override)
+def _resolve_hook_dir() -> Path:
+    override = (os.environ.get("LAKANVAULT_HOOKS_DIR") or "").strip()
+    if override:
+        return Path(override)
+    return Path(__file__).resolve().parent
+
+
+_HOOK_DIR = _resolve_hook_dir()
 _MODE_FILE = _HOOK_DIR / "mode.txt"
 _TAG = "[[lv]]"
 _HANDOFF_TTL_SEC = float(os.environ.get("LAKANVAULT_HANDOFF_TTL", "600"))  # 10 min
 
 
+# path for the one-shot mask handoff allowlist file
 def _handoff_path() -> Path:
     override = (os.environ.get("LAKANVAULT_HANDOFF_FILE") or "").strip()
     return Path(override) if override else (_HOOK_DIR / "handoff_allow.json")
 
 
+# ask the running daemon what the Status UI set (fast fail if down)
+def _daemon_mode() -> str | None:
+    url = os.environ.get("LAKANVAULT_HOOKS_MODE_URL", "http://127.0.0.1:8080/api/hooks/mode")
+    try:
+        req = urllib.request.Request(url, method="GET")
+        with urllib.request.urlopen(req, timeout=0.45) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="replace"))
+        word = str((data or {}).get("mode") or "").strip().lower()
+        if word in {"on", "off", "tag"}:
+            return word
+    except Exception:
+        return None
+    return None
+
+
+# read on/off/tag from env, then daemon Status UI, then mode.txt
 def _mode() -> str:
     env = (os.environ.get("LAKANVAULT_HOOKS") or "").strip().lower()
     if env in {"on", "1", "true", "yes", "enable", "enabled"}:
@@ -46,6 +75,9 @@ def _mode() -> str:
         return "off"
     if env in {"tag", "opt-in", "optin", "test"}:
         return "tag"
+    daemon = _daemon_mode()
+    if daemon:
+        return daemon
     try:
         for line in _MODE_FILE.read_text(encoding="utf-8").splitlines():
             word = line.strip().split("#", 1)[0].strip().lower()
@@ -61,6 +93,7 @@ def _mode() -> str:
     return "off"
 
 
+# should we gate this prompt based on mode
 def _should_gate(prompt: str) -> bool:
     mode = _mode()
     if mode == "on":
@@ -70,6 +103,7 @@ def _should_gate(prompt: str) -> bool:
     return False
 
 
+# load unexpired trusted handoff strings
 def _load_handoffs() -> list[dict]:
     try:
         raw = json.loads(_handoff_path().read_text(encoding="utf-8"))
@@ -89,6 +123,7 @@ def _load_handoffs() -> list[dict]:
     ]
 
 
+# write the handoff allowlist back to disk
 def _save_handoffs(rows: list[dict]) -> None:
     try:
         path = _handoff_path()
@@ -98,6 +133,7 @@ def _save_handoffs(rows: list[dict]) -> None:
         pass
 
 
+# remember a sanitized mask string so paste is trusted once
 def _remember_handoff(sanitized: str) -> None:
     text = sanitized.strip()
     if not text:
@@ -109,6 +145,7 @@ def _remember_handoff(sanitized: str) -> None:
     _save_handoffs(rows[-20:])  # cap
 
 
+# if prompt matches a prior mask handoff allow once n clear it
 def _consume_trusted_handoff(prompt: str) -> bool:
     """Exact match of a prior MASK sanitized string → allow once and clear."""
     text = prompt.strip()
@@ -127,6 +164,7 @@ def _consume_trusted_handoff(prompt: str) -> bool:
     return matched
 
 
+# dig the prompt text out of whatever shape cursor sent
 def _extract_prompt(payload: dict) -> str:
     for key in ("prompt", "text", "content", "user_prompt", "message"):
         value = payload.get(key)
@@ -141,6 +179,7 @@ def _extract_prompt(payload: dict) -> str:
     return ""
 
 
+# build a deny response for cursor
 def _deny(message: str) -> dict:
     return {
         "continue": False,
@@ -150,6 +189,7 @@ def _deny(message: str) -> dict:
     }
 
 
+# build an allow response (optional note)
 def _allow(message: str = "") -> dict:
     out: dict = {"continue": True, "permission": "allow"}
     if message:
@@ -157,12 +197,44 @@ def _allow(message: str = "") -> dict:
     return out
 
 
-def main() -> int:
+# parse cursor stdin — empty/BOM/noise should not hard-block the chat
+def _parse_hook_payload(raw: str) -> tuple[dict | None, str | None]:
+    text = (raw or "").lstrip("\ufeff").strip()
+    if not text:
+        return {}, None
     try:
-        raw = sys.stdin.read()
-        payload = json.loads(raw) if raw.strip() else {}
+        data = json.loads(text)
+        if isinstance(data, dict):
+            return data, None
+        return {}, None
     except json.JSONDecodeError:
-        print(json.dumps(_deny("LakanVault: invalid hook input")))
+        pass
+    start = text.find("{")
+    end = text.rfind("}")
+    if start >= 0 and end > start:
+        try:
+            data = json.loads(text[start : end + 1])
+            if isinstance(data, dict):
+                return data, None
+        except json.JSONDecodeError:
+            pass
+    return None, "invalid_json"
+
+
+# main hook — read stdin call daemon decide allow/deny
+def main() -> int:
+    raw = sys.stdin.read()
+    payload, err = _parse_hook_payload(raw)
+    if err or payload is None:
+        # Fail-open on bad stdin so demo PCs are not stuck ("invalid hook input").
+        print(
+            json.dumps(
+                _allow(
+                    "LakanVault: could not parse hook input — allowing send. "
+                    "If this keeps happening, restart Cursor / reinstall MVP hooks."
+                )
+            )
+        )
         return 0
 
     prompt = _extract_prompt(payload if isinstance(payload, dict) else {})

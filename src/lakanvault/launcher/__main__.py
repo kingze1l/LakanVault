@@ -1,3 +1,4 @@
+# entry point for the daemon / tray launcher
 """LakanVault daemon entry point."""
 import multiprocessing
 import sys

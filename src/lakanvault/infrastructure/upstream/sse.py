@@ -1,3 +1,5 @@
+# sse parse/serialize + sliding token restore
+# tokens can split across chunks so we hold a short incomplete tail
 """Protocol-correct SSE parse/serialize + sliding-tail opaque token restore."""
 from __future__ import annotations
 
@@ -12,6 +14,7 @@ _TOKEN_RE = re.compile(OPAQUE_TOKEN_REGEX)
 _DONE = "[DONE]"
 
 
+# split a buffer into (fields, data) sse events
 def parse_sse_chunk(raw: str) -> list[tuple[dict[str, str], str]]:
     """Split a buffer fragment into (fields, data_payload) events.
 
@@ -40,6 +43,7 @@ def parse_sse_chunk(raw: str) -> list[tuple[dict[str, str], str]]:
     return events
 
 
+# turn fields+data back into a wire sse block
 def serialize_sse(fields: dict[str, str], data: str) -> str:
     lines: list[str] = []
     if comment := fields.get("comment"):
@@ -58,6 +62,7 @@ def serialize_sse(fields: dict[str, str], data: str) -> str:
 
 
 class SlidingTokenRestorer:
+    # restore complete [LV_…] hold incomplete suffix so we dont cut mid-token
     """Restore complete [LV_…] tokens; hold a possible incomplete suffix."""
 
     _INCOMPLETE = re.compile(
@@ -68,6 +73,7 @@ class SlidingTokenRestorer:
         self._mapping = dict(mapping)
         self._buf = ""
 
+    # feed one chunk emit safe prefix keep possible partial token
     def feed(self, chunk: str) -> str:
         if not chunk:
             return ""
@@ -81,11 +87,13 @@ class SlidingTokenRestorer:
         emit, self._buf = self._buf[: len(self._buf) - hold], self._buf[len(self._buf) - hold :]
         return self._restore_complete(emit)
 
+    # dump whatever is left in the buf
     def flush(self) -> str:
         out = self._restore_complete(self._buf)
         self._buf = ""
         return out
 
+    # swap complete tokens via the mapping
     def _restore_complete(self, text: str) -> str:
         def repl(match: re.Match[str]) -> str:
             token = match.group(0)
@@ -95,6 +103,7 @@ class SlidingTokenRestorer:
 
 
 class SlidingMappingRestorer:
+    # same idea but for arbitrary fake→real map keys (not just [LV_…])
     """Restore Joan Vault surrogates across SSE chunk boundaries.
 
     Replace any complete fake in the buffer first, then hold only a proper
@@ -112,6 +121,7 @@ class SlidingMappingRestorer:
             self._pat = None
             self._fakes = ()
 
+    # feed chunk restore completes then hold incomplete fake suffix
     def feed(self, chunk: str) -> str:
         if not chunk:
             return ""
@@ -126,11 +136,13 @@ class SlidingMappingRestorer:
             emit, self._buf = self._buf, ""
         return emit
 
+    # flush leftover buffer
     def flush(self) -> str:
         out = self._restore_complete(self._buf)
         self._buf = ""
         return out
 
+    # longest proper prefix of any fake sitting at the end
     def _incomplete_fake_suffix(self, text: str) -> int:
         """Longest proper prefix of any fake that is a suffix of text."""
         hold = 0
@@ -141,12 +153,14 @@ class SlidingMappingRestorer:
                     hold = max(hold, i)
         return hold
 
+    # replace complete fakes only
     def _restore_complete(self, text: str) -> str:
         if not text or self._pat is None:
             return text
         return self._pat.sub(lambda m: self._mapping.get(m.group(0), m.group(0)), text)
 
 
+# restore inside chat delta json or fall back to raw text feed
 def restore_sse_data_json(
     data: str,
     restorer: SlidingTokenRestorer | SlidingMappingRestorer,
@@ -177,6 +191,7 @@ def restore_sse_data_json(
     return json.dumps(obj, separators=(",", ":"))
 
 
+# walk sse chunks and yield restored events (handles [DONE] leftover)
 def iter_restored_sse(
     chunks: Iterator[str],
     mapping: dict[str, str],

@@ -2,6 +2,25 @@
 
 How the LakanVault repo is organized. **Active branch:** `CS301`.
 
+## Plain English map (for Joan / new readers)
+
+Folder names stay technical (ADR-001). Here is what they mean in normal words:
+
+| Folder | Plain meaning |
+|--------|----------------|
+| `app/` | HTTP doors the browser/Cursor hit |
+| `tray/` | Windows tray icon + Status flyout |
+| `mcp/` | Tools Cursor can call |
+| `launcher/` | Starts the daemon / exe |
+| `orchestration/` | Glue — calls the security pieces in order |
+| `local_core/` | The security brain (PII, secrets, policy, audit) |
+| `infrastructure/` | Vault DB + outbound HTTP helpers |
+| `contracts/` | Shared request/response shapes (no logic) |
+| `shared/` | Paths, config load, URL allowlist |
+| `eval/` | Small research metric helpers only |
+
+Those `__init__.py` files are **not** empty junk folders — Python needs them so `import lakanvault.…` works. Open one: short casual notes at the top (Joan's detection/Vault packages left as she wrote them).
+
 ## Root layout
 
 ```
@@ -140,7 +159,15 @@ Run: `python -m pytest tests/ -q`
 
 ## `scripts/`
 
-See [`scripts/README.md`](../scripts/README.md).
+See [`scripts/README.md`](../scripts/README.md). Notable entries:
+
+| Script | Purpose |
+|--------|---------|
+| `INSTALL_RECOMMENDED.bat` | Optional spaCy NER (`.[ner]` + `en_core_web_lg`) for source/dev installs |
+| `package_mvp.ps1` | Build lean `LakanVault-MVP.zip` (regex PII; no spaCy in the zip) |
+| `verify_boundaries.py` | ADR-001 import boundary checker |
+
+Product DLP lives under `local_core/` (scan, pii, secrets, policy, anonymizer). RQ metric helpers stay in `eval/`; the old Joan `local_core/evaluation/` RQ scripts and committed CSV/report were removed from the tree.
 
 ---
 

@@ -1,4 +1,4 @@
-"""OpenAI payload walk — restore assistant text only."""
+# openai payload walk sanitize user restore assistant only
 from lakanvault.infrastructure.token_vault import generate_opaque_token
 from lakanvault.local_core.dlp.openai_payload import (
     UninspectedPayloadError,
@@ -54,7 +54,7 @@ def test_strict_mode_blocks_images() -> None:
         return
     raise AssertionError("expected UninspectedPayloadError")
 
-
+# dont restore inside tool_call args
 def test_restore_skips_tool_call_arguments() -> None:
     token = generate_opaque_token()
     payload = {

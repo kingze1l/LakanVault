@@ -1,4 +1,4 @@
-"""Subprocess integration: launch stdio server the same way Cursor will."""
+# launch stdio server subprocess the way cursor will
 from __future__ import annotations
 
 import asyncio
@@ -15,7 +15,7 @@ API_KEY = "sk-9f8e7d6c5b4a3210fedcba0987654321zz"
 REPO = Path(__file__).resolve().parents[2]
 CONFIG = REPO / "config"
 
-
+# stdio server launch args like cursor
 def _server_params() -> StdioServerParameters:
     return StdioServerParameters(
         command=sys.executable,

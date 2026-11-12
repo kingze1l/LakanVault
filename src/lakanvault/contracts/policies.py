@@ -1,3 +1,5 @@
+# cloud redaction policy lives here
+# only counts/metadata leave never raw prompts
 """Policies — the single place where we decide what's safe to send to cloud."""
 from __future__ import annotations
 
@@ -5,6 +7,7 @@ from lakanvault.contracts.dtos import CloudTelemetryDTO
 from lakanvault.contracts.events import PipelineEvent, StageStatus
 
 
+# build the tiny cloud-safe DTO from a pipeline event
 def redact_for_cloud(event: PipelineEvent, duration_ms: float = 0.0) -> CloudTelemetryDTO:
     """
     Build a cloud-safe DTO from a pipeline event.

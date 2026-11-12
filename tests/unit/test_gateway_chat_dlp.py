@@ -1,4 +1,4 @@
-"""Gateway chat path uses the same DLP transformer as classify (no secret fail-open)."""
+# gateway chat path same dlp as classify no secret fail-open
 from pathlib import Path
 
 from lakanvault.orchestration.gateway import Gateway

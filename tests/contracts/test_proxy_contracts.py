@@ -1,4 +1,4 @@
-"""Contract tests for proxy / vault / transform public shapes."""
+# proxy audit n transform shapes — no raw secrets in the schema
 from pydantic import ValidationError
 
 from lakanvault.contracts.mcp import DataTier, PolicyAction
@@ -48,7 +48,7 @@ def test_transform_result_forbids_api_key_field() -> None:
         return
     raise AssertionError("TransformResult must forbid api_key")
 
-
+# dump keys shouldnt include forbidden proxy fields
 def test_sanitize_response_dump_is_safe() -> None:
     resp = SanitizeTextResponse(
         text="hello [LV_AAAAAAAAAAAAAAAAAAAAAAAAAA]",

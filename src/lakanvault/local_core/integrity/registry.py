@@ -1,6 +1,8 @@
+# joan — keeps track of which local models we trust
+# baselines come off usb / demo json, never from the cloud
 """Model registry — tracks trusted baseline hashes for local models.
 
-Per ADR-003: baselines come out-of-band (USB / tutor JSON), never from cloud.
+Per ADR-003: baselines come out-of-band (USB / demo JSON), never from cloud.
 A model whose live hash doesn't match its recorded baseline is flagged
 POISONED and can be quarantined (moved to data/quarantine/, removed from
 the active models directory).
@@ -30,6 +32,7 @@ class ModelEntry:
     status: str  # "TRUSTED" | "POISONED" | "UNVERIFIED" | "QUARANTINED"
 
 
+# chunked sha256 so big gguf files dont blow memory
 def _sha256_file(path: Path, chunk_size: int = CHUNK_SIZE) -> str:
     sha = hashlib.sha256()
     with open(path, "rb") as f:
@@ -46,11 +49,13 @@ class ModelRegistry:
     Lives at <models_dir>/baselines.json — loaded out-of-band by the user.
     """
 
+    # models_dir + optional quarantine folder
     def __init__(self, models_dir: str | Path, quarantine_dir: str | Path | None = None):
         self.models_dir = Path(models_dir)
         self.quarantine_dir = Path(quarantine_dir) if quarantine_dir else self.models_dir / "_quarantine"
         self.baselines_path = self.models_dir / "baselines.json"
 
+    # read baselines.json if its there
     def _load_baselines(self) -> dict[str, str]:
         if self.baselines_path.exists():
             try:
@@ -59,6 +64,7 @@ class ModelRegistry:
                 logger.warning("Failed to read baselines.json: %s", exc)
         return {}
 
+    # hash every model file and compare against baselines
     def scan(self) -> list[ModelEntry]:
         """Hash every model file and compare against baselines."""
         if not self.models_dir.exists():
@@ -100,6 +106,7 @@ class ModelRegistry:
 
         return entries
 
+    # move a bad/unknown model out of the active dir
     def quarantine(self, model_name: str) -> bool:
         """Move a poisoned/unverified model out of the active models dir."""
         src = self.models_dir / model_name
@@ -124,6 +131,7 @@ class ModelRegistry:
         logger.warning("Model quarantined: %s -> %s", model_name, dest)
         return True
 
+    # record a trusted hash (out-of-band trust, adr-003)
     def set_baseline(self, model_name: str, sha256_hex: str) -> None:
         """Record a trusted baseline hash (out-of-band trust, ADR-003)."""
         baselines = self._load_baselines()

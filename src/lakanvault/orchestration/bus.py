@@ -1,3 +1,4 @@
+# bus that maybe sends redacted stuff to cloud (off by default tho)
 """Event bus — the ONLY egress point toward cloud (ADR-001).
 Never hand-rolls dicts; always goes through contracts.policies.redact_for_cloud().
 """
@@ -18,10 +19,12 @@ class EventBus:
     If cloud is disabled, logs and stops — nothing leaves the machine.
     """
 
+    # stash whether cloud is on n where to send
     def __init__(self, cloud_enabled: bool = False, analytics_endpoint: str = ""):
         self._cloud_enabled = cloud_enabled
         self._analytics_endpoint = analytics_endpoint
 
+    # if cloud on we redact n pretend-forward else we just log n stop
     def publish(self, event: PipelineEvent, duration_ms: float = 0.0) -> bool:
         """Returns True if forwarded, False otherwise."""
         if not self._cloud_enabled:

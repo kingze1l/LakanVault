@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LakanVault Alert</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #0b0e14;
+      --surface: #141920;
+      --text: #e8eaed;
+      --muted: #8b92a5;
+      --warn: #c4a035;
+      --err: #d45a5a;
+      --green: #3e704d;
+      --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+      --mono: "IBM Plex Mono", Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+    .card {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 3px 1fr;
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--sans);
+      border: 1px solid rgba(255,255,255,.1);
+      box-shadow: 0 10px 28px rgba(0,0,0,.5);
+    }
+    .accent { background: var(--warn); }
+    .card.block .accent { background: var(--err); }
+    .card.mask .accent, .card.warn .accent { background: var(--warn); }
+    .body {
+      padding: 0.65rem 0.7rem 0.6rem;
+      display: flex; flex-direction: column; gap: 0.35rem; min-width: 0;
+    }
+    .top {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem;
+    }
+    h1 {
+      margin: 0; font-size: 0.86rem; font-weight: 700;
+      letter-spacing: -0.02em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .lv {
+      font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+      letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0;
+    }
+    .meta {
+      font-family: var(--mono); color: var(--muted); font-size: 0.66rem;
+    }
+    .actions { display: flex; gap: 0.35rem; margin-top: auto; }
+    button {
+      appearance: none; border: 1px solid rgba(255,255,255,.14);
+      border-radius: 2px; padding: 0.32rem 0.65rem;
+      font: inherit; font-size: 0.72rem; font-weight: 650; cursor: pointer;
+    }
+    #btn-view {
+      background: rgba(62,112,77,.22);
+      border-color: rgba(90,158,111,.45);
+      color: #cfe8d6;
+    }
+    #btn-dismiss {
+      background: transparent; color: var(--muted);
+    }
+    button:hover { filter: brightness(1.08); }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="accent"></div>
+    <div class="body">
+      <div class="top">
+        <h1 id="title">Protect alert</h1>
+        <span class="lv">lv</span>
+      </div>
+      <div class="meta" id="meta">—</div>
+      <div class="actions">
+        <button type="button" id="btn-view">View</button>
+        <button type="button" id="btn-dismiss">Dismiss</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const action = (params.get("action") || "warn").toLowerCase();
+    const source = params.get("source") || "protect";
+    const eventId = params.get("event") || "";
+    const types = params.get("types") || "";
+
+    const titles = {
+      block: "Credential blocked",
+      mask: "PII masked",
+      warn: "Low-sensitivity hit",
+    };
+    document.getElementById("card").classList.add(action);
+    document.getElementById("title").textContent = titles[action] || "Protect alert";
+    document.getElementById("meta").textContent =
+      source + " · just now" + (types ? " · " + types : "");
+
+    function api(name) {
+      try {
+        if (window.pywebview && window.pywebview.api && window.pywebview.api[name]) {
+          return window.pywebview.api[name]();
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    document.getElementById("btn-view").onclick = () => {
+      try {
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.toast_view) {
+          window.pywebview.api.toast_view(eventId);
+          return;
+        }
+      } catch (_) {}
+      if (eventId) location.href = "/status?event=" + encodeURIComponent(eventId);
+    };
+    document.getElementById("btn-dismiss").onclick = () => {
+      api("toast_dismiss");
+    };
+  </script>
+</body>
+</html>

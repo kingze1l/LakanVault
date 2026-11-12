@@ -19,7 +19,25 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # config 
 # =============================================================================
-GITLEAKS_TOML = Path(__file__).with_name("gitleaks.toml")
+def _gitleaks_toml_path() -> Path:
+    """Resolve gitleaks.toml in source tree or PyInstaller bundle."""
+    beside = Path(__file__).with_name("gitleaks.toml")
+    if beside.is_file():
+        return beside
+    import sys
+
+    if getattr(sys, "frozen", False):
+        meipass = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+        for candidate in (
+            meipass / "lakanvault" / "local_core" / "secrets" / "gitleaks.toml",
+            meipass / "gitleaks.toml",
+        ):
+            if candidate.is_file():
+                return candidate
+    return beside
+
+
+GITLEAKS_TOML = _gitleaks_toml_path()
 DEFAULT_SCORE = 0.85
 STOPWORD_PENALTY = 0.5   # placeholder-looking value: 0.85 * 0.5 = 0.425 -> "unsure", not dropped
 ENTROPY_PENALTY = 0.6    # value below the rule's minimum entropy

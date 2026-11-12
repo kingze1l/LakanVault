@@ -1,4 +1,4 @@
-"""Tests for content classification."""
+# content classify allow block redact via classifier/gateway
 from __future__ import annotations
 
 from lakanvault.local_core.privacy.classifier import classify_content

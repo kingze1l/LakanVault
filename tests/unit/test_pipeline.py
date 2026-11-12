@@ -1,4 +1,4 @@
-"""Basic smoke tests for the pipeline stages."""
+# smoke for integrity threat audit pipeline stages
 import tempfile
 from pathlib import Path
 
@@ -28,7 +28,7 @@ def test_integrity_real_file():
     assert "hash" in result.metadata
     Path(tmp).unlink()
 
-
+# no risky env keys → pass or warn never error
 def test_threat_scanner_no_findings():
     import os
     # Remove any risky env vars for this test

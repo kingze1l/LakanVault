@@ -1,9 +1,11 @@
+# draws the little tray dots green / amber / red
 """Solid-color tray icons (green / amber / red). Requires Pillow at runtime."""
 from __future__ import annotations
 
 from lakanvault.tray.state import TrayStatus
 
 
+# make a solid circle icon for whatever status we got
 def make_status_icon(status: TrayStatus, size: int = 64):
     """Return a PIL Image for the given tray status."""
     from PIL import Image, ImageDraw

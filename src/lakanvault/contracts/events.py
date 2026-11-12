@@ -1,3 +1,5 @@
+# pipeline event shapes
+# data models + a bit of fail-closed status logic on PipelineEvent
 """Domain events — immutable records of what happened in the pipeline."""
 from __future__ import annotations
 
@@ -32,6 +34,7 @@ class PipelineEvent(BaseModel):
     stages: list[StageResult] = Field(default_factory=list)
     overall_status: StageStatus = StageStatus.PASS
 
+    # append stage n poison overall on FAIL/ERROR
     def add_stage(self, result: StageResult) -> None:
         self.stages.append(result)
         # Fail-closed: any FAIL or ERROR poisons the whole run
@@ -40,6 +43,7 @@ class PipelineEvent(BaseModel):
         elif result.status == StageStatus.WARN and self.overall_status == StageStatus.PASS:
             self.overall_status = StageStatus.WARN
 
+    # False means stop the pipeline (fail-closed)
     def should_continue(self) -> bool:
         """Return False if a downstream stage must not run (fail-closed)."""
         return self.overall_status not in (StageStatus.FAIL, StageStatus.ERROR)

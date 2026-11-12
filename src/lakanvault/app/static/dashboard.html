@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LakanVault — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #070b10;
+      --bg1: #0c1219;
+      --bg2: #121a24;
+      --panel: rgba(18, 26, 36, 0.92);
+      --line: rgba(180, 210, 230, 0.1);
+      --line-2: rgba(180, 210, 230, 0.18);
+      --text: #e7eef5;
+      --muted: #8a9aab;
+      --dim: #5d6d7e;
+      --mint: #3ecf9a;
+      --mint-dim: rgba(62, 207, 154, 0.16);
+      --warn: #d4b14a;
+      --err: #e06b6b;
+      --mask: #6a9ec4;
+      --sans: "Sora", "Segoe UI", sans-serif;
+      --mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; min-height: 100%;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 12% -10%, rgba(62, 207, 154, 0.12), transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, rgba(80, 130, 180, 0.1), transparent 50%),
+        linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 55%, #05080c 100%);
+    }
+    body { padding: 0 0 3rem; }
+    .shell {
+      width: min(1120px, calc(100% - 2rem));
+      margin: 0 auto;
+    }
+    .hero {
+      padding: 2.4rem 0 1.6rem;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      gap: 0.85rem;
+    }
+    .brand {
+      font-size: clamp(1.85rem, 4vw, 2.55rem);
+      font-weight: 700;
+      letter-spacing: -0.045em;
+      line-height: 1.05;
+      margin: 0;
+    }
+    .brand span {
+      color: var(--mint);
+    }
+    .lede {
+      margin: 0;
+      max-width: 36rem;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.5;
+    }
+    .hero-meta {
+      display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center;
+    }
+    .pill {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.28rem 0.55rem;
+      border: 1px solid var(--line-2);
+      background: var(--mint-dim);
+      color: var(--mint);
+    }
+    .pill.off { color: var(--warn); background: rgba(212, 177, 74, 0.12); }
+    .pill.block { color: #f0a0a0; background: rgba(224, 107, 107, 0.12); }
+    .pill.mask, .pill.warn { color: #e6c96a; background: rgba(212, 177, 74, 0.12); }
+    .section {
+      padding: 1.7rem 0 0.4rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .section:last-child { border-bottom: 0; }
+    .section h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .section p.sub {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+      max-width: 40rem;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+    .metric {
+      background: var(--panel);
+      padding: 1rem 0.9rem 0.85rem;
+    }
+    .metric .n {
+      font-family: var(--mono);
+      font-size: 1.65rem;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .metric .l {
+      margin-top: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      font-weight: 600;
+    }
+    .metric.block .n { color: var(--err); }
+    .metric.warn .n { color: var(--warn); }
+    .metric.mask .n { color: var(--mask); }
+    .gate-btns, .dict-tabs {
+      display: flex; gap: 0.4rem; flex-wrap: wrap;
+    }
+    button, .btn {
+      appearance: none;
+      border: 1px solid var(--line-2);
+      background: var(--bg2);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 0.45rem 0.75rem;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    button:hover, .btn:hover { border-color: rgba(220, 240, 255, 0.28); }
+    button.active {
+      background: var(--mint-dim);
+      border-color: rgba(62, 207, 154, 0.45);
+      color: var(--mint);
+    }
+    button.primary {
+      background: rgba(62, 207, 154, 0.18);
+      border-color: rgba(62, 207, 154, 0.4);
+      color: #b8f5d8;
+    }
+    button.danger {
+      border-color: rgba(224, 107, 107, 0.45);
+      color: #f0a0a0;
+      background: rgba(224, 107, 107, 0.08);
+    }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .hint {
+      margin: 0.65rem 0 0;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--dim);
+      line-height: 1.4;
+    }
+    .activity {
+      list-style: none; margin: 0; padding: 0;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      max-height: 220px; overflow: auto;
+    }
+    .activity li {
+      display: grid;
+      grid-template-columns: 5.5rem 1fr auto;
+      gap: 0.6rem;
+      padding: 0.55rem 0.7rem;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .activity li:hover { background: rgba(255,255,255,0.03); }
+    .activity li:last-child { border-bottom: 0; }
+    .activity .t { font-family: var(--mono); color: var(--dim); font-size: 0.7rem; }
+    .activity .a { font-family: var(--mono); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; }
+    .activity .a.block { color: var(--err); }
+    .activity .a.warn, .activity .a.mask { color: var(--warn); }
+    .activity .empty { padding: 0.9rem; color: var(--dim); cursor: default; display: block; }
+    .dict-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 760px) {
+      .metrics, .dict-grid { grid-template-columns: 1fr; }
+      .activity li { grid-template-columns: 1fr; gap: 0.2rem; }
+    }
+    .dict-panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 0.85rem;
+      display: grid;
+      gap: 0.55rem;
+    }
+    .dict-panel h3 {
+      margin: 0;
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dim);
+      font-weight: 600;
+    }
+    .dict-add {
+      display: flex; gap: 0.4rem;
+    }
+    .dict-add input {
+      flex: 1;
+      background: var(--bg0);
+      border: 1px solid var(--line-2);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.84rem;
+      padding: 0.42rem 0.55rem;
+      border-radius: 2px;
+    }
+    .dict-list {
+      list-style: none; margin: 0; padding: 0;
+      max-height: 160px; overflow: auto;
+    }
+    .dict-list li {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+    .dict-list li:last-child { border-bottom: 0; }
+    .dict-list button {
+      padding: 0.2rem 0.45rem;
+      font-size: 0.7rem;
+    }
+    .review-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 760px) { .review-grid { grid-template-columns: 1fr; } }
+    .hl {
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.45;
+      min-height: 7rem;
+      max-height: 14rem;
+      overflow: auto;
+      background: var(--bg0);
+      border: 1px solid var(--line);
+      padding: 0.7rem;
+      user-select: text;
+    }
+    mark {
+      background: rgba(212, 177, 74, 0.28);
+      color: inherit;
+      padding: 0 1px;
+    }
+    mark.block { background: rgba(224, 107, 107, 0.35); }
+    mark.mask { background: rgba(62, 207, 154, 0.28); color: #cfe8d6; }
+    label.field {
+      display: block;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin: 0 0 0.3rem;
+      font-weight: 600;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.75rem; }
+    .status-msg { min-height: 1.1em; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+    .status-msg.err { color: #f0a0a0; }
+    #overrideBox {
+      display: none; margin-top: 0.75rem; padding: 0.7rem;
+      border: 1px solid rgba(224, 107, 107, 0.4);
+      background: rgba(224, 107, 107, 0.08);
+      gap: 0.45rem; flex-direction: column;
+    }
+    #overrideBox.visible { display: flex; }
+    #overrideBox p { margin: 0; font-size: 0.82rem; line-height: 1.4; }
+    #overrideBox label.check {
+      display: flex; gap: 0.45rem; align-items: flex-start;
+      font-size: 0.8rem; color: var(--muted); cursor: pointer;
+    }
+    textarea#reviewInput {
+      width: 100%;
+      min-height: 5.5rem;
+      resize: vertical;
+      background: var(--bg0);
+      border: 1px solid var(--line-2);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      padding: 0.65rem;
+      border-radius: 2px;
+    }
+    .strip {
+      display: flex; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
+      align-items: center; color: var(--muted); font-size: 0.86rem;
+    }
+    .strip b { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <h1 class="brand">Lakan<span>Vault</span></h1>
+      <p class="lede">Local-first DLP for AI chat — block secrets and PII before they leave the machine.</p>
+      <div class="hero-meta">
+        <span id="protection-pill" class="pill">on</span>
+        <span id="protection-label" class="strip"><b>Protection</b>&nbsp;active</span>
+      </div>
+    </header>
+
+    <section class="section" id="sec-gate">
+      <h2>Cursor chat gate</h2>
+      <p class="sub">Off keeps chat free. Tag gates only prompts with [[lv]]. On gates every prompt in the demo workspace.</p>
+      <div class="gate-btns">
+        <button type="button" id="btn-mode-off" data-mode="off">Off</button>
+        <button type="button" id="btn-mode-tag" data-mode="tag">Tag</button>
+        <button type="button" id="btn-mode-on" data-mode="on">On</button>
+      </div>
+      <p class="hint" id="gate-hint">MCP refresh is manual in Cursor if tools are missing.</p>
+    </section>
+
+    <section class="section" id="sec-stats">
+      <h2>Protection metrics</h2>
+      <p class="sub">Counts only — raw PII stays off the wire and out of audit payloads.</p>
+      <div class="metrics">
+        <div class="metric block"><div class="n" id="n-block">0</div><div class="l">BLOCKED</div></div>
+        <div class="metric warn"><div class="n" id="n-warn">0</div><div class="l">WARNED</div></div>
+        <div class="metric mask"><div class="n" id="n-mask">0</div><div class="l">MASKED</div></div>
+      </div>
+      <div class="actions">
+        <button type="button" id="btn-pause">Pause toasts</button>
+      </div>
+      <p class="hint" style="margin-top:1rem">Activity · select a row to open Prompt Review</p>
+      <ul class="activity" id="activity"><li class="empty">No protect events yet.</li></ul>
+    </section>
+
+    <section class="section" id="sec-dict">
+      <h2>Word dictionary</h2>
+      <p class="sub">Overlook drops matching Joan findings. Flag forces a CUSTOM_FLAG mask when the term appears uncovered.</p>
+      <div class="dict-grid">
+        <div class="dict-panel">
+          <h3>Overlook</h3>
+          <div class="dict-add">
+            <input id="overlook-input" type="text" placeholder="word or name to ignore" />
+            <button type="button" class="primary" id="btn-add-overlook">Add</button>
+          </div>
+          <ul class="dict-list" id="overlook-list"></ul>
+        </div>
+        <div class="dict-panel">
+          <h3>Flag</h3>
+          <div class="dict-add">
+            <input id="flag-input" type="text" placeholder="word or name to force-hit" />
+            <button type="button" class="primary" id="btn-add-flag">Add</button>
+          </div>
+          <ul class="dict-list" id="flag-list"></ul>
+        </div>
+      </div>
+      <p class="hint" id="dict-status"></p>
+    </section>
+
+    <section class="section" id="sec-review">
+      <h2>Prompt Review</h2>
+      <p class="sub">Scan a prompt through Joan + dictionary, then send filtered text or Override once for Cursor paste-trust.</p>
+      <label class="field" for="reviewInput">Prompt to scan</label>
+      <textarea id="reviewInput" placeholder="Paste a prompt, or pick an activity row…"></textarea>
+      <div class="actions">
+        <button type="button" class="primary" id="btn-scan">Scan</button>
+        <button type="button" id="btn-send" disabled>Send filtered</button>
+        <button type="button" class="danger" id="btn-override" disabled>Override</button>
+      </div>
+      <p class="status-msg" id="review-status"></p>
+      <div class="review-grid" style="margin-top:0.85rem">
+        <div>
+          <label class="field">Original</label>
+          <div class="hl" id="originalHl">(none)</div>
+        </div>
+        <div>
+          <label class="field">Filtered · <span id="review-verdict">—</span></label>
+          <div class="hl" id="sanitized">(none)</div>
+        </div>
+      </div>
+      <div id="overrideBox">
+        <p>Override trusts the original once for Cursor paste. It does not call a local LLM.</p>
+        <label class="check">
+          <input type="checkbox" id="overrideAck" />
+          <span>I understand this exposes real credentials or PII.</span>
+        </label>
+        <div class="actions">
+          <button type="button" class="danger" id="btn-confirm-override" disabled>Confirm unmasked</button>
+          <button type="button" id="btn-cancel-override">Cancel</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+    let paused = false;
+    let hooksMode = "tag";
+    let dict = { overlook: [], flag: [] };
+    let reviewState = {
+      sessionId: "", sanitized: "", original: "", action: "allow",
+      allowSend: false, findings: [],
+    };
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function highlight(text, findings) {
+      const spans = (findings || [])
+        .map((f) => ({ start: f.start, end: f.end, action: f.action || "" }))
+        .filter((f) => f.end > f.start)
+        .sort((a, b) => a.start - b.start);
+      let out = "", cursor = 0;
+      for (const span of spans) {
+        if (span.start < cursor) continue;
+        out += escapeHtml(text.slice(cursor, span.start));
+        const cls = span.action === "block" ? "block" : "mask";
+        out += `<mark class="${cls}">` + escapeHtml(text.slice(span.start, span.end)) + "</mark>";
+        cursor = span.end;
+      }
+      return out + escapeHtml(text.slice(cursor));
+    }
+
+    function fmtTime(ts) {
+      try {
+        return new Date(ts * 1000).toLocaleTimeString([], {
+          hour: "2-digit", minute: "2-digit", second: "2-digit"
+        });
+      } catch { return ""; }
+    }
+
+    function friendlyError(msg) {
+      const s = String(msg || "");
+      if (/cannot reach local llm|local llm is not running|connection refused|failed to establish|urlerror/i.test(s)) {
+        return "Local LLM offline — Override still works (paste-trust, no LLM).";
+      }
+      return s;
+    }
+
+    function setReviewStatus(msg, isErr) {
+      const node = el("review-status");
+      node.textContent = isErr ? friendlyError(msg) : (msg || "");
+      node.className = "status-msg" + (isErr ? " err" : "");
+    }
+
+    function hideOverride() {
+      el("overrideBox").classList.remove("visible");
+      el("overrideAck").checked = false;
+      el("btn-confirm-override").disabled = true;
+    }
+
+    function renderProtection(stats) {
+      paused = !!stats.paused;
+      const on = !paused;
+      const pill = el("protection-pill");
+      pill.textContent = on ? "on" : "paused";
+      pill.className = "pill" + (on ? "" : " off");
+      el("protection-label").innerHTML = on
+        ? "<b>Protection</b>&nbsp;active"
+        : "<b>Protection</b>&nbsp;paused";
+      el("n-block").textContent = String(stats.blocked ?? stats.block ?? 0);
+      el("n-warn").textContent = String(stats.warned ?? stats.warn ?? 0);
+      el("n-mask").textContent = String(stats.masked ?? stats.mask ?? 0);
+      el("btn-pause").textContent = paused ? "Resume toasts" : "Pause toasts";
+    }
+
+    function renderGate() {
+      ["off", "tag", "on"].forEach((m) => {
+        el("btn-mode-" + m).classList.toggle("active", hooksMode === m);
+      });
+    }
+
+    function renderDict() {
+      const paint = (key, listId) => {
+        const list = el(listId);
+        const items = dict[key] || [];
+        if (!items.length) {
+          list.innerHTML = '<li class="empty" style="display:block;color:var(--dim);font-family:var(--sans)">None yet.</li>';
+          return;
+        }
+        list.innerHTML = items.map((term, i) => (
+          `<li><span>${escapeHtml(term)}</span>` +
+          `<button type="button" data-kind="${key}" data-i="${i}">Remove</button></li>`
+        )).join("");
+      };
+      paint("overlook", "overlook-list");
+      paint("flag", "flag-list");
+    }
+
+    function applyReview(payload) {
+      reviewState = {
+        sessionId: payload.session_id || "",
+        sanitized: payload.sanitized || "",
+        original: payload.original || el("reviewInput").value || "",
+        action: payload.final_action || payload.action || "allow",
+        allowSend: !!payload.allow_send,
+        findings: payload.findings || [],
+      };
+      el("review-verdict").textContent = reviewState.action;
+      el("originalHl").innerHTML = highlight(reviewState.original, reviewState.findings);
+      el("sanitized").textContent = reviewState.sanitized || "(blocked — empty)";
+      el("btn-send").disabled = !reviewState.allowSend || !reviewState.sessionId;
+      el("btn-override").disabled = !reviewState.sessionId;
+      hideOverride();
+    }
+
+    async function refreshStats() {
+      const resp = await fetch("/api/protect/stats");
+      if (!resp.ok) return;
+      const stats = await resp.json();
+      renderProtection(stats);
+      const recent = await fetch("/api/protect/recent?limit=40");
+      if (!recent.ok) return;
+      const data = await recent.json();
+      const events = data.events || [];
+      const list = el("activity");
+      if (!events.length) {
+        list.innerHTML = '<li class="empty">No protect events yet.</li>';
+        return;
+      }
+      list.innerHTML = events.slice().reverse().map((ev) => (
+        `<li data-id="${ev.id}">` +
+        `<span class="t">${escapeHtml(fmtTime(ev.ts))}</span>` +
+        `<span>${escapeHtml((ev.entity_types || []).join(", ") || "finding")}</span>` +
+        `<span class="a ${escapeHtml(ev.action || "")}">${escapeHtml(ev.action || "")}</span>` +
+        `</li>`
+      )).join("");
+    }
+
+    async function refreshGate() {
+      const resp = await fetch("/api/hooks/mode");
+      if (!resp.ok) return;
+      const data = await resp.json();
+      hooksMode = data.mode || "tag";
+      renderGate();
+      if (data.labels && data.labels[hooksMode]) {
+        el("gate-hint").textContent = data.labels[hooksMode] + (data.hint ? " · " + data.hint : "");
+      }
+    }
+
+    async function refreshDict() {
+      const resp = await fetch("/api/dictionary");
+      if (!resp.ok) return;
+      dict = await resp.json();
+      renderDict();
+    }
+
+    async function saveDict() {
+      const resp = await fetch("/api/dictionary", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dict),
+      });
+      if (!resp.ok) {
+        el("dict-status").textContent = "Save failed.";
+        return;
+      }
+      dict = await resp.json();
+      renderDict();
+      el("dict-status").textContent = "Dictionary saved.";
+    }
+
+    async function openEvent(eventId) {
+      const resp = await fetch("/api/protect/event/" + encodeURIComponent(eventId));
+      if (!resp.ok) {
+        setReviewStatus("Event expired or unknown.", true);
+        return;
+      }
+      const data = await resp.json();
+      el("reviewInput").value = data.original || "";
+      applyReview({
+        session_id: data.session_id,
+        sanitized: data.sanitized,
+        original: data.original,
+        final_action: data.action,
+        allow_send: data.action !== "block",
+        findings: data.findings || [],
+      });
+      setReviewStatus("Loaded from activity.");
+      el("sec-review").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    el("activity").addEventListener("click", (e) => {
+      const li = e.target.closest("li[data-id]");
+      if (!li) return;
+      openEvent(li.getAttribute("data-id"));
+    });
+
+    document.querySelectorAll("[data-mode]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const mode = btn.getAttribute("data-mode");
+        const resp = await fetch("/api/hooks/mode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode }),
+        });
+        if (resp.ok) {
+          hooksMode = mode;
+          renderGate();
+          await refreshGate();
+        }
+      });
+    });
+
+    el("btn-pause").addEventListener("click", async () => {
+      const resp = await fetch("/api/protect/pause", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paused: !paused }),
+      });
+      if (resp.ok) renderProtection(await (await fetch("/api/protect/stats")).json());
+    });
+
+    el("btn-add-overlook").addEventListener("click", async () => {
+      const v = el("overlook-input").value.trim();
+      if (!v) return;
+      dict.overlook = [...(dict.overlook || []), v];
+      el("overlook-input").value = "";
+      await saveDict();
+    });
+    el("btn-add-flag").addEventListener("click", async () => {
+      const v = el("flag-input").value.trim();
+      if (!v) return;
+      dict.flag = [...(dict.flag || []), v];
+      el("flag-input").value = "";
+      await saveDict();
+    });
+    el("overlook-list").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-kind]");
+      if (!btn) return;
+      const i = Number(btn.getAttribute("data-i"));
+      dict[btn.getAttribute("data-kind")].splice(i, 1);
+      await saveDict();
+    });
+    el("flag-list").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-kind]");
+      if (!btn) return;
+      const i = Number(btn.getAttribute("data-i"));
+      dict[btn.getAttribute("data-kind")].splice(i, 1);
+      await saveDict();
+    });
+
+    el("btn-scan").addEventListener("click", async () => {
+      const text = el("reviewInput").value;
+      setReviewStatus("Scanning…");
+      const resp = await fetch("/api/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, session_id: "", llm: "never" }),
+      });
+      if (!resp.ok) {
+        setReviewStatus(await resp.text(), true);
+        return;
+      }
+      const data = await resp.json();
+      applyReview({ ...data, original: text });
+      setReviewStatus("Scan complete · " + (data.final_action || "allow"));
+      await refreshStats();
+    });
+
+    el("btn-send").addEventListener("click", async () => {
+      setReviewStatus("Sending filtered…");
+      const resp = await fetch("/api/review/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: reviewState.sessionId,
+          sanitized: reviewState.sanitized,
+          override: false,
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || data.blocked || data.error) {
+        setReviewStatus(data.block_reason || data.error || data.detail || "Send failed", true);
+        return;
+      }
+      setReviewStatus("Sent filtered to local LLM.");
+    });
+
+    el("btn-override").addEventListener("click", () => {
+      el("overrideBox").classList.add("visible");
+    });
+    el("btn-cancel-override").addEventListener("click", hideOverride);
+    el("overrideAck").addEventListener("change", () => {
+      el("btn-confirm-override").disabled = !el("overrideAck").checked;
+    });
+    el("btn-confirm-override").addEventListener("click", async () => {
+      setReviewStatus("Override (no LLM)…");
+      const resp = await fetch("/api/review/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: reviewState.sessionId,
+          sanitized: reviewState.sanitized,
+          override: true,
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || data.blocked || data.error) {
+        setReviewStatus(data.block_reason || data.error || data.detail || "Override failed", true);
+        return;
+      }
+      hideOverride();
+      setReviewStatus(data.raw_response || "Override accepted — paste Original into Cursor once.");
+    });
+
+    refreshStats();
+    refreshGate();
+    refreshDict();
+    setInterval(refreshStats, 2500);
+  </script>
+</body>
+</html>

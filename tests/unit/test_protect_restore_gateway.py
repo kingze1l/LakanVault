@@ -1,4 +1,4 @@
-"""Gateway protect/restore via Joan process_input / process_output."""
+# gateway protect/restore via joan process_input/output
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,7 +15,7 @@ SECRET_VALUE = "SuperSecret99"
 EMAIL = "jane.doe@example.com"
 PII_PROMPT = f"please email {EMAIL} about the meeting"
 
-
+# gateway pointed at a temp config dir
 def _gateway(tmp_path: Path) -> Gateway:
     src = Path(__file__).resolve().parents[2] / "config" / "default.yaml"
     cfg = tmp_path / "config"
@@ -23,11 +23,9 @@ def _gateway(tmp_path: Path) -> Gateway:
     (cfg / "default.yaml").write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
     return Gateway(config_dir=cfg)
 
-
+# stub email finding so ci doesnt need spacy
 @pytest.fixture(autouse=True)
 def _pii_without_presidio(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Secrets via detector; email via stub Finding so CI needs no spaCy."""
-
     def fake_pii(text: str, layers=("names",)):
         start = text.find(EMAIL)
         if start < 0:

@@ -1,4 +1,4 @@
-"""Tests for settings save/load."""
+# settings save/load + clear local config keys
 from pathlib import Path
 
 from lakanvault.shared.config import clear_local_config_keys, load_config, save_local_config

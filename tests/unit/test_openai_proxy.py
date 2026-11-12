@@ -1,4 +1,4 @@
-"""OpenAI reverse-proxy: fake upstream, no raw PII/secrets outbound, restore rules."""
+# openai reverse proxy fake upstream no raw pii outbound
 from __future__ import annotations
 
 import asyncio
@@ -39,7 +39,7 @@ def test_filter_drops_hop_by_hop_and_host() -> None:
     assert "authorization" in keys
     assert "openai-organization" in keys
 
-
+# hit proxy app thru mock upstream transport
 async def _call(handler, method: str, path: str, **kwargs):
     captured: list[httpx.Request] = []
 
@@ -200,9 +200,8 @@ def test_models_passthrough() -> None:
 
     asyncio.run(run())
 
-
+# token from req A must not restore in req B
 def test_cross_request_surrogate_not_restored() -> None:
-    """A fake belonging to another Joan vault must not be restored on this request."""
     async def run():
         from lakanvault.local_core.anonymizer.anonymizer import Vault
 
@@ -268,7 +267,7 @@ def test_fifty_concurrent_lifecycles() -> None:
 
     asyncio.run(run())
 
-
+# surrogate split across sse chunks still restores
 def test_stream_restores_split_token_and_done() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content)

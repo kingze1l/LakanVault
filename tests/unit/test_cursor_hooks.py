@@ -1,4 +1,4 @@
-"""Cursor hook scripts: stdin JSON → allow/deny without leaking secrets."""
+# cursor hook scripts allow/deny without leaking secrets
 from __future__ import annotations
 
 import io
@@ -18,13 +18,12 @@ SECRET = "SuperSecret99"
 EMAIL = "jane.doe@example.com"
 FAKE_EMAIL = "fleblanc@example.net"
 
-
+# force hooks on even if mode.txt says off
 @pytest.fixture(autouse=True)
 def _hooks_on(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Tests exercise the gate; repo mode.txt defaults to off for live Cursor chat."""
     monkeypatch.setenv("LAKANVAULT_HOOKS", "on")
 
-
+# run hook script with fake stdin/out
 def _run_hook(script: Path, stdin_obj: dict, monkeypatch: pytest.MonkeyPatch) -> dict:
     buf_in = io.StringIO(json.dumps(stdin_obj))
     buf_out = io.StringIO()
@@ -93,7 +92,7 @@ def test_prompt_hook_denies_mask_and_hands_sanitized(
     stored = json.loads(handoff.read_text(encoding="utf-8"))
     assert stored[0]["text"] == sanitized
 
-
+# one-shot handoff token after mask deny
 def test_prompt_hook_trusts_exact_handoff_once(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -143,7 +142,7 @@ def test_prompt_hook_off_skips_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_open.assert_not_called()
     assert out["continue"] is True
 
-
+# tag mode: no marker means skip the gate
 def test_prompt_hook_tag_skips_without_marker(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LAKANVAULT_HOOKS", "tag")
     with patch("urllib.request.urlopen") as mock_open:
@@ -186,6 +185,35 @@ def test_prompt_hook_daemon_down_denies(monkeypatch: pytest.MonkeyPatch) -> None
         out = _run_hook(PROMPT_HOOK, {"prompt": "hello"}, monkeypatch)
     assert out["continue"] is False
     assert "unreachable" in out["user_message"].lower()
+
+
+def test_prompt_hook_bad_json_allows_soft(monkeypatch: pytest.MonkeyPatch) -> None:
+    buf_in = io.StringIO("not-json{{{")
+    buf_out = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", buf_in)
+    monkeypatch.setattr(sys, "stdout", buf_out)
+    try:
+        runpy.run_path(str(PROMPT_HOOK), run_name="__main__")
+    except SystemExit as exc:
+        assert exc.code in (0, None)
+    out = json.loads(buf_out.getvalue())
+    assert out["continue"] is True
+    assert out["permission"] == "allow"
+    assert "parse" in (out.get("user_message") or "").lower()
+
+
+def test_read_hook_bad_json_allows_soft(monkeypatch: pytest.MonkeyPatch) -> None:
+    buf_in = io.StringIO("<<<broken")
+    buf_out = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", buf_in)
+    monkeypatch.setattr(sys, "stdout", buf_out)
+    try:
+        runpy.run_path(str(READ_HOOK), run_name="__main__")
+    except SystemExit as exc:
+        assert exc.code in (0, None)
+    out = json.loads(buf_out.getvalue())
+    assert out["continue"] is True
+    assert out["permission"] == "allow"
 
 
 def test_read_hook_denies_env(monkeypatch: pytest.MonkeyPatch) -> None:

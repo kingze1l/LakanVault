@@ -1,4 +1,4 @@
-"""Tests for model registry poisoned detection and quarantine."""
+# model registry poisoned detect + quarantine move
 from pathlib import Path
 
 from lakanvault.local_core.integrity.registry import ModelRegistry

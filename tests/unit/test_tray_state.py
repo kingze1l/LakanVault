@@ -1,4 +1,4 @@
-"""Tray state machine tests — no real pystray / GUI."""
+# tray state machine no real pystray gui
 from __future__ import annotations
 
 from lakanvault.tray.state import TrayController, TrayStatus
@@ -7,7 +7,8 @@ from lakanvault.tray.state import TrayController, TrayStatus
 def test_initial_status_is_stopped() -> None:
     ctl = TrayController(host="127.0.0.1", port=8080)
     assert ctl.status == TrayStatus.STOPPED
-    assert ctl.dashboard_url == "http://127.0.0.1:8080/status"
+    assert ctl.status_url == "http://127.0.0.1:8080/status"
+    assert ctl.dashboard_url == "http://127.0.0.1:8080/dashboard"
     assert ctl.review_url == "http://127.0.0.1:8080/review"
 
 
@@ -45,7 +46,8 @@ def test_set_status_warning_and_error() -> None:
     assert ctl.status == TrayStatus.WARNING
     ctl.set_status(TrayStatus.ERROR)
     assert ctl.status == TrayStatus.ERROR
-    assert ctl.dashboard_url == "http://127.0.0.1:9090/status"
+    assert ctl.dashboard_url == "http://127.0.0.1:9090/dashboard"
+    assert ctl.status_url == "http://127.0.0.1:9090/status"
 
 
 def test_open_dashboard_and_review_call_opener() -> None:
@@ -54,7 +56,7 @@ def test_open_dashboard_and_review_call_opener() -> None:
     ctl.open_dashboard(lambda url: opened.append(url))
     ctl.open_review(lambda url: opened.append(url))
     assert opened == [
-        "http://127.0.0.1:8080/status",
+        "http://127.0.0.1:8080/dashboard",
         "http://127.0.0.1:8080/review",
     ]
 
@@ -114,7 +116,7 @@ def test_notify_for_events_skips_when_paused() -> None:
     assert notes == []
 
 
-def test_notify_block_events_are_returned_for_auto_flyout() -> None:
+def test_notify_block_events_are_returned_for_toast() -> None:
     ctl = TrayController()
     ctl.start_gateway(lambda: True)
     notes: list[tuple[str, str]] = []

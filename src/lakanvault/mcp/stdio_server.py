@@ -1,3 +1,4 @@
+# native mcp stdio server so cursor can call classify/protect/restore/audit
 """Native MCP stdio server — classify, protect/restore, and audit tools for Cursor.
 
 Uses the official MCP Python SDK (newline-delimited JSON-RPC on stdin/stdout).
@@ -12,20 +13,10 @@ from pathlib import Path
 from mcp.server import MCPServer
 
 from lakanvault.mcp.server import audit_recent, classify, protect, restore, shared_gateway
+from lakanvault.shared.config import resolve_config_dir
 
 
-def resolve_config_dir(explicit: str | Path | None = None) -> Path:
-    if explicit is not None:
-        return Path(explicit)
-    cwd = Path.cwd() / "config"
-    if (cwd / "default.yaml").is_file():
-        return cwd
-    here = Path(__file__).resolve().parents[3] / "config"
-    if (here / "default.yaml").is_file():
-        return here
-    return Path("config")
-
-
+# build the mcp server with our tools wired up
 def build_server(config_dir: str | Path | None = None) -> MCPServer:
     cfg = resolve_config_dir(config_dir)
     # Warm shared Gateway so protect/restore sessions stick for this process.
@@ -41,6 +32,7 @@ def build_server(config_dir: str | Path | None = None) -> MCPServer:
         version="0.1.0",
     )
 
+    # classify tool — meta only
     @server.tool(
         name="lakanvault_classify",
         description="Classify text for secrets/PII before AI submission. Returns metadata only.",
@@ -48,6 +40,7 @@ def build_server(config_dir: str | Path | None = None) -> MCPServer:
     def lakanvault_classify(text: str, source: str = "mcp") -> dict:
         return classify(text, config_dir=cfg).model_dump(mode="json")
 
+    # protect tool — sanitize before cloud send
     @server.tool(
         name="lakanvault_protect",
         description=(
@@ -64,6 +57,7 @@ def build_server(config_dir: str | Path | None = None) -> MCPServer:
     ) -> dict:
         return protect(text, session_id=session_id, llm=llm, config_dir=cfg).model_dump(mode="json")
 
+    # restore tool — put real values back in the reply
     @server.tool(
         name="lakanvault_restore",
         description=(
@@ -77,6 +71,7 @@ def build_server(config_dir: str | Path | None = None) -> MCPServer:
         except KeyError as exc:
             return {"error": str(exc), "session_id": session_id, "text": text}
 
+    # audit tool — recent run meta
     @server.tool(
         name="lakanvault_audit_recent",
         description="Return recent audit run metadata (no prompt text).",
@@ -87,6 +82,7 @@ def build_server(config_dir: str | Path | None = None) -> MCPServer:
     return server
 
 
+# cli entry — parse args n run stdio loop
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="LakanVault MCP stdio server")
     parser.add_argument(

@@ -1,3 +1,5 @@
+# joan — threat stage, host/env misconfig checks only
+# does NOT read prompt text — thats privacy's job (adr-002)
 """Threat scanner — checks host and env for misconfigurations.
 Per ADR-002: does NOT see raw prompts; runs before privacy stage.
 """
@@ -27,10 +29,12 @@ class ThreatScannerStage(PipelineStage):
     Does NOT read prompt text — that's the privacy stage's job.
     """
 
+    # stage name for the pipeline
     @property
     def name(self) -> str:
         return "threat_scanner"
 
+    # env keys / root / world-writable model dir
     def run(self, event: PipelineEvent) -> StageResult:
         warnings: list[str] = []
 

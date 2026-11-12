@@ -1,3 +1,4 @@
+# bus shouldnt cloud-forward when air gap is on
 from pathlib import Path
 
 from lakanvault.contracts.events import PipelineEvent, StageResult, StageStatus

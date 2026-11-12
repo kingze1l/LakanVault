@@ -1,3 +1,2 @@
-from lakanvault.local_core.dlp.transformer import transform_text
-
-__all__ = ["transform_text"]
+# walks chat payloads n applies transform rules
+# openai message shapes image inspect etc

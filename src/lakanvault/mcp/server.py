@@ -1,3 +1,4 @@
+# mcp tool wrappers that just call into Gateway (no cloud stuff here)
 """MCP stdio surface — tools only; no cloud forward. Stdio loop is ticket 1.3."""
 from __future__ import annotations
 
@@ -11,6 +12,7 @@ from lakanvault.contracts.mcp import (
     RestoreResponse,
 )
 from lakanvault.orchestration.gateway import Gateway
+from lakanvault.shared.config import resolve_config_dir
 
 TOOLS: tuple[str, ...] = (
     "lakanvault_classify",
@@ -23,24 +25,28 @@ TOOLS: tuple[str, ...] = (
 _GATEWAYS: dict[str, Gateway] = {}
 
 
+# reuse one gateway per config path so vault sessions stick
 def shared_gateway(config_dir: str | Path = "./config") -> Gateway:
-    key = str(Path(config_dir).resolve())
+    resolved = resolve_config_dir(config_dir)
+    key = str(resolved)
     gw = _GATEWAYS.get(key)
     if gw is None:
-        gw = Gateway(config_dir=config_dir)
+        gw = Gateway(config_dir=resolved)
         _GATEWAYS[key] = gw
     return gw
 
-
+# names of tools we expose
 def list_tools() -> tuple[str, ...]:
     return TOOLS
 
 
+# classify text via gateway (meta only)
 def classify(text: str, config_dir: str | Path = "./config") -> ClassifyResponse:
     """Classify via gateway. Read-only; does not forward prompts to cloud."""
     return shared_gateway(config_dir).classify_text(text)
 
 
+# scan + sanitize before stuff leaves to a model
 def protect(
     text: str,
     session_id: str = "",
@@ -53,6 +59,7 @@ def protect(
     )
 
 
+# put the real values back after the model replies
 def restore(
     text: str,
     session_id: str,
@@ -62,6 +69,7 @@ def restore(
     return shared_gateway(config_dir).restore_prompt(text, session_id=session_id)
 
 
+# pull recent audit jsons (no prompt text)
 def audit_recent(
     limit: int = 10,
     config_dir: str | Path = "./config",

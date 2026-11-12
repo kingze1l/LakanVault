@@ -1,3 +1,4 @@
+# wraps a child mcp server n sanitizes tools/call results thru the daemon
 """MCP stdio shim — wrap a child MCP server and sanitize tools/call results via the daemon.
 
 Stdout is JSON-RPC only (newline-delimited). Logs go to stderr.
@@ -18,6 +19,7 @@ _SANITIZE_URL_DEFAULT = "http://127.0.0.1:8080/internal/v1/sanitize"
 _MAX_MESSAGE = 2_000_000
 
 
+# read one json-rpc line from a binary stream
 def _read_message(stream: BinaryIO) -> dict[str, Any] | None:
     """Read one newline-delimited JSON-RPC message (MCP stdio transport)."""
     line = stream.readline()
@@ -32,6 +34,7 @@ def _read_message(stream: BinaryIO) -> dict[str, Any] | None:
     return msg if isinstance(msg, dict) else None
 
 
+# write one json-rpc line out
 def _write_message(stream: BinaryIO, payload: dict[str, Any]) -> None:
     raw = json.dumps(payload, separators=(",", ":")).encode("utf-8") + b"\n"
     if len(raw) > _MAX_MESSAGE:
@@ -40,6 +43,7 @@ def _write_message(stream: BinaryIO, payload: dict[str, Any]) -> None:
     stream.flush()
 
 
+# pipe child stderr up to our stderr so logs still show
 def _pipe_stderr(src: BinaryIO, dest: TextIO) -> None:
     try:
         while True:
@@ -52,6 +56,7 @@ def _pipe_stderr(src: BinaryIO, dest: TextIO) -> None:
         return
 
 
+# scrub text bits in a tools/call result (block binary/images)
 def sanitize_tool_result(result: dict[str, Any], daemon_url: str, request_id: str) -> dict[str, Any]:
     """Rewrite text / embedded text resource contents. Block binary in strict mode."""
     content = result.get("content")
@@ -92,6 +97,7 @@ def sanitize_tool_result(result: dict[str, Any], daemon_url: str, request_id: st
     return out
 
 
+# hit the daemon sanitize endpoint (empty string if it fails)
 def _sanitize_text(text: str, daemon_url: str, request_id: str) -> str:
     payload = json.dumps({"text": text, "request_id": request_id, "source": "mcp"}).encode()
     req = urllib.request.Request(
@@ -110,12 +116,14 @@ def _sanitize_text(text: str, daemon_url: str, request_id: str) -> str:
     return str(data.get("text") or "")
 
 
+# shuttle messages between cursor ↔ child mcp n sanitize tool results
 def pump(child: Popen, daemon_url: str) -> None:
     pending_calls: dict[Any, str] = {}
     lock = threading.Lock()
     assert child.stdout is not None
     assert child.stdin is not None
 
+    # forward client → child n track tools/call ids
     def client_to_child() -> None:
         try:
             while True:
@@ -132,6 +140,7 @@ def pump(child: Popen, daemon_url: str) -> None:
             except OSError:
                 pass
 
+    # forward child → client n scrub tool results
     def child_to_client() -> None:
         while True:
             msg = _read_message(child.stdout)
@@ -154,6 +163,7 @@ def pump(child: Popen, daemon_url: str) -> None:
     outbound.join(timeout=5)
 
 
+# cli — spawn child mcp n run the sanitize pump
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="LakanVault MCP stdio sanitizing shim")
     parser.add_argument("--daemon-url", default=_SANITIZE_URL_DEFAULT)

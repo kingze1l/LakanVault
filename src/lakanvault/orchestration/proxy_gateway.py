@@ -1,3 +1,4 @@
+# openai proxy lifecycle — sanitize then maybe call upstream then restore
 """Proxy request lifecycle — sanitize, optional upstream, restore, audit metadata."""
 from __future__ import annotations
 
@@ -60,6 +61,7 @@ class ProxyOutcome:
 
 
 class ProxyGateway:
+    # stash vault upstream options for the request path
     def __init__(
         self,
         vault: TokenVaultPort,
@@ -84,6 +86,7 @@ class ProxyGateway:
             image_inspector = ImageInspector()
         self._image_inspector = image_inspector
 
+    # get or make a joan vault for this request id
     def _joan_vault(self, request_id: str) -> Vault:
         vault = self._joan_vaults.get(request_id)
         if vault is None:
@@ -92,10 +95,12 @@ class ProxyGateway:
             self._joan_vaults[request_id] = vault
         return vault
 
+    # drop vaults for a finished request
     def _drop_request(self, request_id: str) -> None:
         self._joan_vaults.pop(request_id, None)
         self._vault.delete_request(request_id)
 
+    # classify outbound chat text (never returns the text)
     def classify_chat_payload(self, payload: dict[str, Any]) -> ChatPayloadClassifyResponse:
         """Classify outbound chat text. The response never includes that text."""
         text = orchestrated_prompt(payload)
@@ -120,10 +125,12 @@ class ProxyGateway:
             message_roles=roles,
         )
 
+    # async wrapper so we dont block the event loop
     async def classify_chat_payload_async(self, payload: dict[str, Any]) -> ChatPayloadClassifyResponse:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self.classify_chat_payload, payload)
 
+    # joan scan + decide + vault surrogates for a blob of text
     def sanitize_text(self, text: str, request_id: str) -> TransformResult:
         """Joan scan + decide + Vault surrogates (Presidio PII / format-preserving secrets)."""
         if not text:
@@ -152,11 +159,35 @@ class ProxyGateway:
                 else str(protected.final_action)
             )
             if action_s in ("warn", "mask", "block"):
-                record_protect_event(
+                from lakanvault.orchestration.review_sessions import get_review_sessions
+
+                ev = record_protect_event(
                     action_s,
                     source="proxy",
                     entity_types=entity_types,
                 )
+                if ev is not None:
+                    get_review_sessions().put(
+                        event_id=ev.id,
+                        session_id=f"proxy-{request_id}",
+                        original=text,
+                        sanitized=protected.sanitized if action_s != "block" else "",
+                        action=action_s,
+                        source="proxy",
+                        entity_types=entity_types,
+                        findings=[
+                            {
+                                "entity_type": f.entity_type,
+                                "tier": f.tier.value if hasattr(f.tier, "value") else str(f.tier),
+                                "confidence": float(f.confidence),
+                                "start": int(f.start),
+                                "end": int(f.end),
+                                "source": str(f.source),
+                                "action": action_s,
+                            }
+                            for f in protected.findings
+                        ],
+                    )
             if protected.final_action == Action.BLOCK:
                 # Keep reason free of secret substrings (e.g. entity types containing "sk-").
                 reason = "API key or credential pattern detected"
@@ -193,7 +224,9 @@ class ProxyGateway:
                 blocked=True,
             )
 
+    # sanitize a full chat payload before upstream
     def _prepare(self, payload: dict[str, Any], request_id: str) -> ProxyOutcome:
+        # tiny adapter so sanitize_chat_request can call us
         def _tx(text: str) -> TransformResult:
             return self.sanitize_text(text, request_id)
 
@@ -271,6 +304,7 @@ class ProxyGateway:
         )
         return ProxyOutcome(False, 200, {}, audit, mapping, sanitized, request_id)
 
+    # run prepare off the event loop
     async def _await_prepare(self, payload: dict[str, Any], rid: str) -> ProxyOutcome:
         loop = asyncio.get_running_loop()
         fut = loop.run_in_executor(None, self._prepare, payload, rid)
@@ -280,6 +314,7 @@ class ProxyGateway:
             await fut
             raise
 
+    # non-stream chat completions thru sanitize → upstream → restore
     async def chat_completions(
         self,
         payload: dict[str, Any],
@@ -318,6 +353,7 @@ class ProxyGateway:
             await resp.aclose()
             mapping = outcome.allow_mapping
 
+            # swap fakes back to real values in reply text
             def _restore(text: str) -> str:
                 if not mapping:
                     return text
@@ -333,6 +369,7 @@ class ProxyGateway:
         finally:
             self._drop_request(rid)
 
+    # stream path — sanitize then restore sse chunks on the way back
     async def iter_sse(
         self,
         payload: dict[str, Any],

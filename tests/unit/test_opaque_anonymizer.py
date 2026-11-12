@@ -1,4 +1,4 @@
-"""Opaque tokens — new module; ReversibleAnonymizer stays untouched."""
+# opaque tokens new module leave ReversibleAnonymizer alone
 from lakanvault.local_core.privacy.opaque_anonymizer import OpaqueAnonymizer
 
 
@@ -14,6 +14,6 @@ def test_restore_applies_mapping() -> None:
     restored = OpaqueAnonymizer.restore("Meet TKN_aaaa", {"TKN_aaaa": "Jane"})
     assert restored == "Meet Jane"
 
-
+# empty map means text comes back unchanged
 def test_restore_empty_mapping_is_identity() -> None:
     assert OpaqueAnonymizer.restore("hello", {}) == "hello"

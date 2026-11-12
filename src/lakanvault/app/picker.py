@@ -1,3 +1,4 @@
+# tiny helpers so u can pick model files / folders on windows
 """Native file/folder picker for local Windows desktop use."""
 from __future__ import annotations
 
@@ -6,6 +7,7 @@ from pathlib import Path
 MODEL_EXTENSIONS = {".gguf", ".bin", ".safetensors", ".pt", ".onnx", ".pth"}
 
 
+# pops a file dialog so u can pick a model file
 def pick_model_file(initial_dir: str | Path | None = None) -> str | None:
     try:
         import tkinter as tk
@@ -30,6 +32,7 @@ def pick_model_file(initial_dir: str | Path | None = None) -> str | None:
     return path or None
 
 
+# same deal but for a whole models folder
 def pick_models_folder(initial_dir: str | Path | None = None) -> str | None:
     try:
         import tkinter as tk
@@ -50,6 +53,7 @@ def pick_models_folder(initial_dir: str | Path | None = None) -> str | None:
     return path or None
 
 
+# walks a folder n lists the model files it finds
 def list_model_files(directory: str | Path, max_depth: int = 2) -> list[dict]:
     root = Path(directory)
     if not root.exists():
@@ -57,6 +61,7 @@ def list_model_files(directory: str | Path, max_depth: int = 2) -> list[dict]:
 
     found: list[dict] = []
 
+    # recurse a bit so we dont dig forever
     def walk(current: Path, depth: int) -> None:
         if depth > max_depth:
             return

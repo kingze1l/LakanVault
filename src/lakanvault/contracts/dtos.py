@@ -1,3 +1,5 @@
+# cross-layer DTOs safe shapes only
+# mostly pydantic data a couple helpers for cloud field checks
 """Data Transfer Objects — safe shapes for passing data across layer boundaries."""
 from __future__ import annotations
 
@@ -74,10 +76,12 @@ class CloudTelemetryDTO(BaseModel):
     }
 
 
+# names allowed on the cloud DTO
 def cloud_dto_field_names() -> frozenset[str]:
     return frozenset(CloudTelemetryDTO.model_fields)
 
 
+# blow up if someone sneaks forbidden fields onto the cloud DTO
 def assert_no_forbidden_cloud_fields() -> None:
     from lakanvault.shared.constants import FORBIDDEN_CLOUD_DTO_FIELDS
 

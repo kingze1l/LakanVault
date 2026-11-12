@@ -4,6 +4,7 @@ sibling of secrets/detector.py. Public entry point: detect_pii(text) -> list[Fin
 '''
 
 import logging
+import os
 import re
 from dataclasses import dataclass
 from functools import lru_cache
@@ -166,9 +167,49 @@ class NameHeuristicDetector(DetectionEngine):
 
 
 # =============================================================================
+# regex fallback (frozen / air-gapped — no spaCy)
+# =============================================================================
+class RegexPiiDetector(DetectionEngine):
+    """Lightweight email (and similar) patterns when Presidio/spaCy are unavailable."""
+
+    layer = "regex_pii"
+    _EMAIL = re.compile(
+        r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"
+    )
+
+    def detect(self, text: str) -> list[Finding]:
+        findings: list[Finding] = []
+        for m in self._EMAIL.finditer(text):
+            findings.append(
+                Finding(
+                    "EMAIL_ADDRESS",
+                    m.group(0),
+                    m.start(),
+                    m.end(),
+                    0.95,
+                    Tier.PII_MODERATE,
+                    self.layer,
+                )
+            )
+        return findings
+
+
+# =============================================================================
 # public API
 # =============================================================================
-_LAYER_CLASSES = {"presidio": PresidioDetector, "names": NameHeuristicDetector}
+_LAYER_CLASSES = {
+    "presidio": PresidioDetector,
+    "names": NameHeuristicDetector,
+    "regex_pii": RegexPiiDetector,
+}
+
+
+def default_pii_layers() -> tuple[str, ...]:
+    """Presidio when available; regex_pii+names when LAKANVAULT_PRIVACY_ENGINE=regex."""
+    engine = (os.environ.get("LAKANVAULT_PRIVACY_ENGINE") or "").strip().lower()
+    if engine in {"regex", "names", "heuristic"}:
+        return ("regex_pii", "names")
+    return ("presidio", "names")
 
 
 @lru_cache(maxsize=None)
@@ -184,20 +225,25 @@ def reset_analyzer_cache() -> None:
 
 def load_pii_models() -> None:
     """Call at startup so the first prompt doesn't pay for loading spaCy."""
-    get_engine("presidio").load()
+    if "presidio" in default_pii_layers():
+        get_engine("presidio").load()
 
 
-def detect_pii(text: str, layers: tuple[str, ...] = ("presidio", "names")) -> list[Finding]:
+def detect_pii(
+    text: str,
+    layers: tuple[str, ...] | None = None,
+) -> list[Finding]:
     """
     Scan one prompt. Returns non-overlapping findings ordered by position.
-    layers=("names",) runs without Presidio/spaCy (air-gapped CI, quick tests).
+    layers=("names",) or regex engine runs without Presidio/spaCy (frozen MVP).
     If Presidio or its model is missing this raises instead of silently returning nothing:
     a DLP gateway should fail loudly, not let prompts through unscanned.
     """
     if not text:
         return []
+    resolved = layers if layers is not None else default_pii_layers()
     findings: list[Finding] = []
-    for layer in layers:
+    for layer in resolved:
         findings.extend(get_engine(layer).detect(text))
     return resolve_overlaps(findings)
 
@@ -214,7 +260,7 @@ class PiiSpan:
 
 def find_pii_spans(
     text: str,
-    layers: tuple[str, ...] = ("presidio", "names"),
+    layers: tuple[str, ...] | None = None,
     engine: str | None = None,
 ) -> tuple[list[PiiSpan], str]:
     """Compatibility wrapper: Joan Finding list → (PiiSpan list, engine label).

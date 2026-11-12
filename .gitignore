@@ -13,9 +13,7 @@ agent-transcripts/
 
 # ── Internal dev docs (team only) ──
 docs/internal/
-docs/SYSTEM_GUIDE.md
 docs/DEV_ONBOARDING.md
-docs/PROJECT_FILES.md
 
 # ── Python / env ──
 __pycache__/

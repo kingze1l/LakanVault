@@ -1,3 +1,4 @@
+# default config stays airgapped + gateway spots pii in a prompt
 from pathlib import Path
 
 from lakanvault.contracts.dtos import ScanRequest
@@ -11,7 +12,7 @@ def test_default_config_is_air_gapped() -> None:
     assert config.cloud.enabled is False
     assert config.local.chunk_size_bytes == 1_048_576
 
-
+# email in prompt should bump pii count n stay local
 def test_gateway_receive_with_prompt_detects_pii() -> None:
     root = Path(__file__).resolve().parents[2]
     gateway = Gateway(config_dir=root / "config")

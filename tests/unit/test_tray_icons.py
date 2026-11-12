@@ -1,4 +1,4 @@
-"""Tray icon generation — requires Pillow."""
+# tray icon gen needs pillow size/mode sanity
 from __future__ import annotations
 
 import pytest

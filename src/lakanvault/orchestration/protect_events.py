@@ -1,3 +1,4 @@
+# little ring buffer of protect events for the tray (no raw pii just meta)
 """In-memory protect event ring for tray status/toasts. Metadata only — no PII."""
 from __future__ import annotations
 
@@ -28,14 +29,17 @@ class ProtectEventRing:
         default_factory=lambda: {"block": 0, "mask": 0, "warn": 0}
     )
 
+    # flip the pause flag so tray can hush toasts
     def set_paused(self, paused: bool) -> None:
         with self._lock:
             self._paused = bool(paused)
 
+    # are we paused rn
     def is_paused(self) -> bool:
         with self._lock:
             return self._paused
 
+    # stash a warn/mask/block event if its one of those
     def record(
         self,
         action: str,
@@ -63,6 +67,7 @@ class ProtectEventRing:
             self._counts[act] = self._counts.get(act, 0) + 1
             return ev
 
+    # grab events newer than since_id for the tray poll
     def recent(self, *, since_id: int = 0, limit: int = 50) -> list[dict[str, Any]]:
         limit = max(1, min(int(limit), 100))
         with self._lock:
@@ -79,6 +84,7 @@ class ProtectEventRing:
                 for e in rows
             ]
 
+    # counts + recent activity for the status ui
     def stats(self) -> dict[str, Any]:
         with self._lock:
             activity = [
@@ -104,10 +110,12 @@ _RING = ProtectEventRing()
 _RING_LOCK = threading.Lock()
 
 
+# process-wide ring so everyone shares the same feed
 def get_protect_ring() -> ProtectEventRing:
     return _RING
 
 
+# wipe n make a fresh ring (tests only)
 def reset_protect_ring_for_tests() -> ProtectEventRing:
     """Replace the process-wide ring (unit tests only)."""
     global _RING
@@ -116,6 +124,7 @@ def reset_protect_ring_for_tests() -> ProtectEventRing:
         return _RING
 
 
+# shorthand so callers dont dig into the ring object
 def record_protect_event(
     action: str,
     *,

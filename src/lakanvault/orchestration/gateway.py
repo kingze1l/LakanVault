@@ -1,3 +1,4 @@
+# main entry for scans chat protect etc — ui talks to this not local_core directly
 """Gateway — pure Python entry point for all pipeline runs.
 Zero Streamlit imports. Can be wrapped as a background .exe in Phase 2 (ADR-004).
 UI calls Gateway.receive(); gateway calls Pipeline; gateway returns ScanResponse.
@@ -41,7 +42,7 @@ from lakanvault.local_core.privacy.stage import PrivacyStage
 from lakanvault.local_core.threat_scanner.stage import ThreatScannerStage
 from lakanvault.orchestration.bus import EventBus
 from lakanvault.orchestration.pipeline import Pipeline
-from lakanvault.shared.config import load_config
+from lakanvault.shared.config import load_config, resolve_config_dir
 from lakanvault.shared.system_prompt import build_chat_system_prompt
 from lakanvault.shared.url_policy import assert_localhost_url
 
@@ -54,9 +55,10 @@ class Gateway:
     Returns plain DTOs. Knows nothing about Streamlit or any UI.
     """
 
+    # load config n wire up pipeline bus llm registry
     def __init__(self, config_dir: str | Path = "./config"):
-        self._config_dir = Path(config_dir)
-        self._cfg = load_config(config_dir)
+        self._config_dir = resolve_config_dir(config_dir)
+        self._cfg = load_config(self._config_dir)
         self._pipeline = self._build_pipeline()
         self._bus = self._build_bus()
         self._anonymizer = ReversibleAnonymizer()
@@ -67,6 +69,7 @@ class Gateway:
         models_dir = self._resolve_path(local.get("models_dir", "./data/models"), self._config_dir)
         self._registry = ModelRegistry(models_dir=models_dir)
 
+    # build the local llm client from config
     def _build_local_llm(self) -> LocalLLMClient:
         ai = self._cfg.get("local_ai", {})
         return LocalLLMClient(
@@ -78,9 +81,11 @@ class Gateway:
             stream=bool(ai.get("stream", True)),
         )
 
+    # raw config dict for callers
     def get_config_snapshot(self) -> dict[str, object]:
         return self._cfg
 
+    # settings shape the ui cares about
     def get_settings(self) -> dict:
         ai = self._cfg.get("local_ai", {})
         local = self._cfg.get("local", {})
@@ -106,6 +111,7 @@ class Gateway:
             "cloud": {"enabled": cloud.get("enabled", False)},
         }
 
+    # apply partial settings live (reload cfg bits)
     def apply_settings(self, partial: dict) -> None:
         self._cfg = load_config(self._config_dir)
         if "local_ai" in partial:
@@ -129,6 +135,7 @@ class Gateway:
         if "cloud" in partial:
             self._bus = self._build_bus()
 
+    # turn relative paths into absolute ones
     @staticmethod
     def _resolve_path(path: str | Path, anchor: Path) -> Path:
         p = Path(path)
@@ -140,6 +147,7 @@ class Gateway:
                 return candidate
         return (Path.cwd() / p).resolve()
 
+    # wire stages from config order
     def _build_pipeline(self) -> Pipeline:
         local = self._cfg.get("local", {})
         chunk_size = local.get("chunk_size_bytes", 1_048_576)
@@ -157,6 +165,7 @@ class Gateway:
         stages = [stage_map[name] for name in order if name in stage_map]
         return Pipeline(stages)
 
+    # bus for optional cloud forward
     def _build_bus(self) -> EventBus:
         cloud = self._cfg.get("cloud", {})
         return EventBus(
@@ -164,6 +173,7 @@ class Gateway:
             analytics_endpoint=cloud.get("analytics_endpoint", ""),
         )
 
+    # run a file scan thru the pipeline
     def receive(self, request: ScanRequest) -> ScanResponse:
         logger.info("Gateway received scan request: %s", request.target_path)
 
@@ -197,6 +207,7 @@ class Gateway:
             duration_ms=duration_ms,
         )
 
+    # classify text for mcp / ide (no raw pii back)
     def classify_text(
         self,
         text: str,
@@ -215,6 +226,7 @@ class Gateway:
             injection_category=result.injection_category,
         )
 
+    # get or make a joan vault for this session id
     def _vault_for_session(self, session_id: str):
         from lakanvault.local_core.anonymizer.anonymizer import Vault
 
@@ -226,6 +238,7 @@ class Gateway:
             self._protect_vaults[session_id] = vault
         return vault
 
+    # scan + sanitize a prompt (review / hooks / mcp)
     def protect_prompt(
         self,
         text: str,
@@ -234,16 +247,26 @@ class Gateway:
         *,
         source: str = "review",
     ) -> ProtectResponse:
-        """Joan scan + Vault sanitize. Findings metadata only — never finding.text."""
-        from lakanvault.local_core.policy.engine import Action, action_for
+        """Joan scan + dictionary apply + Vault sanitize. Findings metadata only."""
+        from lakanvault.local_core.policy.engine import Action, action_for, decide
         from lakanvault.local_core.scan import process_input
         from lakanvault.orchestration.protect_events import record_protect_event
+        from lakanvault.orchestration.word_dictionary import apply_dictionary
 
         req = ProtectRequest(text=text, session_id=session_id or "", llm=llm)
         sid = req.session_id or uuid.uuid4().hex[:12]
         vault = self._vault_for_session(sid)
         protected = process_input(req.text, vault, llm=req.llm)  # type: ignore[arg-type]
-        final = protected.final_action
+        # Sami dictionary layer: overlook Joan hits / force CUSTOM_FLAG masks.
+        findings = apply_dictionary(req.text, list(protected.findings))
+        final, per = decide(findings)
+        if final == Action.BLOCK:
+            sanitized = ""
+        elif final == Action.MASK:
+            mask_findings = [f for f, action in per if action == Action.MASK]
+            sanitized = vault.sanitize(req.text, mask_findings)
+        else:
+            sanitized = req.text
         summaries = [
             FindingSummary(
                 entity_type=f.entity_type,
@@ -255,24 +278,41 @@ class Gateway:
                 needs_escalation=bool(f.needs_escalation),
                 action=action_for(f).value,
             )
-            for f in protected.findings
+            for f in findings
         ]
+        from lakanvault.orchestration.review_sessions import get_review_sessions
+
         action_s = final.value if hasattr(final, "value") else str(final)
+        event_id: int | None = None
         if action_s in ("warn", "mask", "block"):
-            record_protect_event(
+            ev = record_protect_event(
                 action_s,
                 source=source,
                 entity_types=[s.entity_type for s in summaries],
             )
+            if ev is not None:
+                event_id = ev.id
+                get_review_sessions().put(
+                    event_id=ev.id,
+                    session_id=sid,
+                    original=req.text,
+                    sanitized=sanitized,
+                    action=action_s,
+                    source=source,
+                    entity_types=[s.entity_type for s in summaries],
+                    findings=[s.model_dump() for s in summaries],
+                )
         return ProtectResponse(
             session_id=sid,
-            sanitized=protected.sanitized,
+            sanitized=sanitized,
             findings=summaries,
             finding_count=len(summaries),
             final_action=action_s,
             allow_send=final != Action.BLOCK,
+            event_id=event_id,
         )
 
+    # put real values back from a prior protect session
     def restore_prompt(self, text: str, session_id: str) -> RestoreResponse:
         """Restore surrogates from Joan Vault for a prior protect session."""
         from lakanvault.local_core.scan import process_output
@@ -286,40 +326,92 @@ class Gateway:
             text=process_output(req.text, vault),
         )
 
+    # send reviewed text to local llm (maybe override original once)
     def send_reviewed(
         self,
         session_id: str,
         sanitized: str,
         model: str | None = None,
         base_url: str | None = None,
+        *,
+        override: bool = False,
     ) -> ReviewSendResponse:
-        """Send already-sanitized text to the local LLM; restore with the review session vault."""
+        """Send reviewed text to the local LLM; restore with the review session vault.
+
+        ``override=True`` does **not** call the local LLM. It trusts the stored
+        original once for Cursor paste (FR8-style handoff) so a blocked/confidential
+        prompt can go through after explicit confirm.
+        """
         from lakanvault.local_core.scan import process_output
+        from lakanvault.orchestration.hooks_gate import remember_trusted_paste
+        from lakanvault.orchestration.review_sessions import get_review_sessions
 
         req = ReviewSendRequest(
             session_id=session_id,
             sanitized=sanitized,
             model=model,
             base_url=base_url,
+            override=override,
         )
         vault = self._protect_vaults.get(req.session_id)
-        if vault is None:
-            raise KeyError(f"unknown protect session: {req.session_id}")
-        if not (req.sanitized or "").strip():
+        outbound = (req.sanitized or "").strip()
+        used_override = False
+        if req.override:
+            store = get_review_sessions()
+            sess = store.get_by_session(req.session_id)
+            if sess is None or not (sess.original or "").strip():
+                return ReviewSendResponse(
+                    session_id=req.session_id,
+                    blocked=True,
+                    block_reason="override unavailable (session expired or unknown)",
+                )
+            if not store.mark_override_used(req.session_id):
+                return ReviewSendResponse(
+                    session_id=req.session_id,
+                    blocked=True,
+                    block_reason="override already used for this session",
+                )
+            outbound = sess.original
+            used_override = True
+            logger = __import__("logging").getLogger(__name__)
+            logger.warning(
+                "review override (no LLM) session=%s action=%s entities=%s",
+                req.session_id,
+                sess.action,
+                list(sess.entity_types),
+            )
+            remember_trusted_paste(outbound)
             return ReviewSendResponse(
                 session_id=req.session_id,
-                blocked=True,
-                block_reason="nothing to send (blocked or empty sanitized prompt)",
+                raw_response=(
+                    "Override accepted (no local LLM). "
+                    "Paste the Original text into Cursor as a new message — "
+                    "exact paste is trusted once."
+                ),
+                restored_response=outbound,
+                model_used="(override — paste into Cursor)",
+                provider_url="",
+                override_used=True,
             )
+        else:
+            if vault is None:
+                raise KeyError(f"unknown protect session: {req.session_id}")
+            if not outbound:
+                return ReviewSendResponse(
+                    session_id=req.session_id,
+                    blocked=True,
+                    block_reason="nothing to send (blocked or empty sanitized prompt)",
+                )
         if base_url:
             assert_localhost_url(base_url)
         system_hint = build_chat_system_prompt(None)
         try:
             result = self._local_llm.chat(
-                wrap_user_message(req.sanitized),
+                wrap_user_message(outbound),
                 model=req.model,
                 base_url=req.base_url,
                 system=system_hint,
+                stream=False,
             )
         except (ConnectionError, ValueError) as exc:
             return ReviewSendResponse(
@@ -327,6 +419,7 @@ class Gateway:
                 error=str(exc),
                 model_used=req.model or self._cfg.get("local_ai", {}).get("model", ""),
                 provider_url=req.base_url or self._local_llm.base_url,
+                override_used=used_override,
             )
         restored = process_output(result.content, vault)
         return ReviewSendResponse(
@@ -336,8 +429,10 @@ class Gateway:
             model_used=result.model_used,
             provider_url=result.provider_url,
             latency_ms=result.latency_ms,
+            override_used=used_override,
         )
 
+    # check if local llm is up
     def local_llm_status(self, base_url: str | None = None) -> dict:
         url = base_url or self._local_llm.base_url
         models = self._local_llm.list_models(base_url=url)
@@ -347,12 +442,15 @@ class Gateway:
             "base_url": url,
         }
 
+    # list lm studio models (legacy name)
     def lmstudio_models(self) -> list[str]:
         return self._local_llm.list_models()
 
+    # is lm studio reachable (legacy name)
     def lmstudio_reachable(self) -> bool:
         return bool(self._local_llm.list_models())
 
+    # sanitize prompt before chat (joan process_input)
     def _prepare_chat(self, prompt: str) -> dict:
         t0 = monotonic()
         req_id = uuid.uuid4().hex[:12]
@@ -412,12 +510,14 @@ class Gateway:
             "request_id": req_id,
         }
 
+    # restore placeholders in chat reply
     def _restore_chat_text(self, text: str, prep: dict) -> str:
         vault = prep.get("vault")
         if vault is None:
             return text
         return process_output(text, vault)
 
+    # canned blocked chat response
     def _blocked_chat_result(self, prep: dict, model: str | None, base_url: str | None) -> dict:
         reason = prep["block_reason"] or "prompt injection"
         message = BLOCKED_USER_MESSAGE.format(reason=reason)
@@ -437,6 +537,7 @@ class Gateway:
             "block_reason": reason,
         }
 
+    # full chat: sanitize → llm → restore
     def chat(
         self,
         prompt: str,
@@ -489,6 +590,7 @@ class Gateway:
             "block_reason": "",
         }
 
+    # streaming chat events (meta / token / done / error)
     def chat_stream_events(
         self,
         prompt: str,
@@ -578,15 +680,19 @@ class Gateway:
         except (ConnectionError, ValueError) as exc:
             yield {"type": "error", "error": str(exc)}
 
+    # scan models dir integrity
     def scan_models(self) -> list[dict]:
         return [asdict(e) for e in self._registry.scan()]
 
+    # quarantine a model file
     def eject_model(self, model_name: str) -> bool:
         return self._registry.quarantine(model_name)
 
+    # pin a hash baseline for a model
     def set_model_baseline(self, model_name: str, sha256_hex: str) -> None:
         self._registry.set_baseline(model_name, sha256_hex)
 
+    # bundled runtime status if we have one
     def runtime_status(self) -> dict:
         from lakanvault.local_core.runtime import get_runtime
 
@@ -595,6 +701,7 @@ class Gateway:
             return {"available": False, "running": False, "models": [], "active_model": ""}
         return runtime.status()
 
+    # switch the bundled runtime model
     def runtime_select(self, model: str) -> dict:
         from lakanvault.local_core.runtime import get_runtime
 

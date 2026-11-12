@@ -1,3 +1,5 @@
+# proxy / transform / token-map contracts
+# sensitive values stay in local_core + infra impls not these DTOs
 """Proxy / transform / in-memory token-map contracts.
 
 Sensitive values live only in local_core + infrastructure implementations.
@@ -115,10 +117,12 @@ class SanitizeTextResponse(BaseModel):
     model_config = {"extra": "forbid"}
 
 
+# field names on the proxy audit record
 def proxy_audit_field_names() -> frozenset[str]:
     return frozenset(ProxyAuditRecord.model_fields)
 
 
+# assert audit shape doesnt leak forbidden names
 def assert_no_forbidden_proxy_fields() -> None:
     leaked = proxy_audit_field_names().intersection(FORBIDDEN_PROXY_LOG_FIELDS)
     if leaked:
@@ -129,13 +133,16 @@ def assert_no_forbidden_proxy_fields() -> None:
 
 @dataclass
 class RestoreAllowSet:
+    # tokens this request may restore never the whole vault
     """Tokens this request is allowed to restore — never the global vault."""
 
     tokens: set[str] = field(default_factory=set)
 
+    # remember one token for later restore
     def add(self, token: str) -> None:
         self.tokens.add(token)
 
+    # build a tiny token→value map via lookup callback
     def mapping_view(self, lookup) -> dict[str, str]:
         out: dict[str, str] = {}
         for token in self.tokens:
@@ -149,21 +156,26 @@ class TokenVaultPort(ABC):
     """Session-scoped opaque token map. Implementations must not write to disk."""
 
     @abstractmethod
+    # mint or reuse token for value under a request_id
     def mint(self, value: str, *, request_id: str, ttl_seconds: float) -> str:
         """Return a token for value; same request+value reuses the token."""
 
     @abstractmethod
+    # exact lookup expired → None
     def get(self, token: str) -> str | None:
         """Exact-token lookup; expired tokens return None."""
 
     @abstractmethod
+    # drop all rows for one request
     def delete_request(self, request_id: str) -> int:
         """Drop all mappings for a request. Returns rows removed."""
 
     @abstractmethod
+    # sweep expired rows
     def cleanup_expired(self) -> int:
         """Remove expired rows. Returns rows removed."""
 
     @abstractmethod
+    # wipe n close
     def close(self) -> None:
         """Deterministic shutdown — wipe the in-memory database."""

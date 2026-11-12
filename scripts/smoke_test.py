@@ -1,9 +1,12 @@
+# quick smoke — spin uvicorn hit the main endpoints
+# not a full suite just enough to see if the daemon is basicly alive
 """Quick smoke test — starts the server, hits all key endpoints, runs a pipeline scan."""
 import subprocess, sys, time, urllib.request, urllib.error, json, pathlib, os
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 os.chdir(ROOT)
 
+# boot local server on 8080
 proc = subprocess.Popen(
     [sys.executable, "-m", "uvicorn", "lakanvault.app.server:app",
      "--host", "127.0.0.1", "--port", "8080"],
@@ -83,6 +86,7 @@ except urllib.error.HTTPError as e:
 except Exception as e:
     print(f"  Guard check failed: {e}")
 
+# internal sanitize should let clean text thru
 print("\n=== Internal sanitize ===")
 san_payload = json.dumps({"text": "hello world", "request_id": "smoke1"}).encode()
 san_req = urllib.request.Request(
@@ -103,6 +107,7 @@ except Exception as e:
     print(f"  FAIL     /internal/v1/sanitize  ({e})")
     ok = False
 
+# proxy should block an obvious api key without needing upstream
 print("\n=== Proxy secret block (no upstream) ===")
 key_payload = json.dumps({
     "messages": [{"role": "user", "content": "My key is sk-abcdefghijklmnopqrstuvwxyz1234567890"}]

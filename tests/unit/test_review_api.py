@@ -1,4 +1,4 @@
-"""Prompt Review HTTP API: loopback protect/send + page."""
+# prompt review http api loopback protect/send + page
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,7 +13,7 @@ from lakanvault.local_core.findings import Finding, Tier
 EMAIL = "jane.doe@example.com"
 SECRET_PROMPT = "connect with postgres://admin:SuperSecret99@db.example.com/app"
 
-
+# loopback review client w stubbed pii
 @pytest.fixture()
 def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     src = Path(__file__).resolve().parents[2] / "config" / "default.yaml"
