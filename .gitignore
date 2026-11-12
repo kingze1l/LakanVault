@@ -57,6 +57,7 @@ lakan-model-lora
 
 # evaluations
 lakan_vault_combined_results.csv
+lakan_vault_pii_results.csv
 pii_benchmark.csv
 pii_benchmark_negative.csv
 training_data.jsonl

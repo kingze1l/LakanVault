@@ -295,7 +295,7 @@ by entity type
     print(report)
     print(f"Report saved to: {REPORT_FILE}")
 
-    OUTPUT_FILE = BASE_DIR / 'lakan_vault_combined_results.csv'
+    OUTPUT_FILE = BASE_DIR / 'evaluation_result.csv'
     df.to_csv(OUTPUT_FILE, index=False)
     print(f"Results saved to: {OUTPUT_FILE}")
 
