@@ -43,6 +43,34 @@ How to read one finding line:
 
 `DRAFT TO SEND TO EXTERNAL LLM` is the same prompt after the anonymizer replaces each finding with a fake. `Total time` is the whole run.
 
+# Quick LakanVault evaluation guide
+
+Use this to benchmark detection accuracy (precision, recall, F1, coverage) across secret and PII datasets and measure latency.
+
+1. Install the evaluation packages:
+
+```
+pip install pandas pyarrow fsspec huggingface_hub
+```
+
+2. In Command Prompt or PowerShell, change into the `src` folder (`cd src`). The command below is run from there.
+3. Make sure LM Studio is running with `google/gemma-4-e4b` on `http://localhost:1234/v1` if you want to test local LLM escalation. If skipped, the fast layer still benchmarks.
+4. Run the combined benchmark (1200 samples: 300 secrets, 300 PII, 600 negative):
+
+```
+python -m lakanvault.local_core.evaluation.evaluation
+```
+
+Or run the secret database benchmark only:
+
+```
+python -m lakanvault.local_core.evaluation.secret_database
+```
+
+5. When finished, it prints the summary table and saves two files in `local_core/evaluation/`:
+   - `combined_report.txt`: Summary of accuracy, coverage, precision/recall/F1, and latencies.
+   - `evaluation_result.csv`: Row-by-row findings, latencies, and escalation results.
+
 ## Summary of what I did (Joan)
 
 To summarize, I worked on the regex + presidio + local llm (if escalated) pipeline to finds secrets and PII in texts before reaching the external LLM and replaces them with fakes (anonymizer) before the text leaves the machine. Regex catches secrets, Presidio catch personal data. A local model (Gemma, fine-tuned with LoRA) catches the rest (harder cases), including secrets written in plain words. Policy then picks allow, warn, mask, or block. The anonymizer writes format-preserving fakes and can put the real values back after the external model replies. Evaluation scripts score that pipeline on secret and PII samples.
@@ -75,7 +103,7 @@ Checks whether the detectors actually find the sensitive span, and how often the
 
 - `secret_database.py`: Runs the secret scan over the Prowl secrets corpus (positive samples only) and marks a row covered even when the finding is only part of the secret. 
 - `pii_database.py`: Deprecated, pretty much the same but for PII csv. It records whether the span was found and whether the entity type matched. 
-- `evaluation.py`: Combined run of 600 secret and 600 PII samples (total of 1200 samples). Compares regex, Presidio, both, and the full scan, and records latency and how often the local model was asked.
+- `evaluation.py`: Combined run of 1200 samples (300 secrets, 300 PII, 600 negative). Compares regex, Presidio, both, and the full scan, and records latency and how often the local model was asked.
 
 ## local_llm
 

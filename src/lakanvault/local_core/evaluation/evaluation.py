@@ -37,7 +37,7 @@ CONFIGS = {
     'regex': detect_secrets,
     'presidio': detect_pii,
     'regex+presidio': lambda t: resolve_overlaps(detect_secrets(t) + detect_pii(t)),
-    'full': lambda t: scan(t, 'unsure'),
+    'full': lambda t: scan(t, 'never'),
 }
 
 
@@ -45,7 +45,7 @@ def scan_row(text):
     '''returns (findings as dicts, escalated_to_llm, latency_ms)'''
     before = len(calls)
     t0 = time.perf_counter()
-    findings = scan(text, 'unsure')
+    findings = scan(text, 'never')
     latency_ms = (time.perf_counter() - t0) * 1000
     # count the call itself, so escalations where the llm returned nothing are still seen
     escalated = len(calls) > before

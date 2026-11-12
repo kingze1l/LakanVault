@@ -21,13 +21,31 @@ SPACY_MODEL = "en_core_web_lg"   # "en_core_web_md" / "_lg" are more accurate bu
 
 
 # exact strings Presidio must never flag (e.g. your own city or company contact).
-PII_ALLOW_LIST: list[str] = []
+# also just remove popular term
+PII_ALLOW_LIST: list[str] = ['Git', 'Java', 'Docker']
 
 # name heuristics are weak signals: both confidences are below CONFIDENT_AT,
 # so every hit is handed to the local LLM instead of being trusted.
 NAME_STRONG = 0.6   # "my name is X", "Dear X", sign-offs
 NAME_WEAK = 0.45    # "I am X", "to X"
 
+# remove noise
+# _HEX = re.compile(r"[0-9a-fA-F]{16,}")
+# _PROSE = re.compile(r"[A-Z][A-Za-z.'\-]*(?: [A-Z][A-Za-z.'\-]*)*")
+# _CAMEL = re.compile(r"[a-z][A-Z]")
+
+# def _is_noise(entity: str, v: str) -> bool:
+#     v = v.strip()
+#     if entity in {"PERSON", "LOCATION", "NRP"}:
+#         if not _PROSE.fullmatch(v):
+#             return True
+#         if _CAMEL.search(v) or _HEX.fullmatch(v):
+#             return True
+#         if entity != "LOCATION" and v.isupper() and " " not in v:
+#             return True
+#     if entity == "US_DRIVER_LICENSE":
+#         return len(v) < 6
+#     return False
 
 # =============================================================================
 # presidio
@@ -83,8 +101,9 @@ class PresidioDetector(DetectionEngine):
                 start += max(value.rfind("="), value.rfind('"')) + 1   # drop "to=" style prefixes
                 value = text[start:end]
                 start += len(value) - len(value.lstrip("'"))           # drop a leading quote
-            findings.append(Finding(r.entity_type, text[start:end], start, end,
-                                    float(r.score), PII_ENTITY_TIER[r.entity_type], self.layer))
+            # if _is_noise(r.entity_type, text[start:end]):
+            #     continue
+            findings.append(Finding(r.entity_type, text[start:end], start, end, float(r.score), PII_ENTITY_TIER[r.entity_type], self.layer))
         return findings
 
 
@@ -142,8 +161,7 @@ class NameHeuristicDetector(DetectionEngine):
             for m in rx.finditer(text):
                 name = m.group(1)
                 if _plausible_name(name):
-                    findings.append(Finding("PERSON", name, m.start(1), m.end(1), confidence,
-                                            Tier.PII_MODERATE, self.layer))
+                    findings.append(Finding("PERSON", name, m.start(1), m.end(1), confidence, Tier.PII_MODERATE, self.layer))
         return findings
 
 
