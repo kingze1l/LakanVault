@@ -1,0 +1,4 @@
+cloud:
+  enabled: false
+  analytics_endpoint: https://example.invalid/analytics
+  enrichment_endpoint: https://example.invalid/enrichment

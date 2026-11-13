@@ -1,0 +1,65 @@
+app:
+  name: LakanVault
+  log_level: INFO
+
+cloud:
+  enabled: false
+
+local:
+  chunk_size_bytes: 1048576
+  models_dir: ./data/models
+  manifest_db: ./data/manifest.db
+  audit_dir: ./data/audit
+
+pipeline:
+  order: [integrity, threat_scanner, privacy, audit]
+
+privacy:
+  enabled: true
+  engine: auto  # auto | regex | spacy | pattern — auto uses regex + local spaCy NER if installed
+
+local_ai:
+  base_url: http://localhost:1234
+  model: ""
+  timeout_seconds: 60
+  temperature: 0.2
+  max_tokens: 120
+  stream: true
+  provider: lm_studio
+  presets:
+    lm_studio: http://localhost:1234
+    ollama: http://localhost:11434
+    llama_cpp: http://localhost:8081
+
+# Optional bundled llama.cpp server for the standalone .exe.
+# When runtime/llama-server.exe + a .gguf in runtime/models exist, the launcher
+# auto-starts a local OpenAI-compatible server so the demo works with zero setup.
+local_runtime:
+  enabled: true
+  host: 127.0.0.1
+  port: 8081
+  server_exe: runtime/llama-server.exe
+  models_dir: runtime/models
+  model: ""            # filename in models_dir; empty = first .gguf found
+  context_size: 2048
+  threads: 0           # 0 = auto-detect cores
+  extra_args: []
+
+proxy:
+  enabled: true
+  strict_mode: true
+  allow_images: false          # Sprint 3 OCR flips this after inspection
+  max_body_bytes: 1048576
+  timeout_seconds: 120
+  vault_ttl_seconds: 3600
+  vault_max_entries: 10000
+  vault_max_bytes: 10485760
+  openai_base_url: https://api.openai.com
+  allowlist:
+    - https://api.openai.com
+    - http://127.0.0.1:11434
+    - http://localhost:11434
+    - http://127.0.0.1:1234
+    - http://localhost:1234
+    - http://127.0.0.1:8081
+    - http://localhost:8081

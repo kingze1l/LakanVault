@@ -37,7 +37,10 @@ logs/
 Thumbs.db
 .pytest_cache/
 .mypy_cache/
-dist/
+# Ship dist/ (MVP + frozen builds) so testers can run without packaging.
+# GitHub rejects single files >100MB — keep zips out; use the unzipped folders.
+dist/**/*.zip
+dist/**/mcp-std*.txt
 build/
 *.egg-info/
 *.spec

@@ -1,0 +1,9 @@
+﻿{
+  "mcpServers": {
+    "lakanvault": {
+      "type": "stdio",
+      "command": "cmd.exe",
+      "args": ["/c", "${workspaceFolder}\\run-mcp-server.cmd"]
+    }
+  }
+}

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LakanVault Prompt Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #0b0e14;
+      --navy-2: #11151d;
+      --surface: #161b24;
+      --surface-2: #1c222d;
+      --line: rgba(255,255,255,.08);
+      --line-2: rgba(255,255,255,.14);
+      --text: #e8eaed;
+      --muted: #8b92a5;
+      --dim: #5c6370;
+      --green: #3e704d;
+      --green-bright: #5a9e6f;
+      --green-soft: rgba(62,112,77,.18);
+      --warn: #c4a035;
+      --err: #d45a5a;
+      --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+      --mono: "IBM Plex Mono", "Cascadia Code", Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: linear-gradient(180deg, #10151c 0%, var(--navy) 40%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    main { max-width: 920px; margin: 0 auto; padding: 1.5rem 1.15rem 3rem; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 0.75rem; margin-bottom: 0.5rem;
+      padding-bottom: 0.75rem; border-bottom: 1px solid var(--line);
+    }
+    h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.03em; margin: 0; }
+    .sub { color: var(--muted); margin: 0 0 1.1rem; font-size: 0.9rem; max-width: 42rem; }
+    .chip {
+      font-family: var(--mono); font-size: 0.68rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.25rem 0.5rem; border: 1px solid var(--line-2); background: var(--surface);
+      color: var(--green-bright);
+    }
+    .chip.block { color: #f0a0a0; border-color: rgba(212,90,90,.4); }
+    .chip.mask, .chip.warn { color: #e6c96a; border-color: rgba(196,160,53,.35); }
+    label { display: block; font-family: var(--mono); font-size: 0.68rem; color: var(--dim);
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; }
+    textarea, input {
+      width: 100%; background: var(--surface); color: var(--text);
+      border: 1px solid var(--line); border-radius: 2px;
+      padding: 0.7rem 0.85rem; font: inherit;
+    }
+    textarea { min-height: 100px; font-family: var(--mono); font-size: 0.86rem; resize: vertical; }
+    .row { display: flex; gap: 0.7rem; flex-wrap: wrap; margin: 0.65rem 0 0.9rem; }
+    .row > * { flex: 1 1 180px; }
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.85rem 0; }
+    button {
+      border: 1px solid var(--line-2); border-radius: 2px; padding: 0.6rem 1rem;
+      font-weight: 650; cursor: pointer; font: inherit; font-size: 0.88rem;
+      background: var(--surface-2); color: var(--text);
+    }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary {
+      background: var(--green-soft); border-color: rgba(90,158,111,.45); color: #b7e6d2;
+    }
+    button.danger {
+      background: rgba(212,90,90,.12); border-color: rgba(212,90,90,.4); color: #f0b0b0;
+    }
+    button.ghost {
+      background: transparent; border-color: transparent; color: var(--muted);
+      text-decoration: underline; text-underline-offset: 2px;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: 2px; padding: 0.85rem 0.95rem;
+    }
+    .panel h2 {
+      margin: 0 0 0.5rem; font-family: var(--mono); font-size: 0.68rem;
+      color: var(--dim); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .hl { font-family: var(--mono); font-size: 0.84rem; white-space: pre-wrap; word-break: break-word; line-height: 1.45; }
+    mark { background: rgba(196,160,53,.28); color: inherit; padding: 0 1px; }
+    mark.block { background: rgba(212,90,90,.35); }
+    mark.mask { background: rgba(62,112,77,.35); color: #cfe8d6; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th, td { text-align: left; padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--line); }
+    th { color: var(--dim); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .status { margin: 0.55rem 0; color: var(--muted); font-size: 0.85rem; min-height: 1.2em; font-family: var(--mono); }
+    .err { color: #f0a0a0; }
+    #overridePanel {
+      display: none; margin-top: 0.75rem; padding: 0.9rem 1rem;
+      border: 1px solid rgba(212,90,90,.4); border-radius: 2px;
+      background: rgba(212,90,90,.08);
+    }
+    #overridePanel.visible { display: block; }
+    #overridePanel p { margin: 0 0 0.65rem; font-size: 0.88rem; line-height: 1.4; }
+    #overridePanel label.check {
+      display: flex; gap: 0.5rem; align-items: flex-start;
+      color: var(--muted); font-size: 0.85rem; margin-bottom: 0.75rem; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Prompt Review</h1>
+      <span class="chip" id="verdict">—</span>
+    </header>
+    <p class="sub">Compare original vs filtered before anything leaves the machine. Secrets block; PII is masked. Override is explicit and one-time.</p>
+
+    <label for="prompt">Prompt</label>
+    <textarea id="prompt" placeholder="Paste a prompt that might contain secrets or PII…"></textarea>
+
+    <div class="row">
+      <div>
+        <label for="model">Model (optional)</label>
+        <input id="model" placeholder="local model name" />
+      </div>
+      <div>
+        <label for="baseUrl">Local LLM base URL</label>
+        <input id="baseUrl" value="http://127.0.0.1:1234" />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="primary" id="btnReview">Review</button>
+      <button type="button" class="primary" id="btnSend" disabled>Send Filtered</button>
+      <button type="button" class="ghost" id="btnOverride" disabled>Request Override</button>
+    </div>
+    <p class="status" id="status"></p>
+
+    <div id="overridePanel">
+      <p id="overrideWarn">This will send unmasked sensitive content outside your device. This cannot be undone.</p>
+      <label class="check">
+        <input type="checkbox" id="overrideAck" />
+        <span>I understand this exposes real credentials or PII.</span>
+      </label>
+      <div class="actions" style="margin:0">
+        <button type="button" class="danger" id="btnConfirmOverride" disabled>Confirm Send Unmasked</button>
+        <button type="button" id="btnCancelOverride">Cancel</button>
+      </div>
+    </div>
+
+    <div id="result" hidden>
+      <p style="color:var(--dim);font-size:0.8rem;margin:0.25rem 0 0;font-family:var(--mono)">session <code id="sessionId"></code></p>
+      <div class="grid">
+        <div class="panel">
+          <h2>Original</h2>
+          <div class="hl" id="originalHl"></div>
+        </div>
+        <div class="panel">
+          <h2>Filtered</h2>
+          <div class="hl" id="sanitized"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:0.75rem">
+        <h2>Findings</h2>
+        <table>
+          <thead>
+            <tr><th>Type</th><th>Tier</th><th>Action</th><th>Conf</th><th>Span</th></tr>
+          </thead>
+          <tbody id="findings"></tbody>
+        </table>
+      </div>
+      <div class="grid" style="margin-top:0.75rem">
+        <div class="panel">
+          <h2>Raw model reply</h2>
+          <div class="hl" id="rawReply">(not sent yet)</div>
+        </div>
+        <div class="panel">
+          <h2>Restored reply</h2>
+          <div class="hl" id="restoredReply">(not sent yet)</div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let state = {
+      sessionId: "", sanitized: "", finalAction: "allow", allowSend: false,
+      original: "", eventId: null, findings: [],
+    };
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function highlight(text, findings) {
+      const spans = (findings || [])
+        .map((f) => ({ start: f.start, end: f.end, action: f.action || "" }))
+        .filter((f) => f.end > f.start)
+        .sort((a, b) => a.start - b.start);
+      let out = "", cursor = 0;
+      for (const span of spans) {
+        if (span.start < cursor) continue;
+        out += escapeHtml(text.slice(cursor, span.start));
+        const cls = span.action === "block" ? "block" : "mask";
+        out += `<mark class="${cls}">` + escapeHtml(text.slice(span.start, span.end)) + "</mark>";
+        cursor = span.end;
+      }
+      out += escapeHtml(text.slice(cursor));
+      return out;
+    }
+
+    function setStatus(msg, isErr) {
+      const el = $("status");
+      el.textContent = msg || "";
+      el.className = "status" + (isErr ? " err" : "");
+    }
+
+    function applyResult(data, originalText) {
+      state = {
+        sessionId: data.session_id,
+        sanitized: data.sanitized || "",
+        finalAction: data.final_action || "allow",
+        allowSend: !!data.allow_send,
+        original: originalText,
+        eventId: data.event_id ?? state.eventId,
+        findings: data.findings || [],
+      };
+      $("result").hidden = false;
+      $("sessionId").textContent = state.sessionId;
+      const v = $("verdict");
+      v.textContent = state.finalAction;
+      v.className = "chip " + state.finalAction;
+      $("originalHl").innerHTML = highlight(originalText, state.findings);
+      $("sanitized").textContent = state.sanitized || "(empty — blocked)";
+      const tb = $("findings");
+      tb.innerHTML = "";
+      for (const f of state.findings) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${escapeHtml(f.entity_type)}</td><td>${escapeHtml(f.tier)}</td><td>${escapeHtml(f.action || "")}</td><td>${Number(f.confidence || 0).toFixed(2)}</td><td>${f.start}:${f.end}</td>`;
+        tb.appendChild(tr);
+      }
+      $("rawReply").textContent = "(not sent yet)";
+      $("restoredReply").textContent = "(not sent yet)";
+      $("btnSend").disabled = !state.allowSend;
+      $("btnOverride").disabled = !state.sessionId;
+      hideOverride();
+      setStatus(
+        state.allowSend
+          ? "Ready to send filtered."
+          : "Blocked — use Request Override to allow one paste of the Original into Cursor (no local LLM)."
+      );
+    }
+
+    function hideOverride() {
+      $("overridePanel").classList.remove("visible");
+      $("overrideAck").checked = false;
+      $("btnConfirmOverride").disabled = true;
+    }
+
+    async function sendPayload(override) {
+      if (!state.sessionId) return;
+      setStatus(override ? "Sending unmasked (override)…" : "Sending filtered…");
+      try {
+        const body = {
+          session_id: state.sessionId,
+          sanitized: state.sanitized,
+          model: $("model").value || null,
+          base_url: $("baseUrl").value || null,
+          override: !!override,
+        };
+        const resp = await fetch("/api/review/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(typeof data.detail === "string" ? data.detail : resp.statusText);
+        if (data.blocked) {
+          setStatus(data.block_reason || "Blocked", true);
+          return;
+        }
+        if (data.error) {
+          setStatus(data.error, true);
+          return;
+        }
+        $("rawReply").textContent = data.raw_response || "";
+        $("restoredReply").textContent = data.restored_response || "";
+        hideOverride();
+        if (data.override_used) {
+          setStatus(
+            (data.raw_response || "Override accepted.") +
+              " Paste Original into Cursor (exact text, once)."
+          );
+          return;
+        }
+        setStatus(
+          "Done (filtered) · " +
+            (data.model_used || "model") +
+            " · " +
+            Math.round(data.latency_ms || 0) +
+            " ms"
+        );
+      } catch (err) {
+        setStatus(String(err.message || err), true);
+      }
+    }
+
+    $("btnReview").onclick = async () => {
+      const text = $("prompt").value;
+      if (!text.trim()) { setStatus("Enter a prompt first.", true); return; }
+      setStatus("Reviewing…");
+      $("btnSend").disabled = true;
+      try {
+        const resp = await fetch("/api/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, session_id: state.sessionId || "", llm: "never" }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || resp.statusText);
+        applyResult(data, text);
+      } catch (err) {
+        setStatus(String(err.message || err), true);
+      }
+    };
+
+    $("btnSend").onclick = () => sendPayload(false);
+    $("btnOverride").onclick = () => {
+      const types = (state.findings || []).map((f) => f.entity_type).filter(Boolean);
+      const uniq = [...new Set(types)].slice(0, 4).join(", ") || "sensitive content";
+      $("overrideWarn").textContent =
+        "This will allow the Original unmasked text (" +
+        uniq +
+        ") to pass the Cursor hook once when you paste it. No local LLM call. This cannot be undone.";
+      $("overridePanel").classList.add("visible");
+    };
+    $("overrideAck").onchange = () => {
+      $("btnConfirmOverride").disabled = !$("overrideAck").checked;
+    };
+    $("btnConfirmOverride").onclick = () => sendPayload(true);
+    $("btnCancelOverride").onclick = hideOverride;
+
+    async function loadEvent(eventId) {
+      setStatus("Loading event…");
+      try {
+        const resp = await fetch("/api/protect/event/" + encodeURIComponent(eventId));
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || resp.statusText);
+        $("prompt").value = data.original || "";
+        applyResult(
+          {
+            session_id: data.session_id,
+            sanitized: data.sanitized,
+            final_action: data.final_action,
+            allow_send: data.allow_send,
+            findings: data.findings || [],
+            event_id: data.event_id,
+          },
+          data.original || "",
+        );
+      } catch (err) {
+        setStatus(String(err.message || err), true);
+      }
+    }
+
+    const params = new URLSearchParams(location.search);
+    const eventParam = params.get("event");
+    if (eventParam) loadEvent(eventParam);
+  </script>
+</body>
+</html>
