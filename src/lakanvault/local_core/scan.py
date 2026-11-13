@@ -15,6 +15,7 @@ from .escalate import suspicion
 
 logger = logging.getLogger(__name__)
 
+# resolve overlaps 
 def _overlaps(a: Finding, b: Finding) -> bool:
     return a.start < b.end and b.start < a.end
 
@@ -38,11 +39,12 @@ def merge(detector_findings: list[Finding], llm_findings: list[Finding]) -> list
 
     return resolve_overlaps(confident + sensitive + kept_unsure)
 
-
-# when to call the local LLM:
-#   "unsure" - only if a detector produced an unsure finding (fast; the original design)
-#   "always" - on every prompt (slower, but the only way to catch things detectors cannot see at all, e.g. "the db password is Tr0ub4dor&3")
-#   "never"  - detectors only
+'''
+when to call the local LLM:
+   unsure - only if a detector produced an unsure finding (fast, the original design)
+   always - on every prompt (slower, but the only way to catch things detectors cannot see at all like the db password is Tr0ub4dor&3)
+   never  - detectors only
+'''
 LLMPolicy = Literal["unsure", "always", "never"]
 
 
