@@ -15,7 +15,7 @@ python -m uvicorn lakanvault.app.server:app --reload --host 127.0.0.1 --port 808
 ```
 
 API daemon: **http://127.0.0.1:8080**  
-Prompt Review UI: **http://127.0.0.1:8080/review** (loopback Joan scan → mask/block → optional local send).
+Prompt Review UI: **http://127.0.0.1:8080/review** (loopback protect scan → mask/block → optional local send).
 
 Tray mode (Windows):
 
@@ -75,7 +75,7 @@ Honest claim: gate + one-shot paste handoff, not silent in-place rewrite. Not Co
 
 See [`scripts/README.md`](scripts/README.md) for the full index.
 
-**Recommended (stronger PII):** Joan Presidio + spaCy NER (`en_core_web_lg`). Dev/source installs only — the frozen MVP zip stays on regex PII and does not need this.
+**Recommended (stronger PII):** Presidio + spaCy NER (`en_core_web_lg`). Dev/source installs only — the frozen MVP zip stays on regex PII and does not need this.
 
 ```powershell
 scripts\INSTALL_RECOMMENDED.bat
