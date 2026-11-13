@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LakanVault</title>
+  <title>LakanVault Status</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -18,7 +18,6 @@
       --text: #e8eaed;
       --muted: #8b92a5;
       --dim: #5c6370;
-      --green: #3e704d;
       --green-bright: #5a9e6f;
       --green-soft: rgba(62,112,77,.18);
       --warn: #c4a035;
@@ -37,24 +36,23 @@
     }
     .screen {
       height: 100%; display: none; flex-direction: column;
-      padding: 0.7rem 0.75rem 0.75rem;
-      gap: 0.55rem;
-      background:
-        linear-gradient(180deg, #10151c 0%, var(--navy) 42%);
+      padding: 0.65rem 0.7rem 0.7rem;
+      gap: 0.5rem;
+      background: var(--navy);
     }
     .screen.active { display: flex; }
-    header {
+    header.app-header {
       display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
       padding-bottom: 0.35rem;
       border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
     }
-    .brand { display: flex; align-items: baseline; gap: 0.45rem; min-width: 0; }
+    .brand { display: flex; align-items: baseline; gap: 0.4rem; min-width: 0; }
     .brand strong {
       font-size: 0.88rem; font-weight: 700; letter-spacing: -0.03em;
-      color: var(--text);
     }
     .brand em {
-      font-style: normal; font-size: 0.68rem; color: var(--dim);
+      font-style: normal; font-size: 0.66rem; color: var(--dim);
       font-family: var(--mono); font-weight: 500;
     }
     .header-right { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
@@ -71,11 +69,15 @@
       display: inline-flex; align-items: center; justify-content: center;
     }
     .icon-btn:hover { color: var(--text); border-color: rgba(255,255,255,.22); background: var(--surface-2); }
+    .icon-btn:focus-visible, button:focus-visible {
+      outline: 2px solid var(--green-bright);
+      outline-offset: 1px;
+    }
     .chip {
       font-family: var(--mono);
-      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em;
+      font-size: 0.6rem; font-weight: 600; letter-spacing: 0.04em;
       text-transform: uppercase;
-      padding: 0.18rem 0.42rem;
+      padding: 0.18rem 0.4rem;
       border: 1px solid var(--line-2);
       background: var(--surface);
       color: var(--green-bright);
@@ -83,11 +85,39 @@
     .chip.off { color: var(--warn); border-color: rgba(196,160,53,.35); }
     .chip.block { color: #f0a0a0; border-color: rgba(212,90,90,.4); }
     .chip.mask, .chip.warn { color: #e6c96a; border-color: rgba(196,160,53,.35); }
+    .banner {
+      display: none;
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      line-height: 1.35;
+      padding: 0.4rem 0.5rem;
+      border: 1px solid rgba(212,90,90,.35);
+      background: rgba(212,90,90,.08);
+      color: #f0a0a0;
+      flex-shrink: 0;
+    }
+    .banner.visible { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .banner button {
+      flex-shrink: 0;
+      padding: 0.28rem 0.45rem;
+      font-size: 0.66rem;
+    }
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.56rem; color: var(--dim); font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin: 0 0 0.28rem;
+    }
+    section.band { flex-shrink: 0; }
+    section.band.grow {
+      flex: 1; min-height: 0;
+      display: flex; flex-direction: column;
+    }
     .strip {
       display: flex; align-items: center; justify-content: space-between;
-      gap: 0.5rem; font-size: 0.78rem;
-      padding: 0.4rem 0;
+      gap: 0.5rem; font-size: 0.74rem;
       color: var(--muted);
+      margin-bottom: 0.35rem;
     }
     .strip b { color: var(--text); font-weight: 600; }
     .metrics {
@@ -97,68 +127,25 @@
     }
     .metric {
       background: var(--surface);
-      padding: 0.55rem 0.4rem 0.5rem;
+      padding: 0.5rem 0.35rem 0.45rem;
       text-align: left;
     }
     .metric .n {
       font-family: var(--mono);
-      font-size: 1.2rem; font-weight: 600; line-height: 1;
+      font-size: 1.15rem; font-weight: 600; line-height: 1;
       letter-spacing: -0.03em;
     }
     .metric .l {
-      margin-top: 0.28rem;
-      font-size: 0.58rem; color: var(--dim);
+      margin-top: 0.25rem;
+      font-size: 0.56rem; color: var(--dim);
       letter-spacing: 0.08em; font-weight: 600;
     }
     .metric.block .n { color: var(--err); }
     .metric.warn .n { color: var(--warn); }
     .metric.mask .n { color: var(--mask); }
-    .section-label {
-      font-family: var(--mono);
-      font-size: 0.58rem; color: var(--dim); font-weight: 600;
-      letter-spacing: 0.1em; text-transform: uppercase; margin: 0.15rem 0 0;
-    }
-    .activity-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.28rem; }
-    ul {
-      list-style: none; margin: 0; padding: 0;
-      border: 1px solid var(--line); background: var(--surface);
-      overflow: auto; flex: 1;
-    }
-    li {
-      display: grid; grid-template-columns: 3.2rem 1fr auto;
-      gap: 0.45rem; align-items: center;
-      padding: 0.42rem 0.55rem;
-      border-bottom: 1px solid var(--line);
-      font-size: 0.74rem;
-    }
-    li:last-child { border-bottom: none; }
-    li.row { cursor: pointer; }
-    li.row:hover { background: var(--surface-2); }
-    .act {
-      font-family: var(--mono);
-      font-size: 0.58rem; font-weight: 600;
-      letter-spacing: 0.04em; text-transform: uppercase;
-    }
-    .act.block { color: var(--err); }
-    .act.warn { color: var(--warn); }
-    .act.mask { color: var(--mask); }
-    .meta {
-      font-family: var(--mono);
-      color: var(--dim); font-size: 0.62rem; text-align: right; line-height: 1.3;
-    }
-    .types { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
-    .empty { color: var(--dim); padding: 0.75rem 0.65rem; font-size: 0.76rem; }
-    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
-    .actions.triple { grid-template-columns: 1fr 1fr 1fr; }
-    .gate-row {
+    .metric.loading .n { color: var(--dim); }
+    nav.gate {
       display: flex; flex-direction: column; gap: 0.28rem;
-      padding: 0.35rem 0 0.15rem;
-      border-top: 1px solid var(--line);
-    }
-    .gate-row .gate-label {
-      font-family: var(--mono);
-      font-size: 0.58rem; color: var(--dim); font-weight: 600;
-      letter-spacing: 0.08em; text-transform: uppercase;
     }
     .gate-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.3rem; }
     .gate-btns button.active {
@@ -171,18 +158,61 @@
       border-color: rgba(196,160,53,.4);
       color: #e6c96a;
     }
+    .gate-btns button:disabled { opacity: 0.5; }
     .gate-hint {
-      font-size: 0.62rem; color: var(--dim); line-height: 1.35;
+      font-size: 0.6rem; color: var(--dim); line-height: 1.35;
       margin: 0;
     }
+    .gate-hint.err { color: #f0a0a0; }
+    ul#activity {
+      list-style: none; margin: 0; padding: 0;
+      border: 1px solid var(--line); background: var(--surface);
+      overflow: auto; flex: 1; min-height: 4.5rem;
+    }
+    #activity li {
+      display: grid; grid-template-columns: 3.2rem 1fr auto;
+      gap: 0.45rem; align-items: center;
+      padding: 0.4rem 0.5rem;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.72rem;
+    }
+    #activity li:last-child { border-bottom: none; }
+    #activity li.row { cursor: pointer; }
+    #activity li.row:hover { background: var(--surface-2); }
+    #activity li.state {
+      display: block;
+      color: var(--dim);
+      padding: 0.75rem 0.65rem;
+      font-size: 0.74rem;
+      cursor: default;
+    }
+    #activity li.state.err { color: #f0a0a0; }
+    .act {
+      font-family: var(--mono);
+      font-size: 0.56rem; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .act.block { color: var(--err); }
+    .act.warn { color: var(--warn); }
+    .act.mask { color: var(--mask); }
+    .meta {
+      font-family: var(--mono);
+      color: var(--dim); font-size: 0.6rem; text-align: right; line-height: 1.3;
+    }
+    .types { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+    .actions {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.35rem;
+      flex-shrink: 0;
+    }
+    .actions.dual { grid-template-columns: 1fr 1fr; }
     button {
       appearance: none;
       border: 1px solid var(--line-2);
       background: var(--surface-2);
       color: var(--text);
       border-radius: 2px;
-      padding: 0.48rem 0.4rem;
-      font: inherit; font-size: 0.74rem; font-weight: 600;
+      padding: 0.45rem 0.35rem;
+      font: inherit; font-size: 0.72rem; font-weight: 600;
       cursor: pointer;
     }
     button.primary {
@@ -204,142 +234,185 @@
     button.primary:hover:not(:disabled) { background: rgba(62,112,77,.28); }
     .back {
       border: 0; background: transparent; color: var(--muted);
-      font-family: var(--mono); font-size: 0.66rem; font-weight: 500;
+      font-family: var(--mono); font-size: 0.64rem; font-weight: 500;
       padding: 0; cursor: pointer; text-align: left; letter-spacing: 0.02em;
     }
     .back:hover { color: var(--text); }
     .hl {
-      font-family: var(--mono); font-size: 0.7rem;
+      font-family: var(--mono); font-size: 0.68rem;
       white-space: pre-wrap; word-break: break-word; line-height: 1.45;
-      max-height: 92px; overflow: auto; user-select: text;
+      max-height: 88px; overflow: auto; user-select: text;
       background: var(--navy-2); border: 1px solid var(--line);
-      padding: 0.5rem 0.55rem; border-radius: 2px;
+      padding: 0.45rem 0.5rem; border-radius: 2px;
     }
     mark {
       background: rgba(196,160,53,.28); color: inherit;
-      border-radius: 0; padding: 0 1px;
+      padding: 0 1px;
     }
     mark.block { background: rgba(212,90,90,.35); }
     mark.mask { background: rgba(62,112,77,.35); color: #cfe8d6; }
     .pair {
-      display: grid; grid-template-columns: 1fr; gap: 0.45rem;
+      display: grid; grid-template-columns: 1fr; gap: 0.4rem;
       flex: 1; min-height: 0; overflow: auto;
     }
-    .pair label {
+    .pair .field-label {
       font-family: var(--mono);
-      font-size: 0.58rem; color: var(--dim); font-weight: 600;
+      font-size: 0.56rem; color: var(--dim); font-weight: 600;
       letter-spacing: 0.1em; text-transform: uppercase;
       margin: 0 0 0.2rem; display: block;
     }
-    .status-msg { color: var(--muted); font-size: 0.7rem; min-height: 1em; font-family: var(--mono); }
+    .status-msg { color: var(--muted); font-size: 0.68rem; min-height: 1em; font-family: var(--mono); }
     .status-msg.err { color: #f0a0a0; }
     #overrideBox {
-      display: none; padding: 0.55rem 0.6rem;
+      display: none; padding: 0.5rem 0.55rem;
       border: 1px solid rgba(212,90,90,.4);
       background: rgba(212,90,90,.08);
-      flex-direction: column; gap: 0.4rem; border-radius: 2px;
+      flex-direction: column; gap: 0.35rem; border-radius: 2px;
+      flex-shrink: 0;
     }
     #overrideBox.visible { display: flex; }
-    #overrideBox p { margin: 0; font-size: 0.72rem; line-height: 1.4; color: var(--text); }
+    #overrideBox p { margin: 0; font-size: 0.7rem; line-height: 1.4; color: var(--text); }
     #overrideBox label.check {
       display: flex; gap: 0.4rem; align-items: flex-start;
-      font-size: 0.72rem; cursor: pointer; color: var(--muted);
+      font-size: 0.7rem; cursor: pointer; color: var(--muted);
     }
   </style>
 </head>
 <body>
-  <section class="screen active" id="screen-status">
-    <header>
+  <main class="screen active" id="screen-status" aria-label="LakanVault status">
+    <header class="app-header">
       <div class="brand">
         <strong>LakanVault</strong>
         <em>local</em>
       </div>
       <div class="header-right">
-        <span id="protection-pill" class="chip">on</span>
-        <button type="button" class="icon-btn" id="btn-minimize" title="Minimize" aria-label="Minimize">−</button>
+        <span id="protection-pill" class="chip" aria-live="polite">…</span>
+        <button type="button" class="icon-btn" id="btn-minimize" title="Minimize" aria-label="Minimize status panel">−</button>
       </div>
     </header>
-    <div class="strip">
-      <span id="protection-label"><b>Protection</b> active</span>
-      <span id="protection-hint">counts only</span>
+
+    <div id="status-banner" class="banner" role="alert">
+      <span id="status-banner-text">Cannot reach daemon.</span>
+      <button type="button" id="btn-retry">Retry</button>
     </div>
-    <div class="metrics">
-      <div class="metric block"><div class="n" id="n-block">0</div><div class="l">BLOCKED</div></div>
-      <div class="metric warn"><div class="n" id="n-warn">0</div><div class="l">WARNED</div></div>
-      <div class="metric mask"><div class="n" id="n-mask">0</div><div class="l">MASKED</div></div>
-    </div>
-    <div class="activity-wrap">
-      <p class="section-label">activity · select to review</p>
-      <ul id="activity"><li class="empty">No protect events yet.</li></ul>
-    </div>
-    <div class="gate-row">
-      <div class="gate-label">Cursor chat gate</div>
-      <div class="gate-btns">
-        <button type="button" id="btn-mode-off" data-mode="off" title="Never gate — chat always works">Off</button>
-        <button type="button" id="btn-mode-tag" data-mode="tag" title="Only gate prompts with [[lv]]">Tag</button>
-        <button type="button" id="btn-mode-on" data-mode="on" title="Gate every prompt in this workspace">On</button>
+
+    <section class="band" aria-labelledby="gate-heading">
+      <h2 class="section-label" id="gate-heading">Cursor chat gate</h2>
+      <nav class="gate" aria-label="Chat gate mode">
+        <div class="gate-btns">
+          <button type="button" id="btn-mode-off" data-mode="off" aria-pressed="false" title="Never gate — chat always works">Off</button>
+          <button type="button" id="btn-mode-tag" data-mode="tag" aria-pressed="false" title="Only gate prompts with [[lv]]">Tag</button>
+          <button type="button" id="btn-mode-on" data-mode="on" aria-pressed="false" title="Gate every prompt in this workspace">On</button>
+        </div>
+        <p class="gate-hint" id="gate-hint" aria-live="polite">Loading gate…</p>
+      </nav>
+    </section>
+
+    <section class="band" aria-labelledby="metrics-heading">
+      <div class="strip">
+        <span id="protection-label"><b>Protection</b> …</span>
+        <span id="protection-hint">loading</span>
       </div>
-      <p class="gate-hint" id="gate-hint">Off = chat free. Tag = [[lv]] only. MCP refresh is manual in Cursor if tools missing.</p>
-    </div>
-    <div class="actions">
+      <h2 class="section-label" id="metrics-heading">Metrics</h2>
+      <div class="metrics" aria-live="polite">
+        <div class="metric block loading" id="metric-block">
+          <div class="n" id="n-block">—</div>
+          <div class="l">BLOCKED</div>
+        </div>
+        <div class="metric warn loading" id="metric-warn">
+          <div class="n" id="n-warn">—</div>
+          <div class="l">WARNED</div>
+        </div>
+        <div class="metric mask loading" id="metric-mask">
+          <div class="n" id="n-mask">—</div>
+          <div class="l">MASKED</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band grow" aria-labelledby="activity-heading">
+      <h2 class="section-label" id="activity-heading">Activity · select to review</h2>
+      <ul id="activity" aria-live="polite">
+        <li class="state">Loading activity…</li>
+      </ul>
+    </section>
+
+    <div class="actions" role="group" aria-label="Status actions">
       <button type="button" class="primary" id="btn-open-review">Review</button>
       <button type="button" id="btn-open-dashboard" title="Open full dashboard in browser">Dashboard</button>
       <button type="button" id="btn-pause">Pause</button>
     </div>
-  </section>
+  </main>
 
-  <section class="screen" id="screen-review">
-    <header>
-      <div class="brand" style="flex-direction:column;gap:0.15rem;align-items:flex-start">
+  <main class="screen" id="screen-review" aria-label="Prompt Review" hidden>
+    <header class="app-header">
+      <div class="brand" style="flex-direction:column;gap:0.12rem;align-items:flex-start">
         <button type="button" class="back" id="btn-back">← status</button>
         <strong>Prompt Review</strong>
       </div>
       <div class="header-right">
         <span class="chip" id="review-verdict">—</span>
-        <button type="button" class="icon-btn" id="btn-minimize-review" title="Minimize" aria-label="Minimize">−</button>
+        <button type="button" class="icon-btn" id="btn-minimize-review" title="Minimize" aria-label="Minimize status panel">−</button>
       </div>
     </header>
     <div class="pair">
       <div>
-        <label>Original</label>
-        <div class="hl" id="originalHl">(none)</div>
+        <span class="field-label" id="lbl-original">Original</span>
+        <div class="hl" id="originalHl" aria-labelledby="lbl-original">(none)</div>
       </div>
       <div>
-        <label>Filtered</label>
-        <div class="hl" id="sanitized">(none)</div>
+        <span class="field-label" id="lbl-filtered">Filtered</span>
+        <div class="hl" id="sanitized" aria-labelledby="lbl-filtered">(none)</div>
       </div>
     </div>
-    <p class="status-msg" id="review-status"></p>
-    <div id="overrideBox">
+    <p class="status-msg" id="review-status" aria-live="polite"></p>
+    <div id="overrideBox" role="region" aria-label="Override confirmation">
       <p id="overrideWarn">This will send unmasked content outside your device. This cannot be undone.</p>
       <label class="check">
         <input type="checkbox" id="overrideAck" />
         <span>I understand this exposes real credentials or PII.</span>
       </label>
-      <div class="actions">
+      <div class="actions dual">
         <button type="button" class="danger" id="btn-confirm-override" disabled>Confirm unmasked</button>
         <button type="button" id="btn-cancel-override">Cancel</button>
       </div>
     </div>
-    <div class="actions triple" id="review-actions">
+    <div class="actions" id="review-actions" role="group" aria-label="Review actions">
       <button type="button" class="primary" id="btn-send" disabled>Send filtered</button>
       <button type="button" class="ghost" id="btn-override" disabled>Override</button>
       <button type="button" id="btn-back-2">Back</button>
     </div>
-  </section>
+  </main>
 
   <script>
     const el = (id) => document.getElementById(id);
     let paused = false;
     let hooksMode = "tag";
+    let statsLoading = true;
+    let gateLoading = true;
     let reviewState = {
       sessionId: "", sanitized: "", original: "", action: "allow",
       allowSend: false, findings: [],
     };
 
     function showScreen(name) {
-      document.querySelectorAll(".screen").forEach((n) => n.classList.remove("active"));
-      el("screen-" + name).classList.add("active");
+      document.querySelectorAll(".screen").forEach((n) => {
+        const on = n.id === "screen-" + name;
+        n.classList.toggle("active", on);
+        if (on) n.removeAttribute("hidden");
+        else n.setAttribute("hidden", "");
+      });
+    }
+
+    function setBanner(msg) {
+      const box = el("status-banner");
+      if (!msg) {
+        box.classList.remove("visible");
+        el("status-banner-text").textContent = "";
+        return;
+      }
+      el("status-banner-text").textContent = msg;
+      box.classList.add("visible");
     }
 
     function fmtTime(ts) {
@@ -375,7 +448,7 @@
     function friendlyError(msg) {
       const s = String(msg || "");
       if (/cannot reach local llm|local llm is not running|connection refused|failed to establish|urlerror/i.test(s)) {
-        return "Local LLM offline — start LM Studio/Ollama on :1234, then retry Send or Override.";
+        return "Local LLM offline — Override still works (paste-trust). Or start LM Studio/Ollama on :1234.";
       }
       return s;
     }
@@ -408,8 +481,8 @@
         sessionId: data.session_id || "",
         sanitized: data.sanitized || "",
         original,
-        action: data.final_action || "allow",
-        allowSend: !!data.allow_send,
+        action: data.final_action || data.action || "allow",
+        allowSend: data.allow_send != null ? !!data.allow_send : (data.action || data.final_action) !== "block",
         findings: data.findings || [],
       };
       const v = el("review-verdict");
@@ -425,21 +498,27 @@
       setReviewStatus(
         reviewState.allowSend
           ? "Ready — send filtered to local LLM."
-          : "Blocked — override sends unmasked once."
+          : "Blocked — override trusts Original paste once."
       );
       showScreen("review");
     }
 
     async function openEvent(eventId) {
       if (!eventId) return;
-      setReviewStatus("Loading…");
+      setReviewStatus("Loading event…");
       showScreen("review");
+      el("originalHl").textContent = "Loading…";
+      el("sanitized").textContent = "Loading…";
+      el("btn-send").disabled = true;
+      el("btn-override").disabled = true;
       try {
         const resp = await fetch("/api/protect/event/" + encodeURIComponent(eventId));
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.detail || resp.statusText);
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(data.detail || resp.statusText || "Load failed");
         applyReview(data);
       } catch (err) {
+        el("originalHl").textContent = "(failed to load)";
+        el("sanitized").textContent = "(none)";
         setReviewStatus(String(err.message || err), true);
       }
     }
@@ -464,29 +543,49 @@
       ["off", "tag", "on"].forEach((m) => {
         const btn = el("btn-mode-" + m);
         if (!btn) return;
-        const on = hooksMode === m;
+        const on = !gateLoading && hooksMode === m;
         btn.classList.toggle("active", on);
         btn.classList.toggle("off-mode", on && m === "off");
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+        btn.disabled = gateLoading;
       });
+      if (gateLoading) {
+        el("gate-hint").textContent = "Loading gate…";
+        el("gate-hint").className = "gate-hint";
+        return;
+      }
       const hints = {
         off: "Chat gate Off — Cursor chat stays normal. Flip Tag/On when you want blocking.",
         tag: "Tag mode — only prompts with [[lv]] are gated. Normal chat works.",
         on: "Full On — every prompt in this workspace is gated. Use Off if chat gets stuck.",
       };
       el("gate-hint").textContent = hints[hooksMode] || hints.tag;
+      el("gate-hint").className = "gate-hint";
     }
 
     async function refreshGate() {
       try {
         const resp = await fetch("/api/hooks/mode");
-        if (!resp.ok) return;
+        if (!resp.ok) throw new Error("Gate request failed (" + resp.status + ")");
         const data = await resp.json();
         hooksMode = (data.mode || "tag").toLowerCase();
+        gateLoading = false;
         renderGate();
-      } catch (_) {}
+      } catch (err) {
+        gateLoading = false;
+        renderGate();
+        el("gate-hint").textContent = String(err.message || err);
+        el("gate-hint").className = "gate-hint err";
+      }
     }
 
     async function setGate(mode) {
+      ["off", "tag", "on"].forEach((m) => {
+        const btn = el("btn-mode-" + m);
+        if (btn) btn.disabled = true;
+      });
+      el("gate-hint").textContent = "Updating…";
+      el("gate-hint").className = "gate-hint";
       try {
         const resp = await fetch("/api/hooks/mode", {
           method: "POST",
@@ -495,20 +594,62 @@
         });
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) {
-          el("gate-hint").textContent = String(data.detail || "could not set mode");
+          el("gate-hint").textContent = String(data.detail || "Could not set mode");
+          el("gate-hint").className = "gate-hint err";
+          renderGate();
           return;
         }
         hooksMode = (data.mode || mode).toLowerCase();
+        gateLoading = false;
         renderGate();
         el("gate-hint").textContent =
           (data.hint || "") + " Next chat send picks this up — no Cursor restart needed for hooks.";
+        el("gate-hint").className = "gate-hint";
       } catch (err) {
         el("gate-hint").textContent = String(err.message || err);
+        el("gate-hint").className = "gate-hint err";
+        renderGate();
       }
+    }
+
+    function renderActivity(activity) {
+      const list = el("activity");
+      if (statsLoading) {
+        list.innerHTML = '<li class="state">Loading activity…</li>';
+        return;
+      }
+      if (!activity || !activity.length) {
+        list.innerHTML = '<li class="state">No protect events yet.</li>';
+        return;
+      }
+      list.innerHTML = activity.map((e) => {
+        const types = (e.entity_types || []).slice(0, 4).join(", ") || "—";
+        const id = Number(e.id) || 0;
+        return `<li class="row" data-event="${id}" role="button" tabindex="0" title="Open in Prompt Review">
+          <span class="act ${escapeHtml(e.action || "")}">${escapeHtml(e.action || "")}</span>
+          <span class="types" title="${escapeHtml(types)}">${escapeHtml(types)}</span>
+          <span class="meta">${escapeHtml(e.source || "")}<br/>${escapeHtml(fmtTime(e.ts))}</span>
+        </li>`;
+      }).join("");
+      list.querySelectorAll("li.row").forEach((node) => {
+        const open = () => openEvent(node.getAttribute("data-event"));
+        node.addEventListener("click", open);
+        node.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            open();
+          }
+        });
+      });
     }
 
     function render(stats) {
       paused = !!stats.paused;
+      statsLoading = false;
+      ["block", "warn", "mask"].forEach((k) => {
+        const node = el("metric-" + k);
+        if (node) node.classList.remove("loading");
+      });
       el("n-block").textContent = String(stats.blocked ?? 0);
       el("n-warn").textContent = String(stats.warned ?? 0);
       el("n-mask").textContent = String(stats.masked ?? 0);
@@ -520,38 +661,43 @@
       pill.textContent = paused ? "paused" : "on";
       pill.className = "chip" + (paused ? " off" : "");
       el("btn-pause").textContent = paused ? "Resume" : "Pause";
+      renderActivity(stats.activity || []);
+      setBanner("");
+    }
 
-      const activity = stats.activity || [];
-      const list = el("activity");
-      if (!activity.length) {
-        list.innerHTML = '<li class="empty">No protect events yet.</li>';
-        return;
-      }
-      list.innerHTML = activity.map((e) => {
-        const types = (e.entity_types || []).slice(0, 4).join(", ") || "—";
-        const id = Number(e.id) || 0;
-        return `<li class="row" data-event="${id}" title="Review in tray">
-          <span class="act ${e.action}">${e.action}</span>
-          <span class="types" title="${types}">${types}</span>
-          <span class="meta">${e.source}<br/>${fmtTime(e.ts)}</span>
-        </li>`;
-      }).join("");
-      list.querySelectorAll("li.row").forEach((node) => {
-        node.addEventListener("click", () => openEvent(node.getAttribute("data-event")));
+    function renderStatsError(msg) {
+      statsLoading = false;
+      ["block", "warn", "mask"].forEach((k) => {
+        const node = el("metric-" + k);
+        if (node) node.classList.add("loading");
       });
+      el("n-block").textContent = "—";
+      el("n-warn").textContent = "—";
+      el("n-mask").textContent = "—";
+      el("protection-label").innerHTML = "<b>Protection</b> unknown";
+      el("protection-hint").textContent = "offline";
+      el("protection-pill").textContent = "err";
+      el("protection-pill").className = "chip block";
+      el("activity").innerHTML = '<li class="state err">' + escapeHtml(msg || "Failed to load activity.") + "</li>";
+      setBanner(msg || "Cannot reach daemon on this port.");
     }
 
     async function refresh() {
       try {
         const resp = await fetch("/api/protect/stats");
-        if (!resp.ok) return;
+        if (!resp.ok) throw new Error("Stats failed (" + resp.status + ")");
         render(await resp.json());
-      } catch (_) {}
+      } catch (err) {
+        renderStatsError(String(err.message || err));
+      }
     }
 
     async function sendPayload(override) {
       if (!reviewState.sessionId) return;
-      setReviewStatus(override ? "Sending unmasked…" : "Sending filtered…");
+      setReviewStatus(override ? "Override in progress…" : "Sending filtered…");
+      el("btn-send").disabled = true;
+      el("btn-override").disabled = true;
+      el("btn-confirm-override").disabled = true;
       try {
         const body = {
           session_id: reviewState.sessionId,
@@ -564,32 +710,51 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        const data = await resp.json();
+        const data = await resp.json().catch(() => ({}));
         if (!resp.ok) throw new Error(typeof data.detail === "string" ? data.detail : resp.statusText);
         if (data.blocked) {
           setReviewStatus(data.block_reason || "Blocked", true);
+          el("btn-override").disabled = !reviewState.sessionId;
+          el("btn-send").disabled = !reviewState.allowSend;
           return;
         }
         if (data.error) {
           setReviewStatus(data.error, true);
+          el("btn-override").disabled = !reviewState.sessionId;
+          el("btn-send").disabled = !reviewState.allowSend;
           return;
         }
         hideOverride();
         if (data.override_used) {
           setReviewStatus(
             (data.raw_response || "Override accepted.") +
-              " Copy Original above and paste it into Cursor (exact paste once)."
+              " Copy Original above and paste into Cursor (exact paste once)."
           );
+          el("btn-override").disabled = true;
+          el("btn-send").disabled = !reviewState.allowSend;
           return;
         }
         setReviewStatus("Sent (filtered) · " + (data.model_used || "model"));
+        el("btn-send").disabled = !reviewState.allowSend;
+        el("btn-override").disabled = !reviewState.sessionId;
       } catch (err) {
         setReviewStatus(String(err.message || err), true);
+        el("btn-send").disabled = !reviewState.allowSend;
+        el("btn-override").disabled = !reviewState.sessionId;
+        el("btn-confirm-override").disabled = !el("overrideAck").checked;
       }
     }
 
     el("btn-minimize").addEventListener("click", minimizeFlyout);
     el("btn-minimize-review").addEventListener("click", minimizeFlyout);
+    el("btn-retry").addEventListener("click", () => {
+      statsLoading = true;
+      gateLoading = true;
+      renderGate();
+      renderActivity([]);
+      refresh();
+      refreshGate();
+    });
     ["off", "tag", "on"].forEach((m) => {
       el("btn-mode-" + m).addEventListener("click", () => setGate(m));
     });
@@ -600,8 +765,11 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ paused: !paused }),
         });
-        if (resp.ok) render(await (await fetch("/api/protect/stats")).json());
-      } catch (_) {}
+        if (!resp.ok) throw new Error("Pause failed");
+        await refresh();
+      } catch (err) {
+        setBanner(String(err.message || err));
+      }
     });
     el("btn-open-review").addEventListener("click", openEmptyReview);
     el("btn-open-dashboard").addEventListener("click", () => {
@@ -638,11 +806,13 @@
     const panel = params.get("panel");
     if (eventParam) openEvent(eventParam);
     else if (panel === "review") openEmptyReview();
+    else showScreen("status");
 
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") minimizeFlyout();
     });
 
+    renderGate();
     refresh();
     refreshGate();
     setInterval(refresh, 2000);
