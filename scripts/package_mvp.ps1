@@ -178,7 +178,7 @@ try {
 - [ ] Result is **403**.
 
 ### 5. MCP classify (in the demo-workspace Cursor window)
-Ask the agent: call `lakanvault_classify` on `sk-9f8e7d6c5b4a3928170615243a4b5c6d7e8f90ab`
+In Cursor chat, ask to call `lakanvault_classify` on `sk-9f8e7d6c5b4a3928170615243a4b5c6d7e8f90ab`
 - [ ] Result `action: block` (key not echoed).
 
 ### 6. Hooks (`mode.txt` = tag)
